@@ -546,7 +546,7 @@ _private _method type_dumper.write_method(type_name, method)
 
 	_local params << _self.build_params(method.name, method.value)
 	_local is_assignment? << method.name.matches?(:|*<<|)
-	_if is_assignment?
+	_if is_assignment? _andif params.size > 1
 	_then
 		instruction[:parameters] << params.subseq(2)
 		instruction[:assignment_parameter] << params[1]
@@ -852,9 +852,15 @@ _private _method type_dumper.build_params(name, procedure)
 	_endif
 
 	_local param_list <<
-		_if procedure.responds_to?(:basic_arglist)
+		_if procedure.responds_to?(:basic_arglist) _andif procedure.responds_to?(:arglist)
 		_then
-			>> procedure.basic_arglist
+			_local arglist << {}
+			_try
+				arglist << procedure.basic_arglist
+			_when error
+				arglist << {}
+			_endtry
+			>> arglist
 		_else
 			>> {}
 		_endif
@@ -909,5 +915,6 @@ _private _method type_dumper.write_condition(cond)
 _endmethod
 $
 
-type_dumper.new("/tmp/sw_types.jsonl").run()
+# type_dumper.new("/tmp/sw_types.jsonl").run()
+type_dumper.new("C:\temp\sw_type2.jsonl").run()
 $
