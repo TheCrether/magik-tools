@@ -1,0 +1,433 @@
+{
+	".source.magik": {
+		"Magik file Header": {
+			"prefix": ["file_header"],
+			"description": "Empty Magik file",
+			"isFileTemplate": true,
+			"body": [
+				"#% text_encoding = iso8859_1",
+				"#------------------------------------------------------------------------------",
+				"#",
+				"#        GRINTEC Gesellschaft fuer grafische Informationstechnologie mbH",
+				"#",
+				"#                    ${4:# TODO module desc}",
+				"#",
+				"#------------------------------------------------------------------------------",
+				"#------------------------------------------------------------------------------",
+				"## Module       : ${1:module_name}",
+				"##",
+				"## Description  : ${2:#TODO desc}",
+				"##",
+				"## Author       : ${3:#TODO Name}, GRINTEC GmbH",
+				"##",
+				"## Date         : $CURRENT_DATE.$CURRENT_MONTH.$CURRENT_YEAR",
+				"#------------------------------------------------------------------------------",
+				"## Change number:",
+				"##",
+				"## Description  :",
+				"##",
+				"## Author       :",
+				"##",
+				"## Date         :",
+				"#------------------------------------------------------------------------------",
+				"",
+				"_package sw",
+				"$",
+				"",
+				"$0"
+			]
+		},
+		"Magik Class Header": {
+			"prefix": ["class_header", "magik_class_header"],
+			"description": "Empty Class file",
+			"isFileTemplate": true,
+			"body": [
+				"#% text_encoding = iso8859_1",
+				"#------------------------------------------------------------------------------",
+				"#",
+				"#        GRINTEC Gesellschaft fuer grafische Informationstechnologie mbH",
+				"#",
+				"#                    ${5:# TODO module desc}",
+				"#",
+				"#------------------------------------------------------------------------------",
+				"#------------------------------------------------------------------------------",
+				"## Module       : ${1:module_name}",
+				"##",
+				"## Class        : ${2:${TM_FILENAME_BASE/(_adds|_mods)//}}",
+				"##",
+				"## Description  : ${3:#TODO desc}",
+				"##",
+				"## Author       : ${4:#TODO Name}, GRINTEC GmbH",
+				"##",
+				"## Date         : $CURRENT_DATE.$CURRENT_MONTH.$CURRENT_YEAR",
+				"#------------------------------------------------------------------------------",
+				"## Change number:",
+				"##",
+				"## Description  :",
+				"##",
+				"## Author       :",
+				"##",
+				"## Date         :",
+				"#------------------------------------------------------------------------------",
+				"",
+				"_package sw",
+				"$",
+				"",
+				"$0"
+			]
+		},
+		"Magik Class file": {
+			"prefix": [
+				"exemplar_file",
+				"magik_exemplar_file",
+				"class_file",
+				"define_exemplar_file"
+			],
+			"description": "Empty Class file",
+			"isFileTemplate": true,
+			"body": [
+				"#% text_encoding = iso8859_1",
+				"#------------------------------------------------------------------------------",
+				"#",
+				"#        GRINTEC Gesellschaft fuer grafische Informationstechnologie mbH",
+				"#",
+				"#                    ${5:# TODO module desc}",
+				"#",
+				"#------------------------------------------------------------------------------",
+				"#------------------------------------------------------------------------------",
+				"## Module       : ${1:module_name}",
+				"##",
+				"## Class        : ${2:${TM_FILENAME_BASE/(_adds|_mods)//}}",
+				"##",
+				"## Description  : ${3:#TODO desc}",
+				"##",
+				"## Author       : ${4:#TODO Name}, GRINTEC GmbH",
+				"##",
+				"## Date         : $CURRENT_DATE.$CURRENT_MONTH.$CURRENT_YEAR",
+				"#------------------------------------------------------------------------------",
+				"## Change number:",
+				"##",
+				"## Description  :",
+				"##",
+				"## Author       :",
+				"##",
+				"## Date         :",
+				"#------------------------------------------------------------------------------",
+				"",
+				"_package sw",
+				"$",
+				"",
+				"#------------------------------------------------------------------------------",
+				"# Exemplar",
+				"#------------------------------------------------------------------------------",
+				"_pragma(classify_level=${7|basic,advanced,restricted,debug,deprecated|}, topic={grintec${8:, topic}})",
+				"def_slotted_exemplar(:${2:${TM_FILENAME_BASE/(_adds|_mods)//}}, ",
+				"\t{",
+				"\t\t${5:{:prop, default\\},}",
+				"\t},",
+				"\t{${6::super_exemplar}})",
+				"$",
+				"",
+				"$0"
+			]
+		},
+		"Magik File Change": {
+			"prefix": ["change_desc"],
+			"description": "An empty description for a change message",
+			"body": [
+				"## Change number: ${1:#TODO change-number}",
+				"##",
+				"## Description  : ${2:#TODO desc}",
+				"##",
+				"## Author       : ${3:#TODO name}, GRINTEC GmbH",
+				"##",
+				"## Date         : $CURRENT_DATE.$CURRENT_MONTH.$CURRENT_YEAR",
+				"#------------------------------------------------------------------------------",
+				"$0"
+			]
+		},
+		"Magik Method": {
+			"prefix": ["method"],
+			"description": "Full method definition",
+			"body": [
+				"#---------------------------------------",
+				"# Method",
+				"#---------------------------------------",
+				"_pragma(classify_level=${5|basic,advanced,restricted,debug,deprecated|}, topic={grintec${6:, topic}}${7:, usage={subclassable}})",
+				"${1|_private |}_method ${2:${TM_FILENAME_BASE/(_adds|_mods)//}}.${3:method}(${4:params})",
+				"\t## ",
+				"",
+				"\t$0",
+				"_endmethod",
+				"$"
+			]
+		},
+		"Magik Init Script for Reloading Modules": {
+			"prefix": ["init-script"],
+			"body": [
+				"#% text_encoding = iso8859_1",
+				"!global_auto_declare?! << _maybe",
+				"$",
+				"_global gt_reload_modules << _unset",
+				"$",
+				"magik_rep.prompt_generator <<",
+				"\t_proc(prompt)",
+				"\t\t>> write_string(\"imd\",%|,prompt)",
+				"\t_endproc",
+				"$",
+				"",
+				"_block",
+				"\t_if get_global_value(:u) _is _unset _orif",
+				"\t\tget_global_value(:gt_reload_modules) _is _unset",
+				"\t_then",
+				"\t\tload_file(\"G:\\Entwicklung\\utils\\gt_reload_modules.magik\")",
+				"\t\tload_file(\"G:\\Entwicklung\\gt_util.magik\")",
+				"\t_endif",
+				"_endblock",
+				"$",
+				"",
+				"_global remove_conditions << _proc@remove_conditions()",
+				"\t_local cond << {",
+				"\t}",
+				"\t_for c _over cond.fast_elements()",
+				"\t_loop",
+				"\t\tcondition.remove_condition(c)",
+				"\t_endloop",
+				"_endproc",
+				"$",
+				"_global reload_conditions << _proc@reload_conditions()",
+				"\tremove_conditions()",
+				"\t# load_file(\"G:\\Entwicklung\\Grintec\\gt_naturbestand_graz_import\\modul_v1.0\\source\\conditions.magik\")",
+				"_endproc",
+				"$",
+				"",
+				"_block",
+				"\tremove_conditions()",
+				"\tload_file(\"G:\\Skripte\\imd\\utils.magik\")",
+				"\t_local modules_to_load << rope.new_with(",
+				"\t\t{:${1:modul}, \"G:\\Entwicklung\\\\${1:modul}\"}$0",
+				"\t)",
+				"",
+				"\tgt_reload_modules(modules_to_load)",
+				"_endblock",
+				"$",
+				"# Disable caching",
+				"gt_abstract_dialog_plugin.define_shared_constant( :cache_dialogs?, _false, :public )",
+				"$"
+			]
+		},
+		"Mixin-file": {
+			"prefix": ["mixin-file"],
+			"isFileTemplate": true,
+			"description": "Empty Mixin file",
+			"body": [
+				"#% text_encoding = iso8859_1",
+				"#------------------------------------------------------------------------------",
+				"#",
+				"#        GRINTEC Gesellschaft fuer grafische Informationstechnologie mbH",
+				"#",
+				"#                    ${5:# TODO module desc}",
+				"#",
+				"#------------------------------------------------------------------------------",
+				"#------------------------------------------------------------------------------",
+				"## Module       : ${1:module_name}",
+				"##",
+				"## Class        : ${2:${TM_FILENAME_BASE/(_adds|_mods)//}}",
+				"##",
+				"## Description  : ${3:# TODO desc}",
+				"##",
+				"## Author       : ${4:# TODO Name}, GRINTEC GmbH",
+				"##",
+				"## Date         : $CURRENT_DATE.$CURRENT_MONTH.$CURRENT_YEAR",
+				"#------------------------------------------------------------------------------",
+				"## Change number:",
+				"##",
+				"## Description  :",
+				"##",
+				"## Author       :",
+				"##",
+				"## Date         :",
+				"#------------------------------------------------------------------------------",
+				"",
+				"_package sw",
+				"$",
+				"",
+				"#--------------------------------------",
+				"# Mixin",
+				"#--------------------------------------",
+				"_pragma(classify_level=${6|basic,advanced,restricted,debug,deprecated|}, topic={grintec${7:, topic}}",
+				"def_mixin(:${2:${TM_FILENAME_BASE/(_adds|_mods)//}}, {${5:deps}})",
+				"$",
+				"$0"
+			]
+		},
+		"Define Mixin": {
+			"prefix": ["mixin", "define-mixin"],
+			"description": "Define a mixin",
+			"body": [
+				"#--------------------------------------",
+				"# Mixin",
+				"#--------------------------------------",
+				"_pragma(classify_level=${4|basic,advanced,restricted,debug,deprecated|}, topic={grintec${3:, topic}})",
+				"def_mixin(:${1:${TM_FILENAME_BASE/(_adds|_mods)//}}, {${2:deps}})",
+				"$",
+				"$0"
+			]
+		},
+		"Define shared constant": {
+			"prefix": ["shared-constant", "define-shared-constant"],
+			"description": "Define a shared constant",
+			"body": [
+				"#--------------------------------------",
+				"# Shared constant",
+				"#--------------------------------------",
+				"_pragma(classify_level=${6|basic,advanced,restricted,debug,deprecated|}, topic={grintec${5:, topic}}${7:, usage=subclassable})",
+				"${1:${TM_FILENAME_BASE/(_adds|_mods)//}}.define_shared_constant(:${2:constant},",
+				"\t${3:value},",
+				"\t:${4|public,private|})",
+				"$",
+				"$0"
+			]
+		},
+		"Define Slotted Exemplar": {
+			"prefix": ["exemplar", "slotted_exemplar", "define_slotted_exemplar"],
+			"description": "Define a slotted exemplar",
+			"body": [
+				"#------------------------------------------------------------------------------",
+				"# Exemplar",
+				"#------------------------------------------------------------------------------",
+				"_pragma(classify_level=${4|basic,advanced,restricted,debug,deprecated|}, topic={grintec${5:, topic}})",
+				"def_slotted_exemplar( :${1:${TM_FILENAME_BASE/(_adds|_mods)//}}, ",
+				"\t## ${6:desc}",
+				"\t{",
+				"\t\t${2:{:prop, default\\},}",
+				"\t},",
+				"\t{${3::super_exemplar}})",
+				"$",
+				"$0"
+			]
+		},
+		"Define Slot Access": {
+			"prefix": ["slot_access", "define_slot_access"],
+			"description": "Define slot access",
+			"body": [
+				"#-------------------------------------------------------------------------------",
+				"# Slot access",
+				"#-------------------------------------------------------------------------------",
+				"_pragma(classify_level=${5|basic,advanced,restricted,debug,deprecated|}, topic={grintec${6:, topic}})",
+				"${1:${TM_FILENAME_BASE/(_adds|_mods)//}}.define_slot_access( :${2:property},",
+				"\t## ${7:desc}",
+				"\t:${3|readable,writable|}, :${4|public,private,read_only|} )",
+				"$",
+				"$0"
+			]
+		},
+		"Global Procedure": {
+			"prefix": ["global_procedure", "gproc"],
+			"description": "Define a global procedure",
+			"body": [
+				"_global ${1:procname} << _proc@${1:procname}(${2:params})",
+				"\t$0",
+				"_endproc",
+				"$"
+			]
+		},
+		"Procedure": {
+			"prefix": ["procedure", "proc"],
+			"description": "Define a procedure",
+			"body": [
+				"${1:procname} << _proc@${1:procname}(${2:params})",
+				"\t$0",
+				"_endproc"
+			]
+		},
+		"Define Condition": {
+			"prefix": ["define_condition", "condition"],
+			"description": "Define a condition",
+			"body": [
+				"condition.define_condition(:${1:cond_name},",
+				"\t:${2|user_error,warning,error,information|},",
+				"\t{${3::param}})",
+				"$$0"
+			]
+		},
+		"Record Transaction": {
+			"prefix": ["record_transaction", "trans"],
+			"description": "Create a record transaction",
+			"body": [
+				"record_transaction.new_${1|insert,update,delete,clone|}(${2:a_collection, prop_list})"
+			]
+		},
+		"Pragma": {
+			"prefix": "prag",
+			"description": "A pragma statement",
+			"body": "_pragma(classify_level=${1|basic,advanced,restricted,debug,deprecated|}, topic={grintec${2:, topic}}${3:, usage=subclassable})"
+		},
+		"Add Child to Mixin": {
+			"prefix": "mixin_add_child",
+			"description": "Add a child to a mixin",
+			"body": [
+				"_pragma(classify_level=${3|basic,advanced,restricted,debug,deprecated|}, topic={grintec${4:, topic}})",
+				"${1:mixin}.add_child(${2:${TM_FILENAME_BASE/(_adds|_mods)//}})",
+				"$",
+				"$0"
+			]
+		},
+		"elements() loop": {
+			"prefix": "e_loop",
+			"description": "Loop which uses .elements()",
+			"body": [
+				"_for ${2:element} _over ${1:elements}.elements()",
+				"_loop",
+				"\t${0:# do stuff}",
+				"_endloop"
+			]
+		},
+		"keys_and_elements() loop": {
+			"prefix": "e_loop",
+			"description": "Loop which uses .keys_and_elements()",
+			"body": [
+				"_for ${2:element} _over ${1:elements}.keys_and_elements()",
+				"_loop",
+				"\t${0:# do stuff}",
+				"_endloop"
+			]
+		},
+		"fast_keys_and_elements() loop": {
+			"prefix": "fke_loop",
+			"description": "Loop which uses .fast_keys_and_elements()",
+			"body": [
+				"_for ${2:key}, ${3:element} _over ${1:elements}.fast_keys_and_elements()",
+				"_loop",
+				"\t${0:# do stuff}",
+				"_endloop"
+			]
+		},
+		"fast_elements() loop": {
+			"prefix": "fe_loop",
+			"description": "Loop which uses .fast_elements()",
+			"body": [
+				"_for ${2:element} _over ${1:elements}.fast_elements()",
+				"_loop",
+				"\t${0:# do stuff}",
+				"_endloop"
+			]
+		},
+		"iter method": {
+			"prefix": "iter",
+			"description": "iter method definition",
+			"body": [
+				"#---------------------------------------",
+				"# Iter Method",
+				"#---------------------------------------",
+				"_pragma(classify_level=${5|basic,advanced,restricted,debug,deprecated|}, topic={grintec${6:, topic}}${7:, usage={subclassable}})",
+				"${1|_private |}_iter _method ${2:${TM_FILENAME_BASE/(_adds|_mods)//}}.${3:method}(${4:params})",
+				"\t## ",
+				"",
+				"\t$0",
+				"_endmethod",
+				"$"
+			]
+		}
+	}
+}
