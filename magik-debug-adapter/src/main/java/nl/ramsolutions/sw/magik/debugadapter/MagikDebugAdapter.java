@@ -198,7 +198,7 @@ public class MagikDebugAdapter implements IDebugProtocolServer, SlapEventListene
       return pathMappings.stream()
           .map(
               mapping -> {
-                final String fromStr = mapping.get(PATH_MAPPING_FROM_ARG);
+                final String fromStr = mapping.get(PATH_MAPPING_FROM_ARG); // TODO add readonly flag
                 final String toStr = mapping.get(PATH_MAPPING_TO_ARG);
                 final Path from = Path.of(fromStr);
                 final Path to = Path.of(toStr);
