@@ -75,19 +75,12 @@
 		"snippets": [
 			{
 				"language": "magik",
-				"path": "./snippets/magik.snippets.json"
+				"path": "./snippets/magik-snippets.json"
 			}
 		],
 		"breakpoints": [
 			{
 				"language": "magik"
-			}
-		],
-		"iconThemes": [
-			{
-				"id": "magik-icon-theme",
-				"label": "Magik Icon theme",
-				"path": "./config/magik.icon-theme.json"
 			}
 		],
 		"debuggers": [

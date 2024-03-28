@@ -6,6 +6,5 @@
 	"sonarlint.connectedMode.project": {
 		"connectionId": "SonarCloud",
 		"projectKey": "StevenLooman_magik-tools"
-	},
-	"editor.detectIndentation": false
+	}
 }

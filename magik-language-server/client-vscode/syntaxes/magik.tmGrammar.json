@@ -1,5 +1,4 @@
 {
-	"$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
 	"scopeName": "source.magik",
 	"patterns": [
 		{ "include": "#keyword" },
@@ -14,8 +13,8 @@
 		{ "include": "#object" }
 	],
 	"repository": {
-		"keyword": {
-			"patterns": [
+	    "keyword": {
+		    "patterns": [
 				{
 					"name": "keyword.other.magik",
 					"match": "(?i)\\b(_package)\\b"
@@ -81,7 +80,7 @@
 					"match": "(?i)\\b(_scatter|_gather|_allresults)\\b"
 				}
 			]
-		},
+	  	},
 		"operator": {
 			"patterns": [
 				{
@@ -103,7 +102,7 @@
 				{
 					"begin": "##",
 					"beginCaptures": {
-						"0": { "name": "comment.block.documentation.magik" }
+							"0": {"name": "comment.block.documentation.magik"}
 					},
 					"end": "\\n",
 					"name": "comment.block.documentation.magik"
@@ -111,7 +110,7 @@
 				{
 					"begin": "#",
 					"beginCaptures": {
-						"0": { "name": "comment.line.magik" }
+							"0": {"name": "comment.line.magik"}
 					},
 					"end": "\\n",
 					"name": "comment.line.magik"
@@ -123,22 +122,22 @@
 				{
 					"begin": "(?:^|[^%])(\")",
 					"beginCaptures": {
-						"1": { "name": "string.quoted.double.magik" }
+						"1": {"name": "string.quoted.double.magik"}
 					},
 					"end": "\"",
 					"endCaptures": {
-						"0": { "name": "string.quoted.double.magik" }
+						"0": {"name": "string.quoted.double.magik"}
 					},
 					"contentName": "string.quoted.double.magik"
 				},
 				{
 					"begin": "(?:^|[^%])(')",
 					"beginCaptures": {
-						"1": { "name": "string.quoted.single.magik" }
+						"1": {"name": "string.quoted.single.magik"}
 					},
 					"end": "'",
 					"endCaptures": {
-						"0": { "name": "string.quoted.single.magik" }
+						"0": {"name": "string.quoted.single.magik"}
 					},
 					"contentName": "string.quoted.single.magik"
 				}
@@ -149,7 +148,7 @@
 				{
 					"match": "(?:\\s*[^#\"\\w!?])((?:\\:[\\w!?]*\\|.+\\|)|(?:\\:[\\w!?]+))(?=\\s*[^\\w!?])",
 					"captures": {
-						"1": { "name": "string.other.magik" }
+						"1": {"name": "string.other.magik"}
 					}
 				}
 			]
@@ -159,16 +158,16 @@
 				{
 					"match": "(_method)\\s+([\\w!?]+)\\s*(?:\\.)\\s*([\\w!?]+)\\s*",
 					"captures": {
-						"1": { "name": "storage.type.function.magik" },
-						"2": { "name": "entity.name.type.class.magik" },
-						"3": { "name": "entity.name.function.magik" }
+						"1": {"name": "storage.type.function.magik"},
+						"2": {"name": "entity.name.type.class.magik"},
+						"3": {"name": "entity.name.function.magik"}
 					}
 				},
 				{
 					"match": "(_method)\\s+([\\w!?]+)\\s*(?:\\.)",
 					"captures": {
-						"1": { "name": "storage.type.function.magik" },
-						"2": { "name": "entity.name.type.class.magik" }
+						"1": {"name": "storage.type.function.magik"},
+						"2": {"name": "entity.name.type.class.magik"}
 					}
 				},
 				{
@@ -182,7 +181,7 @@
 				{
 					"match": "(_proc)\\s*",
 					"captures": {
-						"1": { "name": "storage.type.function.magik" }
+						"1": {"name": "storage.type.function.magik"}
 					}
 				},
 				{
@@ -196,7 +195,7 @@
 				{
 					"match": "(?:\\s*[^#\"\\w!?)\\]])(\\.[\\w!?]+)(?=\\s*[^\\w!?])",
 					"captures": {
-						"1": { "name": "variable.other.object.property.magik" }
+						"1": {"name": "variable.other.object.property.magik"}
 					}
 				}
 			]
@@ -206,7 +205,7 @@
 				{
 					"match": "(?:[^\"]\\.)([\\w!?]+)",
 					"captures": {
-						"1": { "name": "entity.name.function.magik" }
+						"1": {"name": "entity.name.function.magik"}
 					}
 				}
 			]
@@ -216,7 +215,7 @@
 				{
 					"match": "(?:\\s*[^#\"\\w!?])([A-Za-z0-9!?]+[\\w!?]*)\\s*(?=\\()",
 					"captures": {
-						"1": { "name": "entity.name.function.magik" }
+						"1": {"name": "entity.name.function.magik"}
 					}
 				}
 			]
