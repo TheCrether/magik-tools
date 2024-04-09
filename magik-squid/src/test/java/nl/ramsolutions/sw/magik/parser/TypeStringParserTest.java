@@ -2,8 +2,8 @@ package nl.ramsolutions.sw.magik.parser;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import nl.ramsolutions.sw.magik.analysis.typing.types.ExpressionResultString;
-import nl.ramsolutions.sw.magik.analysis.typing.types.TypeString;
+import nl.ramsolutions.sw.magik.analysis.typing.ExpressionResultString;
+import nl.ramsolutions.sw.magik.analysis.typing.TypeString;
 import org.junit.jupiter.api.Test;
 
 /** Tests for TypeStringParser. */
@@ -92,8 +92,7 @@ class TypeStringParserTest {
     final String typeStr = "sw:integer|sw:float";
     final TypeString typeString = TypeStringParser.parseTypeString(typeStr, SW_PACKAGE);
     assertThat(typeString)
-        .isEqualTo(
-            TypeString.ofCombination(SW_PACKAGE, TypeString.SW_INTEGER, TypeString.SW_FLOAT));
+        .isEqualTo(TypeString.ofCombination(TypeString.SW_INTEGER, TypeString.SW_FLOAT));
   }
 
   @Test

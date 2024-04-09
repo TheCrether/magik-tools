@@ -9,7 +9,7 @@ import nl.ramsolutions.sw.magik.MagikTypedFile;
 import nl.ramsolutions.sw.magik.analysis.definitions.DefinitionKeeper;
 import nl.ramsolutions.sw.magik.analysis.definitions.ExemplarDefinition;
 import nl.ramsolutions.sw.magik.analysis.definitions.IDefinitionKeeper;
-import nl.ramsolutions.sw.magik.analysis.typing.types.TypeString;
+import nl.ramsolutions.sw.magik.analysis.typing.TypeString;
 import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.SymbolKind;
@@ -44,7 +44,10 @@ class TypeHierarchyProviderTest {
             Collections.emptyList(),
             Collections.emptySet()));
 
-    final String code = "" + "_method exemplar.method\n" + "_endmethod\n";
+    final String code = """
+        _method exemplar.method
+        _endmethod
+        """;
     final Position position = new Position(0, 10); // On 'exemplar'.
 
     final List<TypeHierarchyItem> items =
@@ -68,12 +71,17 @@ class TypeHierarchyProviderTest {
             Collections.emptyList(),
             Collections.emptySet()));
 
-    final String code = "" + "_method exemplar.method\n" + "  rope.new()\n" + "_endmethod\n";
+    final String code =
+        """
+        _method exemplar.method
+          rope.new()
+        _endmethod
+        """;
     final Position position = new Position(1, 4); // On 'rope'.
 
     final List<TypeHierarchyItem> items =
         this.getPrepareTypeHierarchy(code, position, definitionKeeper);
-    assertThat(items).isNotNull().hasSize(1);
+    assertThat(items).hasSize(1);
   }
 
   @Test

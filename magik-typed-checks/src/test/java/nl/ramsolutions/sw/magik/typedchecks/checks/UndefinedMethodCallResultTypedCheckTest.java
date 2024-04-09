@@ -8,8 +8,8 @@ import java.util.List;
 import nl.ramsolutions.sw.magik.analysis.definitions.DefinitionKeeper;
 import nl.ramsolutions.sw.magik.analysis.definitions.IDefinitionKeeper;
 import nl.ramsolutions.sw.magik.analysis.definitions.MethodDefinition;
-import nl.ramsolutions.sw.magik.analysis.typing.types.ExpressionResultString;
-import nl.ramsolutions.sw.magik.analysis.typing.types.TypeString;
+import nl.ramsolutions.sw.magik.analysis.typing.ExpressionResultString;
+import nl.ramsolutions.sw.magik.analysis.typing.TypeString;
 import nl.ramsolutions.sw.magik.checks.MagikIssue;
 import nl.ramsolutions.sw.magik.typedchecks.MagikTypedCheck;
 import org.junit.jupiter.api.Test;
@@ -19,7 +19,10 @@ class UndefinedMethodCallResultTypedCheckTest extends MagikTypedCheckTestBase {
 
   @Test
   void testMethodInvocationUndefined() {
-    final String code = "" + "_block\n" + "  object.m()\n" + "_endblock";
+    final String code = """
+        _block
+          object.m()
+        _endblock""";
     final IDefinitionKeeper definitionKeeper = new DefinitionKeeper();
     final MagikTypedCheck check = new UndefinedMethodCallResultTypedCheck();
     final List<MagikIssue> issues = this.runCheck(code, definitionKeeper, check);
@@ -28,7 +31,10 @@ class UndefinedMethodCallResultTypedCheckTest extends MagikTypedCheckTestBase {
 
   @Test
   void testMethodInvocationDefined() {
-    final String code = "" + "_block\n" + "  object.m()\n" + "_endblock";
+    final String code = """
+        _block
+          object.m()
+        _endblock""";
     final IDefinitionKeeper definitionKeeper = new DefinitionKeeper();
     definitionKeeper.add(
         new MethodDefinition(
@@ -52,7 +58,10 @@ class UndefinedMethodCallResultTypedCheckTest extends MagikTypedCheckTestBase {
 
   @Test
   void testMethodInvocationOnUndefined() {
-    final String code = "" + "_block\n" + "  undefined.m()\n" + "_endblock";
+    final String code = """
+        _block
+          undefined.m()
+        _endblock""";
     final IDefinitionKeeper definitionKeeper = new DefinitionKeeper();
     final MagikTypedCheck check = new UndefinedMethodCallResultTypedCheck();
     final List<MagikIssue> issues = this.runCheck(code, definitionKeeper, check);

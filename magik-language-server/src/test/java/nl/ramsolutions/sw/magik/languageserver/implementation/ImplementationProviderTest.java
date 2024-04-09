@@ -14,8 +14,8 @@ import nl.ramsolutions.sw.magik.analysis.definitions.DefinitionKeeper;
 import nl.ramsolutions.sw.magik.analysis.definitions.ExemplarDefinition;
 import nl.ramsolutions.sw.magik.analysis.definitions.IDefinitionKeeper;
 import nl.ramsolutions.sw.magik.analysis.definitions.MethodDefinition;
-import nl.ramsolutions.sw.magik.analysis.typing.types.ExpressionResultString;
-import nl.ramsolutions.sw.magik.analysis.typing.types.TypeString;
+import nl.ramsolutions.sw.magik.analysis.typing.ExpressionResultString;
+import nl.ramsolutions.sw.magik.analysis.typing.TypeString;
 import org.junit.jupiter.api.Test;
 
 /** Test ImplementationProvider. */
@@ -86,7 +86,9 @@ class ImplementationProviderTest {
             ExpressionResultString.EMPTY));
 
     final URI uri = URI.create("tests://unittest");
-    final String code = "" + "_abstract _method a.abstract()\n" + "_endmethod";
+    final String code = """
+        _abstract _method a.abstract()
+        _endmethod""";
     final MagikTypedFile magikFile = new MagikTypedFile(uri, code, definitionKeeper);
     final Position position = new Position(1, 26); // On `abstract()`.
 

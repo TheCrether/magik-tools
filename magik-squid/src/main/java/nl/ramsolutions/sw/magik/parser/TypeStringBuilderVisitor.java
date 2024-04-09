@@ -8,7 +8,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import nl.ramsolutions.sw.magik.analysis.typing.types.TypeString;
+import nl.ramsolutions.sw.magik.analysis.typing.TypeString;
 import nl.ramsolutions.sw.magik.api.TypeStringGrammar;
 
 /** Visitor which constructs TypeStrings from the TypeStringGrammar. */
@@ -156,7 +156,7 @@ public final class TypeStringBuilderVisitor implements AstVisitor {
     final TypeString part =
         childNodes.size() == 1
             ? childTypeStrings.get(0)
-            : TypeString.ofCombination(this.currentPakkage, childTypeStringsArr);
+            : TypeString.ofCombination(childTypeStringsArr);
     this.mapping.put(node, part);
   }
 }

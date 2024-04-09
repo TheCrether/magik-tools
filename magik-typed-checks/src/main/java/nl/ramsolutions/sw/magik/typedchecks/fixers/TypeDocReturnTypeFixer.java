@@ -11,11 +11,9 @@ import nl.ramsolutions.sw.magik.Position;
 import nl.ramsolutions.sw.magik.Range;
 import nl.ramsolutions.sw.magik.TextEdit;
 import nl.ramsolutions.sw.magik.analysis.definitions.MethodDefinition;
+import nl.ramsolutions.sw.magik.analysis.typing.ExpressionResultString;
+import nl.ramsolutions.sw.magik.analysis.typing.TypeString;
 import nl.ramsolutions.sw.magik.analysis.typing.reasoner.LocalTypeReasonerState;
-import nl.ramsolutions.sw.magik.analysis.typing.types.AbstractType;
-import nl.ramsolutions.sw.magik.analysis.typing.types.ExpressionResult;
-import nl.ramsolutions.sw.magik.analysis.typing.types.ExpressionResultString;
-import nl.ramsolutions.sw.magik.analysis.typing.types.TypeString;
 import nl.ramsolutions.sw.magik.api.MagikGrammar;
 import nl.ramsolutions.sw.magik.api.TypeDocGrammar;
 import nl.ramsolutions.sw.magik.parser.MagikCommentExtractor;
@@ -51,17 +49,13 @@ public class TypeDocReturnTypeFixer extends MagikTypedCheckFixer {
     final AstNode methodDefinitionNode = methodDefinition.getNode();
     Objects.requireNonNull(methodDefinitionNode);
     final LocalTypeReasonerState state = magikFile.getTypeReasonerState();
-    final ExpressionResult methodResult = state.getNodeType(methodDefinitionNode);
-    final ExpressionResultString methodResultString =
-        methodResult.stream()
-            .map(AbstractType::getTypeString)
-            .collect(ExpressionResultString.COLLECTOR);
+    final ExpressionResultString result = state.getNodeType(methodDefinitionNode);
 
     final TypeDocParser typeDocParser = new TypeDocParser(methodDefinitionNode);
     final Map<AstNode, TypeString> typeDocNodes = typeDocParser.getReturnTypeNodes();
 
     // Construct Code Actions.
-    return StreamUtils.zip(methodResultString.stream(), typeDocNodes.entrySet().stream())
+    return StreamUtils.zip(result.stream(), typeDocNodes.entrySet().stream())
         .map(
             entry -> {
               final TypeString methodTypeString = entry.getKey();

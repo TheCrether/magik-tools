@@ -14,8 +14,8 @@ import nl.ramsolutions.sw.magik.analysis.definitions.GlobalUsage;
 import nl.ramsolutions.sw.magik.analysis.definitions.IDefinitionKeeper;
 import nl.ramsolutions.sw.magik.analysis.definitions.MethodDefinition;
 import nl.ramsolutions.sw.magik.analysis.definitions.MethodUsage;
-import nl.ramsolutions.sw.magik.analysis.typing.types.ExpressionResultString;
-import nl.ramsolutions.sw.magik.analysis.typing.types.TypeString;
+import nl.ramsolutions.sw.magik.analysis.typing.ExpressionResultString;
+import nl.ramsolutions.sw.magik.analysis.typing.TypeString;
 import org.junit.jupiter.api.Test;
 
 /** Test ReferencesProvider. */
@@ -54,7 +54,12 @@ class ReferencesProviderTest {
             Collections.emptySet(),
             Collections.emptySet()));
 
-    final String code = "" + "_method integer.refering\n" + "    _self.refering\n" + "_endmethod\n";
+    final String code =
+        """
+        _method integer.refering
+            _self.refering
+        _endmethod
+        """;
     final Position position = new Position(2, 12); // On `refering`.
     final List<Location> references = this.getReferences(code, position, definitionKeeper);
     assertThat(references).hasSize(1);
@@ -82,7 +87,12 @@ class ReferencesProviderTest {
             Collections.emptySet(),
             Collections.emptySet()));
 
-    final String code = "" + "_method integer.refering\n" + "    _self.refering\n" + "_endmethod\n";
+    final String code =
+        """
+        _method integer.refering
+            _self.refering
+        _endmethod
+        """;
     final Position position = new Position(1, 20); // On `refering`.
     final List<Location> references = this.getReferences(code, position, definitionKeeper);
     assertThat(references).hasSize(1);
@@ -110,7 +120,12 @@ class ReferencesProviderTest {
             Collections.emptySet(),
             Collections.emptySet()));
 
-    final String code = "" + "_method integer.refering\n" + "    integer\n" + "_endmethod\n";
+    final String code =
+        """
+        _method integer.refering
+            integer
+        _endmethod
+        """;
     final Position position = new Position(2, 4); // On `integer`.
     final List<Location> references = this.getReferences(code, position, definitionKeeper);
     assertThat(references).hasSize(1);
@@ -138,7 +153,12 @@ class ReferencesProviderTest {
             Collections.emptySet(),
             Collections.emptySet()));
 
-    final String code = "" + "_method integer.refering\n" + "    print(integer)\n" + "_endmethod\n";
+    final String code =
+        """
+        _method integer.refering
+            print(integer)
+        _endmethod
+        """;
     final Position position = new Position(1, 10); // On `integer`.
     final List<Location> references = this.getReferences(code, position, definitionKeeper);
     assertThat(references).hasSize(1);

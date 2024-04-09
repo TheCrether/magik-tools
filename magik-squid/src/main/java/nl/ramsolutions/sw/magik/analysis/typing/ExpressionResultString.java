@@ -1,4 +1,4 @@
-package nl.ramsolutions.sw.magik.analysis.typing.types;
+package nl.ramsolutions.sw.magik.analysis.typing;
 
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
@@ -9,38 +9,45 @@ import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-/** Container to hold resulting {@link AbstractType}s for an EXPRESSION node. */
-public class ExpressionResult {
+/** Container to hold resulting {@link TypeString}s. */
+public class ExpressionResultString {
 
   /** Stream collector. */
-  public static final Collector<AbstractType, ?, ExpressionResult> COLLECTOR =
+  public static final Collector<TypeString, ?, ExpressionResultString> COLLECTOR =
       Collector.of(
-          ArrayList<AbstractType>::new,
+          ArrayList<TypeString>::new,
           List::add,
           (list, values) -> {
             list.addAll(values);
             return list;
           },
-          ExpressionResult::new);
+          ExpressionResultString::new);
+
+  /** Max number of items in a {@link ExpressionResultString}. */
+  public static final int MAX_ITEMS = 1024; // 1024 is max for _scatter
 
   /**
-   * Instance of {@link ExpressionResult} to be used in all cases of undefined expression results.
+   * Instance of {@link ExpressionResultString} to be used in all cases of undefined expression
+   * results.
    */
-  public static final ExpressionResult UNDEFINED =
-      new ExpressionResult(
-          Collections.nCopies(1024, UndefinedType.INSTANCE)); // 1024 is max for _scatter
+  public static final ExpressionResultString UNDEFINED =
+      new ExpressionResultString(Collections.nCopies(MAX_ITEMS, TypeString.UNDEFINED));
 
-  private static final int MAX_ITEMS = 1024;
+  /** Serialized name of {@link ExpressionResultString.UNDEFINED}. */
+  public static final String UNDEFINED_SERIALIZED_NAME = "__UNDEFINED_RESULT__";
 
-  private final List<AbstractType> types;
+  /** Instance of an empty {@link ExpressionResultString}. */
+  public static final ExpressionResultString EMPTY = new ExpressionResultString();
+
+  private final List<TypeString> types;
 
   /** Empty result constructor. */
-  public ExpressionResult() {
+  public ExpressionResultString() {
     this(Collections.emptyList());
   }
 
   /** Array/utility constructor. */
-  public ExpressionResult(final AbstractType... types) {
+  public ExpressionResultString(final TypeString... types) {
     this(List.of(types));
   }
 
@@ -49,30 +56,22 @@ public class ExpressionResult {
    *
    * @param types Types this {@link ExpressionResult} represents.
    */
-  public ExpressionResult(final List<AbstractType> types) {
+  public ExpressionResultString(final List<TypeString> types) {
     this.types = Collections.unmodifiableList(types);
   }
 
-  /**
-   * Combine constructor.
-   *
-   * @param result1 First {@link ExpressionResult}.
-   * @param result2 Second {@link ExpressionResult}.
-   * @param unsetType Unset type, used for filler.
-   */
-  public ExpressionResult(
-      final ExpressionResult result1,
-      final @Nullable ExpressionResult result2,
-      final AbstractType unsetType) {
+  /** Combine constructor. */
+  public ExpressionResultString(
+      final ExpressionResultString result1, final @Nullable ExpressionResultString result2) {
     if (result2 == null) {
       this.types = result1.getTypes();
     } else {
       final int size = Math.max(result1.size(), result2.size());
-      final List<AbstractType> combinedTypes = new ArrayList<>(size);
+      final List<TypeString> combinedTypes = new ArrayList<>(size);
       for (int i = 0; i < size; ++i) {
-        final AbstractType type1 = result1.get(i, unsetType);
-        final AbstractType type2 = result2.get(i, unsetType);
-        final AbstractType combinedType = CombinedType.combine(type1, type2);
+        final TypeString type1 = result1.get(i, TypeString.SW_UNSET);
+        final TypeString type2 = result2.get(i, TypeString.SW_UNSET);
+        final TypeString combinedType = TypeString.combine(type1, type2);
         combinedTypes.add(combinedType);
       }
 
@@ -90,24 +89,11 @@ public class ExpressionResult {
   }
 
   /**
-   * Test if this contains any {@link UndefinedType}.
-   *
-   * @return True if this contains any {@link UndefinedType}, false otherwise.
-   */
-  public boolean containsUndefined() {
-    if (this == ExpressionResult.UNDEFINED) {
-      return true;
-    }
-
-    return this.stream().anyMatch(type -> type == UndefinedType.INSTANCE);
-  }
-
-  /**
    * Get types.
    *
-   * @return
+   * @return Type strings.
    */
-  public List<AbstractType> getTypes() {
+  public List<TypeString> getTypes() {
     return Collections.unmodifiableList(this.types);
   }
 
@@ -117,7 +103,7 @@ public class ExpressionResult {
    * @param index Index of type.
    * @return Type at index.
    */
-  public AbstractType get(final int index, final @Nullable AbstractType unsetType) {
+  public TypeString get(final int index, final @Nullable TypeString unsetType) {
     if (this.types.isEmpty() || index >= this.types.size()) {
       return unsetType;
     }
@@ -132,14 +118,14 @@ public class ExpressionResult {
   /**
    * Substitue {@code from} by {@code to} in a copy of self.
    *
-   * @param from To substitute.
-   * @param to To substitute with.
-   * @return New {@link ExpressionResult}.
+   * @param from From type.
+   * @param to To type.
+   * @return New {@link ExpressionResultString}.
    */
-  public ExpressionResult substituteType(final AbstractType from, final AbstractType to) {
+  public ExpressionResultString substituteType(final TypeString from, final TypeString to) {
     return this.types.stream()
-        .map(type -> type.substituteType(from, to))
-        .collect(ExpressionResult.COLLECTOR);
+        .map(typeString -> typeString.substituteType(from, to))
+        .collect(ExpressionResultString.COLLECTOR);
   }
 
   /**
@@ -148,17 +134,17 @@ public class ExpressionResult {
    * @return Type names of items of the result.
    */
   public String getTypeNames(final String separator) {
-    if (this == ExpressionResult.UNDEFINED) {
+    if (this == ExpressionResultString.UNDEFINED) {
       return "UNDEFINED...";
     }
 
     // Determine first index of trailing homogenous sequence.
     int firstRepeatingIndex = MAX_ITEMS;
-    AbstractType lastType = null;
+    TypeString lastType = null;
     if (this.types.size() == MAX_ITEMS) {
       lastType = this.get(firstRepeatingIndex - 1, null);
       for (int i = this.types.size() - 1; i > -1; --i) {
-        AbstractType type = this.types.get(i);
+        final TypeString type = this.types.get(i);
         if (type.equals(lastType)) {
           firstRepeatingIndex = i;
         } else {
@@ -171,7 +157,7 @@ public class ExpressionResult {
     final String typesStr =
         this.types.stream()
             .limit(firstRepeatingIndex)
-            .map(AbstractType::getFullName)
+            .map(TypeString::getFullString)
             .collect(Collectors.joining(separator));
     builder.append(typesStr);
 
@@ -181,7 +167,7 @@ public class ExpressionResult {
         builder.append(separator);
       }
 
-      builder.append(lastType.getFullName()).append("...");
+      builder.append(lastType).append("...");
     }
     return builder.toString();
   }
@@ -191,11 +177,25 @@ public class ExpressionResult {
    *
    * @return Stream of types.
    */
-  public Stream<AbstractType> stream() {
+  public Stream<TypeString> stream() {
     return this.types.stream();
   }
 
+  /**
+   * Get full string.
+   *
+   * @return Full string.
+   */
+  public String getFullString() {
+    if (this == UNDEFINED) {
+      return UNDEFINED_SERIALIZED_NAME;
+    }
+
+    return this.types.stream().map(TypeString::getFullString).collect(Collectors.joining(","));
+  }
+
   @Override
+  @SuppressWarnings("checkstyle:NestedIfDepth")
   public String toString() {
     return String.format(
         "%s@%s(%s)",
@@ -221,7 +221,7 @@ public class ExpressionResult {
       return false;
     }
 
-    final ExpressionResult other = (ExpressionResult) obj;
+    final ExpressionResultString other = (ExpressionResultString) obj;
     return Objects.equals(this.types, other.types);
   }
 }
