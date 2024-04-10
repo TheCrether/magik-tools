@@ -34,19 +34,16 @@ public class ProcedureDefinitionDeserializer extends DefinitionDeserializer<Proc
     ExpressionResultString loopTypes =
         get(context, jObj, "loop_types", ExpressionResultString.class);
 
-    ProcedureDefinition def =
-        new ProcedureDefinition(
-            base.getLocation(),
-            base.getModuleName(),
-            base.getDoc(),
-            base.getNode(),
-            modifiers,
-            typeName,
-            procedureName,
-            parameters,
-            returnTypes,
-            loopTypes);
-
-    return def;
+    return new ProcedureDefinition(
+        base.getLocation(),
+        base.getModuleName(),
+        base.getDoc(),
+        base.getNode(),
+        modifiers,
+        typeName,
+        procedureName,
+        parameters,
+        returnTypes,
+        loopTypes);
   }
 }

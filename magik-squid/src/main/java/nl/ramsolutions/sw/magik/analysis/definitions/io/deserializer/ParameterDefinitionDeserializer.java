@@ -23,16 +23,13 @@ public class ParameterDefinitionDeserializer extends DefinitionDeserializer<Para
         get(context, jObj, "modifier", ParameterDefinition.Modifier.class);
     TypeString typeName = getTypeString(context, jObj, "type_name");
 
-    ParameterDefinition def =
-        new ParameterDefinition(
-            base.getLocation(),
-            base.getModuleName(),
-            base.getDoc(),
-            base.getNode(),
-            name,
-            modifier,
-            typeName);
-
-    return def;
+    return new ParameterDefinition(
+        base.getLocation(),
+        base.getModuleName(),
+        base.getDoc(),
+        base.getNode(),
+        name,
+        modifier,
+        typeName);
   }
 }

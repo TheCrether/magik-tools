@@ -20,15 +20,12 @@ public class GlobalDefinitionDeserializer extends DefinitionDeserializer<GlobalD
     TypeString typeName = getTypeString(context, jObj, "type_name");
     TypeString aliasedTypeName = getTypeString(context, jObj, "aliased_type_name");
 
-    GlobalDefinition def =
-        new GlobalDefinition(
-            base.getLocation(),
-            base.getModuleName(),
-            base.getDoc(),
-            base.getNode(),
-            typeName,
-            aliasedTypeName);
-
-    return def;
+    return new GlobalDefinition(
+        base.getLocation(),
+        base.getModuleName(),
+        base.getDoc(),
+        base.getNode(),
+        typeName,
+        aliasedTypeName);
   }
 }

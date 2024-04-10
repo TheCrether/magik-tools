@@ -24,17 +24,14 @@ public class BinaryOperatorDefinitionDeserializer
     TypeString rhsTypeName = getTypeString(context, jObj, "rhs_type_name");
     TypeString resultTypeName = getTypeString(context, jObj, "result_type_name");
 
-    BinaryOperatorDefinition def =
-        new BinaryOperatorDefinition(
-            base.getLocation(),
-            base.getModuleName(),
-            base.getDoc(),
-            base.getNode(),
-            operator,
-            lhsTypeName,
-            rhsTypeName,
-            resultTypeName);
-
-    return def;
+    return new BinaryOperatorDefinition(
+        base.getLocation(),
+        base.getModuleName(),
+        base.getDoc(),
+        base.getNode(),
+        operator,
+        lhsTypeName,
+        rhsTypeName,
+        resultTypeName);
   }
 }

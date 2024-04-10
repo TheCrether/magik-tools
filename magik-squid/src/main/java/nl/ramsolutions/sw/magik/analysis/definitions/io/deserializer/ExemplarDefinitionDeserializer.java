@@ -28,10 +28,7 @@ public class ExemplarDefinitionDeserializer extends BaseDeserializer<ExemplarDef
 
     Location location = getLocation(jObj);
 
-    ExemplarDefinition def =
-        new ExemplarDefinition(
-            location, moduleName, doc, null, sort, typeName, slots, parents, topics);
-
-    return def;
+    return new ExemplarDefinition(
+        location, moduleName, doc, null, sort, typeName, slots, parents, topics);
   }
 }

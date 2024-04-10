@@ -21,9 +21,6 @@ public class ModuleDefinitionDeserializer extends BaseDeserializer<ModuleDefinit
 
     Location location = getLocation(jObj);
 
-    ModuleDefinition def =
-        new ModuleDefinition(location, name, baseVersion, currentVersion, requireds);
-
-    return def;
+    return new ModuleDefinition(location, name, baseVersion, currentVersion, requireds);
   }
 }

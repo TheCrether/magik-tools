@@ -10,7 +10,6 @@ import java.nio.channels.Channels;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.function.Function;
 import java.util.logging.LogManager;
 import org.apache.commons.cli.CommandLine;
@@ -19,11 +18,8 @@ import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
-import org.eclipse.lsp4j.jsonrpc.JsonRpcException;
 import org.eclipse.lsp4j.jsonrpc.Launcher;
 import org.eclipse.lsp4j.jsonrpc.MessageConsumer;
-import org.eclipse.lsp4j.jsonrpc.MessageIssueException;
-import org.eclipse.lsp4j.jsonrpc.messages.Message;
 import org.eclipse.lsp4j.launch.LSPLauncher;
 import org.eclipse.lsp4j.services.LanguageClient;
 
@@ -88,8 +84,7 @@ public final class Main {
    * @throws IOException -
    * @throws ParseException -
    */
-  public static void main(final String[] args)
-      throws IOException, ParseException, InterruptedException {
+  public static void main(final String[] args) throws IOException, ParseException {
     final CommandLine commandLine = Main.parseCommandline(args);
     if (commandLine.hasOption(OPTION_DEBUG)) {
       Main.initDebugLogger();
@@ -98,25 +93,12 @@ public final class Main {
     }
 
     final MagikLanguageServer server = new MagikLanguageServer();
-    Launcher<LanguageClient> launcher = null;
+    Launcher<LanguageClient> launcher;
     if (commandLine.hasOption(OPTION_DEBUG)) {
-      Function<MessageConsumer, MessageConsumer> wrapper =
-          consumer -> {
-            MessageConsumer result =
-                new MessageConsumer() {
-                  @Override
-                  public void consume(Message message)
-                      throws MessageIssueException, JsonRpcException {
-                    //            System.out.println(message);
-                    consumer.consume(message);
-                  }
-                };
-            return result;
-          };
+      Function<MessageConsumer, MessageConsumer> wrapper = consumer -> (MessageConsumer) consumer;
       launcher =
           createSocketLauncher(
               server,
-              LanguageClient.class,
               new InetSocketAddress("localhost", 5007),
               Executors.newCachedThreadPool(),
               wrapper);
@@ -124,18 +106,15 @@ public final class Main {
       launcher = LSPLauncher.createServerLauncher(server, System.in, System.out);
     }
 
+    assert launcher != null;
     final LanguageClient remoteProxy = launcher.getRemoteProxy();
     server.connect(remoteProxy);
 
-    Future<?> future = launcher.startListening();
-    while (!future.isDone()) {
-      Thread.sleep(10_000l);
-    }
+    launcher.startListening();
   }
 
   static <T> Launcher<T> createSocketLauncher(
       Object localService,
-      Class<T> remoteInterface,
       SocketAddress socketAddress,
       ExecutorService executorService,
       Function<MessageConsumer, MessageConsumer> wrapper)
@@ -147,7 +126,7 @@ public final class Main {
       socketChannel = serverSocket.accept().get();
       return Launcher.createIoLauncher(
           localService,
-          remoteInterface,
+          (Class<T>) LanguageClient.class,
           Channels.newInputStream(socketChannel),
           Channels.newOutputStream(socketChannel),
           executorService,

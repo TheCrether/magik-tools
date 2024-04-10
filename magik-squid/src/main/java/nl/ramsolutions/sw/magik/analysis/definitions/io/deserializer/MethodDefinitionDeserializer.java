@@ -43,25 +43,22 @@ public class MethodDefinitionDeserializer extends DefinitionDeserializer<MethodD
     Set<ConditionUsage> usedConditions =
         getSet(context, jObj, "used_conditions", ConditionUsage.class);
 
-    MethodDefinition def =
-        new MethodDefinition(
-            base.getLocation(),
-            base.getModuleName(),
-            base.getDoc(),
-            base.getNode(),
-            typeName,
-            methodName,
-            modifiers,
-            parameters,
-            assignmentParameter,
-            topics,
-            returnTypes,
-            loopTypes,
-            usedGlobals,
-            usedMethods,
-            usedSlots,
-            usedConditions);
-
-    return def;
+    return new MethodDefinition(
+        base.getLocation(),
+        base.getModuleName(),
+        base.getDoc(),
+        base.getNode(),
+        typeName,
+        methodName,
+        modifiers,
+        parameters,
+        assignmentParameter,
+        topics,
+        returnTypes,
+        loopTypes,
+        usedGlobals,
+        usedMethods,
+        usedSlots,
+        usedConditions);
   }
 }

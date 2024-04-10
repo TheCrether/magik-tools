@@ -20,10 +20,7 @@ public class PackageDefinitionDeserializer extends DefinitionDeserializer<Packag
     String name = getString(jObj, "name");
     List<String> uses = getList(context, jObj, "uses", String.class);
 
-    PackageDefinition def =
-        new PackageDefinition(
-            base.getLocation(), base.getModuleName(), base.getDoc(), base.getNode(), name, uses);
-
-    return def;
+    return new PackageDefinition(
+        base.getLocation(), base.getModuleName(), base.getDoc(), base.getNode(), name, uses);
   }
 }

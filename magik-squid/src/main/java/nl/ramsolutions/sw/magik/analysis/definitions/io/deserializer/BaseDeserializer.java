@@ -33,13 +33,13 @@ public abstract class BaseDeserializer<T> implements JsonDeserializer<T> {
 
   public static <X> List<X> getList(
       JsonDeserializationContext context, JsonObject obj, String field, Class<X> clazz) {
-    return getStream(obj, field).map(e -> (X) context.<X>deserialize(e, clazz)).toList();
+    return getStream(obj, field).map(e -> context.<X>deserialize(e, clazz)).toList();
   }
 
   public static <X> Set<X> getSet(
       JsonDeserializationContext context, JsonObject obj, String field, Class<X> clazz) {
     return getStream(obj, field)
-        .map(e -> (X) context.<X>deserialize(e, clazz))
+        .map(e -> context.<X>deserialize(e, clazz))
         .collect(Collectors.toSet());
   }
 

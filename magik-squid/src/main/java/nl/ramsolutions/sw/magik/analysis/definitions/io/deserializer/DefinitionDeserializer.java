@@ -8,7 +8,7 @@ import nl.ramsolutions.sw.magik.analysis.definitions.Definition;
 
 public abstract class DefinitionDeserializer<T> extends BaseDeserializer<T> {
 
-  public class DeserializedDefinition extends Definition {
+  public static class DeserializedDefinition extends Definition {
 
     /**
      * Constructor.

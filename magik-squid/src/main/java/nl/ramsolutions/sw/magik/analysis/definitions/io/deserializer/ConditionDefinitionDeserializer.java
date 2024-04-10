@@ -21,16 +21,13 @@ public class ConditionDefinitionDeserializer extends DefinitionDeserializer<Cond
     String parent = nullableString(jObj, "parent");
     List<String> dataNames = getList(context, jObj, "data_names", String.class);
 
-    ConditionDefinition def =
-        new ConditionDefinition(
-            base.getLocation(),
-            base.getModuleName(),
-            base.getDoc(),
-            base.getNode(),
-            name,
-            parent,
-            dataNames);
-
-    return def;
+    return new ConditionDefinition(
+        base.getLocation(),
+        base.getModuleName(),
+        base.getDoc(),
+        base.getNode(),
+        name,
+        parent,
+        dataNames);
   }
 }
