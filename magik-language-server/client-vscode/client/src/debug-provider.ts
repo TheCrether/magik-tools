@@ -12,12 +12,12 @@ export class MagikDebugProvider implements vscode.Disposable {
 	constructor(context: vscode.ExtensionContext) {
 		this.context = context;
 
-		const factory = new DebugAdapterExecutableFactory();
+		const factory = new DebugAdapterExecutableFactory(context);
 		const subscription = vscode.debug.registerDebugAdapterDescriptorFactory('magik', factory);
 		this.context.subscriptions.push(subscription);
 	}
 
-	dispose() {
+	dispose(): void {
 		// Nop.
 	}
 
@@ -25,14 +25,19 @@ export class MagikDebugProvider implements vscode.Disposable {
 
 
 class DebugAdapterExecutableFactory implements vscode.DebugAdapterDescriptorFactory {
+	private context: vscode.ExtensionContext;
+	constructor(context: vscode.ExtensionContext) {
+		this.context = context;
+	}
 
-	createDebugAdapterDescriptor(_session: vscode.DebugSession, _executable: vscode.DebugAdapterExecutable | undefined): vscode.ProviderResult<vscode.DebugAdapterDescriptor> {
+	createDebugAdapterDescriptor(session: vscode.DebugSession, _executable: vscode.DebugAdapterExecutable | undefined): vscode.ProviderResult<vscode.DebugAdapterDescriptor> {
 		const javaExec = getJavaExec();
-		if (javaExec == null) {
-			vscode.window.showWarningMessage('Could locate java executable, either set Java Home setting ("magik.javaHome") or JAVA_HOME environment variable.');
+		if (javaExec === null) {
+			vscode.window.showWarningMessage('Could not locate java executable, either set Java Home setting ("magik.javaHome") or JAVA_HOME environment variable.');
 			return;
 		}
-		const jar = path.join(__dirname, '..', '..', 'server', 'magik-debug-adapter-' + MAGIK_TOOLS_VERSION + '.jar');
+
+		const jar = path.join(this.context.extensionPath, 'server', 'magik-debug-adapter-' + MAGIK_TOOLS_VERSION + '.jar');
 		const javaDebuggerOptions = '-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,quiet=y,address=5006';
 
 		const command = javaExec.toString();

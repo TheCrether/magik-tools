@@ -949,7 +949,5 @@ _private _method type_dumper.write_condition(cond)
 _endmethod
 $
 
-# type_dumper.new("/tmp/sw_types.jsonl").run()
-# type_dumper.new("C:\temp\sw_type2.jsonl").run()
-type_dumper.new("C:\temp\sw_type3.jsonl").run()
+type_dumper.new("/tmp/sw_types.jsonl").run()
 # $
