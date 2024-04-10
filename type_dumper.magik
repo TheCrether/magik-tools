@@ -7,7 +7,6 @@ _endif
 $
 
 
-
 # Auxilary methods.
 method_finder.auto_start? << _true
 $
@@ -123,7 +122,8 @@ _pragma(classify_level=basic, topic=type_dumper)
 def_slotted_exemplar(:type_dumper,
 	{
 		{:ignore_vars, _unset},
-		{:out_stream, _unset}
+		{:out_stream, _unset},
+		{:encoder, _unset}
 	})
 $
 
@@ -186,6 +186,7 @@ _private _method type_dumper.init(filename, _optional ignore_vars)
 	.ignore_vars << set.new_from(ignore_vars.default({}))
 	.ignore_vars.add(:|user:| + _self.class_name)
 	.out_stream << external_text_output_stream.new(filename)
+	.encoder << sw:json_encoder.new()
 	_return _self
 _endmethod
 $
@@ -211,17 +212,25 @@ _pragma(classify_level=restricted, topic=type_dumper, usage=internal)
 _private _method type_dumper.write_instruction(instruction)
 	## Write instruction.
 	## @param {sw:property_list} instruction Instruction to write.
-	_local encoder << sw:json_encoder.new()
-	_local line << encoder.generate_string(instruction)
+	_local line << .encoder.generate_string(instruction)
 	.out_stream.write(line, character.newline)
 _endmethod
 $
 
 _pragma(classify_level=basic, topic=type_dumper, usage=external)
-_method type_dumper.run()
+_method type_dumper.run(_optional debug?)
 	## Run the dump.
+	debug? << debug?.default(_false)
 	_protect
+		_if debug?
+		_then
+			write("Starting type dumper: ", date_time.now());
+		_endif
 		_self.int!run()
+		_if debug?
+		_then
+			write("Type dumper finished: ", date_time.now());
+		_endif
 	_protection
 		_self.deinit()
 	_endprotect
@@ -374,6 +383,12 @@ _private _method type_dumper.write_product(product)
 		map(_proc(prereq) _return prereq[1] _endproc).
 		as_sorted_collection().
 		as_simple_vector()
+	instruction[:source_file] <<
+		_try
+			>> system.pathname_down(product.directory, "product.def")
+		_when error
+			>> _unset
+		_endtry
 
 	_self.write_instruction(instruction)
 _endmethod
@@ -392,6 +407,12 @@ _private _method type_dumper.write_module(module)
 		map(_proc(prereq) _return prereq[1] _endproc).
 		as_sorted_collection().
 		as_simple_vector()
+	instruction[:source_file] <<
+		_try
+			>> system.pathname_down(module.full_directory, "module.def")
+		_when error
+			>> _unset
+		_endtry
 
 	_self.write_instruction(instruction)
 _endmethod
@@ -430,6 +451,13 @@ _private _method type_dumper.write_type(type_name, method_table)
 	_then
 		instruction[:sort] << "object"
 	_endif
+
+	instruction[:source_file] <<
+		_try
+			>> method_table.source_file
+		_when error
+			>> _unset
+		_endtry
 
 	instruction[:doc] << method_finder.get_class_comment(type_name).default("")
 
@@ -852,7 +880,7 @@ _private _method type_dumper.build_params(name, procedure)
 	_endif
 
 	_local param_list <<
-		_if procedure.responds_to?(:basic_arglist) _andif procedure.responds_to?(:arglist)
+		_if procedure.responds_to?(:basic_arglist)
 		_then
 			_local arglist << {}
 			_try
@@ -911,10 +939,17 @@ _private _method type_dumper.write_condition(cond)
 			>> cond.taxonomy[cond.taxonomy.size - 1]
 		_endif
 	instruction[:doc] << method_finder.get_method_comment(cond.name, "<condition>")
+	instruction[:source_file] <<
+		_try
+			>> cond.source_file
+		_when error
+			>> _unset
+		_endtry
 	_self.write_instruction(instruction)
 _endmethod
 $
 
 # type_dumper.new("/tmp/sw_types.jsonl").run()
-type_dumper.new("C:\temp\sw_type2.jsonl").run()
-$
+# type_dumper.new("C:\temp\sw_type2.jsonl").run()
+type_dumper.new("C:\temp\sw_type3.jsonl").run()
+# $
