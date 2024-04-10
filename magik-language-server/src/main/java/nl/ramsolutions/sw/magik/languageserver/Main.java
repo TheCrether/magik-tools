@@ -2,6 +2,16 @@ package nl.ramsolutions.sw.magik.languageserver;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
+import java.nio.channels.AsynchronousServerSocketChannel;
+import java.nio.channels.AsynchronousSocketChannel;
+import java.nio.channels.Channels;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.function.Function;
 import java.util.logging.LogManager;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
@@ -9,7 +19,11 @@ import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
+import org.eclipse.lsp4j.jsonrpc.JsonRpcException;
 import org.eclipse.lsp4j.jsonrpc.Launcher;
+import org.eclipse.lsp4j.jsonrpc.MessageConsumer;
+import org.eclipse.lsp4j.jsonrpc.MessageIssueException;
+import org.eclipse.lsp4j.jsonrpc.messages.Message;
 import org.eclipse.lsp4j.launch.LSPLauncher;
 import org.eclipse.lsp4j.services.LanguageClient;
 
@@ -74,7 +88,8 @@ public final class Main {
    * @throws IOException -
    * @throws ParseException -
    */
-  public static void main(final String[] args) throws IOException, ParseException {
+  public static void main(final String[] args)
+      throws IOException, ParseException, InterruptedException {
     final CommandLine commandLine = Main.parseCommandline(args);
     if (commandLine.hasOption(OPTION_DEBUG)) {
       Main.initDebugLogger();
@@ -83,12 +98,63 @@ public final class Main {
     }
 
     final MagikLanguageServer server = new MagikLanguageServer();
-    final Launcher<LanguageClient> launcher =
-        LSPLauncher.createServerLauncher(server, System.in, System.out); // NOSONAR
+    Launcher<LanguageClient> launcher = null;
+    if (commandLine.hasOption(OPTION_DEBUG)) {
+      Function<MessageConsumer, MessageConsumer> wrapper =
+          consumer -> {
+            MessageConsumer result =
+                new MessageConsumer() {
+                  @Override
+                  public void consume(Message message)
+                      throws MessageIssueException, JsonRpcException {
+                    //            System.out.println(message);
+                    consumer.consume(message);
+                  }
+                };
+            return result;
+          };
+      launcher =
+          createSocketLauncher(
+              server,
+              LanguageClient.class,
+              new InetSocketAddress("localhost", 5007),
+              Executors.newCachedThreadPool(),
+              wrapper);
+    } else {
+      launcher = LSPLauncher.createServerLauncher(server, System.in, System.out);
+    }
 
     final LanguageClient remoteProxy = launcher.getRemoteProxy();
     server.connect(remoteProxy);
 
-    launcher.startListening();
+    Future<?> future = launcher.startListening();
+    while (!future.isDone()) {
+      Thread.sleep(10_000l);
+    }
+  }
+
+  static <T> Launcher<T> createSocketLauncher(
+      Object localService,
+      Class<T> remoteInterface,
+      SocketAddress socketAddress,
+      ExecutorService executorService,
+      Function<MessageConsumer, MessageConsumer> wrapper)
+      throws IOException {
+    AsynchronousServerSocketChannel serverSocket =
+        AsynchronousServerSocketChannel.open().bind(socketAddress);
+    AsynchronousSocketChannel socketChannel;
+    try {
+      socketChannel = serverSocket.accept().get();
+      return Launcher.createIoLauncher(
+          localService,
+          remoteInterface,
+          Channels.newInputStream(socketChannel),
+          Channels.newOutputStream(socketChannel),
+          executorService,
+          wrapper);
+    } catch (InterruptedException | ExecutionException e) {
+      e.printStackTrace();
+    }
+    return null;
   }
 }
