@@ -18,6 +18,7 @@ import nl.ramsolutions.sw.magik.analysis.typing.TypeStringResolver;
 import nl.ramsolutions.sw.magik.analysis.typing.reasoner.LocalTypeReasonerState;
 import nl.ramsolutions.sw.magik.api.MagikGrammar;
 import nl.ramsolutions.sw.magik.languageserver.Lsp4jConversion;
+import nl.ramsolutions.sw.magik.languageserver.MagikSettings;
 import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.ServerCapabilities;
 import org.eclipse.lsp4j.SymbolKind;
@@ -162,7 +163,8 @@ public class TypeHierarchyProvider {
   private TypeHierarchyItem toTypeHierarchyItem(final ExemplarDefinition definition) {
     final TypeString typeStr = definition.getTypeString();
     final Location typeLocation = definition.getLocation();
-    final Location location = Location.validLocation(typeLocation);
+    final Location location =
+        Location.validLocation(typeLocation, MagikSettings.INSTANCE.getPathMappings());
     final Range range = location.getRange();
     Objects.requireNonNull(range);
     return new TypeHierarchyItem(

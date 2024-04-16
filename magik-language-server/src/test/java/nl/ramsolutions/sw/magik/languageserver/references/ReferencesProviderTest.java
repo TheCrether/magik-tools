@@ -22,7 +22,7 @@ import org.junit.jupiter.api.Test;
 @SuppressWarnings("checkstyle:MagicNumber")
 class ReferencesProviderTest {
 
-  private static final Location EMPTY_LOCATION = Location.validLocation(null);
+  private static final Location EMPTY_LOCATION = Location.validLocation(null, null);
 
   private List<Location> getReferences(
       final String code, final Position position, final IDefinitionKeeper definitionKeeper) {

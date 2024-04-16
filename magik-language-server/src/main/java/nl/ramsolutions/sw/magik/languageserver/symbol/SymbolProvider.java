@@ -17,6 +17,7 @@ import nl.ramsolutions.sw.magik.analysis.definitions.MethodDefinition;
 import nl.ramsolutions.sw.magik.analysis.definitions.ProcedureDefinition;
 import nl.ramsolutions.sw.magik.analysis.definitions.TypeStringDefinition;
 import nl.ramsolutions.sw.magik.languageserver.Lsp4jConversion;
+import nl.ramsolutions.sw.magik.languageserver.MagikSettings;
 import org.eclipse.lsp4j.ServerCapabilities;
 import org.eclipse.lsp4j.SymbolKind;
 import org.eclipse.lsp4j.WorkspaceSymbol;
@@ -80,7 +81,8 @@ public class SymbolProvider {
     for (final ProductDefinition definition : this.definitionKeeper.getProductDefinitions()) {
       if (predicate.test(definition)) {
         final Location conditionLocation = definition.getLocation();
-        final Location location = Location.validLocation(conditionLocation);
+        final Location location =
+            Location.validLocation(conditionLocation, MagikSettings.INSTANCE.getPathMappings());
         final WorkspaceSymbol symbol =
             new WorkspaceSymbol(
                 "Product: " + definition.getName(),
@@ -98,7 +100,8 @@ public class SymbolProvider {
     for (final ModuleDefinition definition : this.definitionKeeper.getModuleDefinitions()) {
       if (predicate.test(definition)) {
         final Location conditionLocation = definition.getLocation();
-        final Location location = Location.validLocation(conditionLocation);
+        final Location location =
+            Location.validLocation(conditionLocation, MagikSettings.INSTANCE.getPathMappings());
         final WorkspaceSymbol symbol =
             new WorkspaceSymbol(
                 "Module: " + definition.getName(),
@@ -114,7 +117,8 @@ public class SymbolProvider {
     for (final ExemplarDefinition definition : this.definitionKeeper.getExemplarDefinitions()) {
       if (predicate.test(definition)) {
         final Location typeLocation = definition.getLocation();
-        final Location location = Location.validLocation(typeLocation);
+        final Location location =
+            Location.validLocation(typeLocation, MagikSettings.INSTANCE.getPathMappings());
         final WorkspaceSymbol symbol =
             new WorkspaceSymbol(
                 "Exemplar: " + definition.getTypeString().getFullString(),
@@ -130,7 +134,8 @@ public class SymbolProvider {
     for (final MethodDefinition definition : this.definitionKeeper.getMethodDefinitions()) {
       if (predicate.test(definition)) {
         final Location methodLocation = definition.getLocation();
-        final Location location = Location.validLocation(methodLocation);
+        final Location location =
+            Location.validLocation(methodLocation, MagikSettings.INSTANCE.getPathMappings());
         final WorkspaceSymbol symbol =
             new WorkspaceSymbol(
                 "Method: " + definition.getName(),
@@ -142,7 +147,7 @@ public class SymbolProvider {
   }
 
   /**
-   * Gather {{@link WorkspaceSymbolsymbol}} for matching conditions.
+   * Gather {{@link WorkspaceSymbol}} for matching conditions.
    *
    * @param query Query to run.
    * @param workspaceSymbols List to add results to.
@@ -152,7 +157,8 @@ public class SymbolProvider {
     for (final ConditionDefinition definition : this.definitionKeeper.getConditionDefinitions()) {
       if (predicate.test(definition)) {
         final Location conditionLocation = definition.getLocation();
-        final Location location = Location.validLocation(conditionLocation);
+        final Location location =
+            Location.validLocation(conditionLocation, MagikSettings.INSTANCE.getPathMappings());
         final WorkspaceSymbol symbol =
             new WorkspaceSymbol(
                 "Condition: " + definition.getName(),

@@ -7,11 +7,17 @@ import com.google.gson.JsonParseException;
 import java.lang.reflect.Type;
 import java.util.List;
 import java.util.Set;
+import nl.ramsolutions.sw.magik.Location;
+import nl.ramsolutions.sw.magik.PathMapping;
 import nl.ramsolutions.sw.magik.analysis.definitions.*;
 import nl.ramsolutions.sw.magik.analysis.typing.ExpressionResultString;
 import nl.ramsolutions.sw.magik.analysis.typing.TypeString;
 
 public class MethodDefinitionDeserializer extends DefinitionDeserializer<MethodDefinition> {
+  public MethodDefinitionDeserializer(List<PathMapping> mappings) {
+    super(mappings);
+  }
+
   @Override
   public MethodDefinition deserialize(
       JsonElement json, Type type, JsonDeserializationContext context) throws JsonParseException {
@@ -21,6 +27,14 @@ public class MethodDefinitionDeserializer extends DefinitionDeserializer<MethodD
 
     TypeString typeName = getTypeString(context, jObj, "type_name");
     String methodName = jObj.get("method_name").getAsString();
+
+    Location loc = base.getLocation();
+    if (loc != null && type instanceof Class) {
+      Definition parsed = getParsedDefinition(loc, methodName, (Class<?>) type);
+      if (parsed != null) {
+        loc = parsed.getLocation();
+      }
+    }
 
     Set<MethodDefinition.Modifier> modifiers =
         getSet(context, jObj, "modifiers", MethodDefinition.Modifier.class);
@@ -44,7 +58,7 @@ public class MethodDefinitionDeserializer extends DefinitionDeserializer<MethodD
         getSet(context, jObj, "used_conditions", ConditionUsage.class);
 
     return new MethodDefinition(
-        base.getLocation(),
+        loc,
         base.getModuleName(),
         base.getDoc(),
         base.getNode(),

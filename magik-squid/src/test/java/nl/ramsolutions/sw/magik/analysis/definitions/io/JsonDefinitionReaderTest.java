@@ -26,7 +26,7 @@ class JsonDefinitionReaderTest {
   private IDefinitionKeeper readTypes() throws IOException {
     final Path path = Path.of("src/test/resources/tests/type_database.jsonl");
     final IDefinitionKeeper definitionKeeper = new DefinitionKeeper();
-    JsonDefinitionReader.readTypes(path, definitionKeeper);
+    JsonDefinitionReader.readTypes(path, definitionKeeper, null);
     return definitionKeeper;
   }
 

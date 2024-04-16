@@ -3,10 +3,16 @@ package nl.ramsolutions.sw.magik.analysis.definitions.io.deserializer;
 import com.google.gson.JsonObject;
 import com.sonar.sslr.api.AstNode;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.List;
 import nl.ramsolutions.sw.magik.Location;
+import nl.ramsolutions.sw.magik.PathMapping;
 import nl.ramsolutions.sw.magik.analysis.definitions.Definition;
 
 public abstract class DefinitionDeserializer<T> extends BaseDeserializer<T> {
+
+  public DefinitionDeserializer(List<PathMapping> mappings) {
+    super(mappings);
+  }
 
   public static class DeserializedDefinition extends Definition {
 

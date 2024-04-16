@@ -20,6 +20,7 @@ import nl.ramsolutions.sw.magik.analysis.definitions.MethodDefinition;
 import nl.ramsolutions.sw.magik.analysis.typing.TypeString;
 import nl.ramsolutions.sw.magik.analysis.typing.TypeStringResolver;
 import nl.ramsolutions.sw.magik.languageserver.Lsp4jConversion;
+import nl.ramsolutions.sw.magik.languageserver.MagikSettings;
 import org.eclipse.lsp4j.ServerCapabilities;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -175,7 +176,8 @@ public class MUnitTestItemProvider {
   private MUnitTestItem createTestItem(final ProductDefinition definition) {
     final String productName = definition.getName();
     final Location definitionLocation = definition.getLocation();
-    final Location location = Location.validLocation(definitionLocation);
+    final Location location =
+        Location.validLocation(definitionLocation, MagikSettings.INSTANCE.getPathMappings());
     return new MUnitTestItem(
         "product:" + productName, productName, Lsp4jConversion.locationToLsp4j(location));
   }
@@ -183,7 +185,8 @@ public class MUnitTestItemProvider {
   private MUnitTestItem createTestItem(final ModuleDefinition definition) {
     final String moduleName = definition.getName();
     final Location definitionLocation = definition.getLocation();
-    final Location location = Location.validLocation(definitionLocation);
+    final Location location =
+        Location.validLocation(definitionLocation, MagikSettings.INSTANCE.getPathMappings());
     return new MUnitTestItem(
         "module:" + moduleName, moduleName, Lsp4jConversion.locationToLsp4j(location));
   }
@@ -191,7 +194,8 @@ public class MUnitTestItemProvider {
   private MUnitTestItem createTestItem(final ExemplarDefinition definition) {
     final String typeName = definition.getTypeString().getFullString();
     final Location definitionLocation = definition.getLocation();
-    final Location location = Location.validLocation(definitionLocation);
+    final Location location =
+        Location.validLocation(definitionLocation, MagikSettings.INSTANCE.getPathMappings());
     return new MUnitTestItem(
         "test_case:" + typeName, typeName, Lsp4jConversion.locationToLsp4j(location));
   }
@@ -199,7 +203,8 @@ public class MUnitTestItemProvider {
   private MUnitTestItem createTestItem(final MethodDefinition definition) {
     final String methodName = definition.getMethodName();
     final Location definitionLocation = definition.getLocation();
-    final Location location = Location.validLocation(definitionLocation);
+    final Location location =
+        Location.validLocation(definitionLocation, MagikSettings.INSTANCE.getPathMappings());
     return new MUnitTestItem(
         "method:" + methodName, methodName, Lsp4jConversion.locationToLsp4j(location));
   }

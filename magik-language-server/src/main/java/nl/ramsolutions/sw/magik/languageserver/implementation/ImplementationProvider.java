@@ -13,6 +13,7 @@ import nl.ramsolutions.sw.magik.analysis.helpers.MethodDefinitionNodeHelper;
 import nl.ramsolutions.sw.magik.analysis.typing.TypeString;
 import nl.ramsolutions.sw.magik.analysis.typing.TypeStringResolver;
 import nl.ramsolutions.sw.magik.api.MagikGrammar;
+import nl.ramsolutions.sw.magik.languageserver.MagikSettings;
 import org.eclipse.lsp4j.ServerCapabilities;
 
 /** Implementation provider. */
@@ -69,7 +70,9 @@ public class ImplementationProvider {
         .filter(methodDef -> !typeStr.equals(methodDef.getTypeName()))
         .filter(methodDef -> resolver.isKindOf(methodDef.getTypeName(), typeStr))
         .map(MethodDefinition::getLocation)
-        .map(Location::validLocation)
+        .map(
+            (Location location) ->
+                Location.validLocation(location, MagikSettings.INSTANCE.getPathMappings()))
         .toList();
   }
 }

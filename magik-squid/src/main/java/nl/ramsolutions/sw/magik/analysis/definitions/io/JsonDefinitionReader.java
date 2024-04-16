@@ -6,14 +6,17 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import com.google.gson.JsonParser;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.util.List;
 import nl.ramsolutions.sw.definitions.ModuleDefinition;
 import nl.ramsolutions.sw.definitions.ProductDefinition;
+import nl.ramsolutions.sw.magik.PathMapping;
 import nl.ramsolutions.sw.magik.analysis.definitions.BinaryOperatorDefinition;
 import nl.ramsolutions.sw.magik.analysis.definitions.ConditionDefinition;
 import nl.ramsolutions.sw.magik.analysis.definitions.ExemplarDefinition;
@@ -33,12 +36,16 @@ import org.slf4j.LoggerFactory;
 public final class JsonDefinitionReader {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(JsonDefinitionReader.class);
-  private final Gson gson = this.buildGson();
+  private final Gson gson;
 
   private final IDefinitionKeeper definitionKeeper;
+  private final List<PathMapping> mappings;
 
-  private JsonDefinitionReader(final IDefinitionKeeper definitionKeeper) {
+  private JsonDefinitionReader(
+      final IDefinitionKeeper definitionKeeper, final @Nullable List<PathMapping> mappings) {
     this.definitionKeeper = definitionKeeper;
+    this.mappings = mappings;
+    this.gson = this.buildGson();
   }
 
   private void run(final Path path) throws IOException {
@@ -125,30 +132,41 @@ public final class JsonDefinitionReader {
   private Gson buildGson() {
     return new GsonBuilder()
         .setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES)
-        .registerTypeAdapter(TypeString.class, new TypeStringDeserializer())
-        .registerTypeAdapter(ExpressionResultString.class, new ExpressionResultStringDeserializer())
+        .registerTypeAdapter(TypeString.class, new TypeStringDeserializer(this.mappings))
         .registerTypeAdapter(
-            ExemplarDefinition.Sort.class, new LowerCaseEnumDeserializer<ExemplarDefinition.Sort>())
+            ExpressionResultString.class, new ExpressionResultStringDeserializer(this.mappings))
+        .registerTypeAdapter(
+            ExemplarDefinition.Sort.class,
+            new LowerCaseEnumDeserializer<ExemplarDefinition.Sort>(this.mappings))
         .registerTypeAdapter(
             MethodDefinition.Modifier.class,
-            new LowerCaseEnumDeserializer<MethodDefinition.Modifier>())
+            new LowerCaseEnumDeserializer<MethodDefinition.Modifier>(this.mappings))
         .registerTypeAdapter(
             ProcedureDefinition.Modifier.class,
-            new LowerCaseEnumDeserializer<ProcedureDefinition.Modifier>())
+            new LowerCaseEnumDeserializer<ProcedureDefinition.Modifier>(this.mappings))
         .registerTypeAdapter(
             ParameterDefinition.Modifier.class,
-            new LowerCaseEnumDeserializer<ParameterDefinition.Modifier>())
-        .registerTypeAdapter(ParameterDefinition.class, new ParameterDefinitionDeserializer())
-        .registerTypeAdapter(ProductDefinition.class, new ProductDefinitionDeserializer())
-        .registerTypeAdapter(ModuleDefinition.class, new ModuleDefinitionDeserializer())
-        .registerTypeAdapter(PackageDefinition.class, new PackageDefinitionDeserializer())
-        .registerTypeAdapter(ExemplarDefinition.class, new ExemplarDefinitionDeserializer())
-        .registerTypeAdapter(MethodDefinition.class, new MethodDefinitionDeserializer())
-        .registerTypeAdapter(ConditionDefinition.class, new ConditionDefinitionDeserializer())
+            new LowerCaseEnumDeserializer<ParameterDefinition.Modifier>(this.mappings))
         .registerTypeAdapter(
-            BinaryOperatorDefinition.class, new BinaryOperatorDefinitionDeserializer())
-        .registerTypeAdapter(ProcedureDefinition.class, new ProcedureDefinitionDeserializer())
-        .registerTypeAdapter(GlobalDefinition.class, new GlobalDefinitionDeserializer())
+            ParameterDefinition.class, new ParameterDefinitionDeserializer(this.mappings))
+        .registerTypeAdapter(
+            ProductDefinition.class, new ProductDefinitionDeserializer(this.mappings))
+        .registerTypeAdapter(
+            ModuleDefinition.class, new ModuleDefinitionDeserializer(this.mappings))
+        .registerTypeAdapter(
+            PackageDefinition.class, new PackageDefinitionDeserializer(this.mappings))
+        .registerTypeAdapter(
+            ExemplarDefinition.class, new ExemplarDefinitionDeserializer(this.mappings))
+        .registerTypeAdapter(
+            MethodDefinition.class, new MethodDefinitionDeserializer(this.mappings))
+        .registerTypeAdapter(
+            ConditionDefinition.class, new ConditionDefinitionDeserializer(this.mappings))
+        .registerTypeAdapter(
+            BinaryOperatorDefinition.class, new BinaryOperatorDefinitionDeserializer(this.mappings))
+        .registerTypeAdapter(
+            ProcedureDefinition.class, new ProcedureDefinitionDeserializer(this.mappings))
+        .registerTypeAdapter(
+            GlobalDefinition.class, new GlobalDefinitionDeserializer(this.mappings))
         .create();
   }
 
@@ -213,9 +231,13 @@ public final class JsonDefinitionReader {
    * @param definitionKeeper {@link IDefinitionKeeper} to fill.
    * @throws IOException -
    */
-  public static void readTypes(final Path path, final IDefinitionKeeper definitionKeeper)
+  public static void readTypes(
+      final Path path,
+      final IDefinitionKeeper definitionKeeper,
+      final @Nullable List<PathMapping> mappings)
       throws IOException {
-    final JsonDefinitionReader reader = new JsonDefinitionReader(definitionKeeper);
+    final JsonDefinitionReader reader = new JsonDefinitionReader(definitionKeeper, mappings);
+    BaseDeserializer.clearParsedFiles();
     reader.run(path);
   }
 }

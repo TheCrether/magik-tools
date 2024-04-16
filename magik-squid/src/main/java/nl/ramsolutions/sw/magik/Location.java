@@ -8,6 +8,7 @@ import java.io.Serializable;
 import java.net.URI;
 import java.nio.file.Path;
 import java.util.Comparator;
+import java.util.List;
 import java.util.Objects;
 
 /** Location within a file. */
@@ -21,8 +22,8 @@ public class Location {
 
     @Override
     public int compare(final Location location0, final Location location1) {
-      final Location validLocation0 = Location.validLocation(location0);
-      final Location validLocation1 = Location.validLocation(location1);
+      final Location validLocation0 = Location.validLocation(location0, null);
+      final Location validLocation1 = Location.validLocation(location1, null);
 
       // Compare URI.
       final URI uri0 = validLocation0.getUri();
@@ -155,9 +156,16 @@ public class Location {
    * @param location Range to derive from.
    * @return Location.
    */
-  public static Location validLocation(final @Nullable Location location) {
+  public static Location validLocation(
+      @Nullable Location location, final @Nullable List<PathMapping> mappings) {
     if (location == null) {
       return DUMMY_LOCATION;
+    }
+
+    if (mappings != null) {
+      for (PathMapping mapping : mappings) {
+        location = mapping.mapLocation(location);
+      }
     }
 
     final Range range = location.getRange();

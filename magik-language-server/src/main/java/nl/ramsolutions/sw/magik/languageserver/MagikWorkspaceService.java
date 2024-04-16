@@ -195,7 +195,8 @@ public class MagikWorkspaceService implements WorkspaceService {
           }
 
           try {
-            JsonDefinitionReader.readTypes(path, this.definitionKeeper);
+            JsonDefinitionReader.readTypes(
+                path, this.definitionKeeper, MagikSettings.INSTANCE.getPathMappings());
           } catch (final IOException exception) {
             LOGGER.error(exception.getMessage(), exception);
           }

@@ -8,8 +8,13 @@ import java.lang.reflect.Type;
 import java.util.List;
 import nl.ramsolutions.sw.definitions.ModuleDefinition;
 import nl.ramsolutions.sw.magik.Location;
+import nl.ramsolutions.sw.magik.PathMapping;
 
 public class ModuleDefinitionDeserializer extends BaseDeserializer<ModuleDefinition> {
+  public ModuleDefinitionDeserializer(List<PathMapping> mappings) {
+    super(mappings);
+  }
+
   @Override
   public ModuleDefinition deserialize(
       JsonElement json, Type type, JsonDeserializationContext context) throws JsonParseException {

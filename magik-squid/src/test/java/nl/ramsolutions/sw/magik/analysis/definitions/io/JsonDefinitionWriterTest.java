@@ -166,7 +166,7 @@ class JsonDefinitionWriterTest {
 
   @Test
   void testWriteBinaryOperator() throws IOException {
-    final Location location = Location.validLocation(null);
+    final Location location = Location.validLocation(null, null);
     final IDefinitionKeeper definitionKeeper = new DefinitionKeeper();
     definitionKeeper.add(
         new BinaryOperatorDefinition(

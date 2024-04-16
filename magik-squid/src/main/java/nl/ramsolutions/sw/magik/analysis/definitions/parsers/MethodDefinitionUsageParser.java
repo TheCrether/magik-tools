@@ -69,7 +69,7 @@ public class MethodDefinitionUsageParser {
               final TypeString ref = TypeString.ofIdentifier(identifier, currentPakkage);
               final URI uri = this.node.getToken().getURI();
               final Location location = new Location(uri, scopeEntry.getDefinitionNode());
-              final Location validLocation = Location.validLocation(location);
+              final Location validLocation = Location.validLocation(location, null);
               // TODO: The type should be resolved here, but we don't have a type resolver
               // yet.
               // Now you might "see" the ref user:char16_vector, or any other package which is
@@ -96,7 +96,7 @@ public class MethodDefinitionUsageParser {
               final String methodName = helper.getMethodName();
               final URI uri = this.node.getToken().getURI();
               final Location location = new Location(uri, methodInvocationNode);
-              final Location validLocation = Location.validLocation(location);
+              final Location validLocation = Location.validLocation(location, null);
               return new MethodUsage(TypeString.UNDEFINED, methodName, validLocation);
             })
         .collect(Collectors.toUnmodifiableSet());
@@ -115,7 +115,7 @@ public class MethodDefinitionUsageParser {
                   slotNode.getFirstChild(MagikGrammar.IDENTIFIER).getTokenValue();
               final URI uri = this.node.getToken().getURI();
               final Location location = new Location(uri, slotNode);
-              final Location validLocation = Location.validLocation(location);
+              final Location validLocation = Location.validLocation(location, null);
               return new SlotUsage(slotName, validLocation);
             })
         .collect(Collectors.toUnmodifiableSet());
@@ -134,7 +134,7 @@ public class MethodDefinitionUsageParser {
                 conditionNameNode -> {
                   final String conditionName = conditionNameNode.getTokenValue();
                   final Location location = new Location(uri, conditionNameNode);
-                  final Location validLocation = Location.validLocation(location);
+                  final Location validLocation = Location.validLocation(location, null);
                   return new ConditionUsage(conditionName, validLocation);
                 });
     final Stream<ConditionUsage> raisedConditions =
@@ -161,7 +161,7 @@ public class MethodDefinitionUsageParser {
 
                   final String conditionName = argumentNode.getTokenValue().substring(1);
                   final Location location = new Location(uri, argumentsNode);
-                  final Location validLocation = Location.validLocation(location);
+                  final Location validLocation = Location.validLocation(location, null);
                   return new ConditionUsage(conditionName, validLocation);
                 })
             .filter(Objects::nonNull);

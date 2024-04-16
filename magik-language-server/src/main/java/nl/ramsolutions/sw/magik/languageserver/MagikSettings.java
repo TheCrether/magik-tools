@@ -1,13 +1,16 @@
 package nl.ramsolutions.sw.magik.languageserver;
 
+import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import edu.umd.cs.findbugs.annotations.CheckForNull;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import nl.ramsolutions.sw.magik.PathMapping;
 
 /** Magik settings. */
 public final class MagikSettings { // NOSONAR
@@ -29,8 +32,11 @@ public final class MagikSettings { // NOSONAR
   private static final String INDEX_METHOD_USAGES = "indexMethodUsages";
   private static final String INDEX_SLOT_USAGES = "indexSlotUsages";
   private static final String INDEX_CONDITION_USAGES = "indexConditionUsages";
+  private static final String PATH_MAPPING = "pathMapping";
 
   private JsonObject settings = new JsonObject();
+
+  private List<PathMapping> pathMappings = null;
 
   /** Private constructor. */
   private MagikSettings() {}
@@ -42,6 +48,7 @@ public final class MagikSettings { // NOSONAR
    */
   public void setSettings(final JsonObject settings) {
     this.settings = settings;
+    this.pathMappings = null;
   }
 
   /**
@@ -320,5 +327,23 @@ public final class MagikSettings { // NOSONAR
     }
 
     return Path.of(overrideConfigFileStr);
+  }
+
+  public List<PathMapping> getPathMappings() {
+    if (this.pathMappings != null) {
+      return this.pathMappings;
+    }
+
+    final JsonObject magik = this.settings.getAsJsonObject(TOP_LEVEL);
+    if (magik == null) {
+      return null;
+    }
+
+    final JsonElement pathMappingElement = magik.get(PATH_MAPPING);
+    if (pathMappingElement == null) {
+      return null;
+    }
+
+    return Arrays.asList(new Gson().fromJson(pathMappingElement, PathMapping[].class));
   }
 }

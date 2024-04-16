@@ -27,6 +27,7 @@ import nl.ramsolutions.sw.magik.analysis.scope.ScopeEntry;
 import nl.ramsolutions.sw.magik.analysis.typing.TypeString;
 import nl.ramsolutions.sw.magik.analysis.typing.TypeStringResolver;
 import nl.ramsolutions.sw.magik.api.MagikGrammar;
+import nl.ramsolutions.sw.magik.languageserver.MagikSettings;
 import org.eclipse.lsp4j.ServerCapabilities;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -146,7 +147,9 @@ public class ReferencesProvider {
         .flatMap(def -> def.getUsedMethods().stream())
         .filter(filterPredicate::test)
         .map(MethodUsage::getLocation)
-        .map(Location::validLocation)
+        .map(
+            (Location location) ->
+                Location.validLocation(location, MagikSettings.INSTANCE.getPathMappings()))
         .toList();
   }
 
@@ -181,7 +184,9 @@ public class ReferencesProvider {
         .flatMap(def -> def.getUsedGlobals().stream())
         .filter(filterPredicate::test)
         .map(GlobalUsage::getLocation)
-        .map(Location::validLocation)
+        .map(
+            (Location location) ->
+                Location.validLocation(location, MagikSettings.INSTANCE.getPathMappings()))
         .toList();
   }
 
@@ -192,7 +197,9 @@ public class ReferencesProvider {
         .flatMap(def -> def.getUsedConditions().stream())
         .filter(conditionUsage -> conditionUsage.getConditionName().equals(conditionName))
         .map(ConditionUsage::getLocation)
-        .map(Location::validLocation)
+        .map(
+            (Location location) ->
+                Location.validLocation(location, MagikSettings.INSTANCE.getPathMappings()))
         .toList();
   }
 }

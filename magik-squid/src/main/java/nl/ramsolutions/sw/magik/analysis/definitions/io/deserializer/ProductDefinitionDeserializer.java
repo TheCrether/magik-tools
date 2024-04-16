@@ -5,10 +5,16 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import java.lang.reflect.Type;
+import java.util.List;
 import nl.ramsolutions.sw.definitions.ProductDefinition;
 import nl.ramsolutions.sw.magik.Location;
+import nl.ramsolutions.sw.magik.PathMapping;
 
 public class ProductDefinitionDeserializer extends BaseDeserializer<ProductDefinition> {
+  public ProductDefinitionDeserializer(List<PathMapping> mappings) {
+    super(mappings);
+  }
+
   @Override
   public ProductDefinition deserialize(
       JsonElement json, Type type, JsonDeserializationContext context) throws JsonParseException {

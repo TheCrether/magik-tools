@@ -6,10 +6,15 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import java.lang.reflect.Type;
 import java.util.List;
+import nl.ramsolutions.sw.magik.PathMapping;
 import nl.ramsolutions.sw.magik.analysis.definitions.Definition;
 import nl.ramsolutions.sw.magik.analysis.definitions.PackageDefinition;
 
 public class PackageDefinitionDeserializer extends DefinitionDeserializer<PackageDefinition> {
+  public PackageDefinitionDeserializer(List<PathMapping> mappings) {
+    super(mappings);
+  }
+
   @Override
   public PackageDefinition deserialize(
       JsonElement json, Type type, JsonDeserializationContext context) throws JsonParseException {

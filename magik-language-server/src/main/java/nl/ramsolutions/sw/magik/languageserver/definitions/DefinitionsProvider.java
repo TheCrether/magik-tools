@@ -8,6 +8,7 @@ import nl.ramsolutions.sw.magik.Location;
 import nl.ramsolutions.sw.magik.MagikTypedFile;
 import nl.ramsolutions.sw.magik.Position;
 import nl.ramsolutions.sw.magik.analysis.AstQuery;
+import nl.ramsolutions.sw.magik.analysis.definitions.Definition;
 import nl.ramsolutions.sw.magik.analysis.definitions.IDefinitionKeeper;
 import nl.ramsolutions.sw.magik.analysis.definitions.MethodDefinition;
 import nl.ramsolutions.sw.magik.analysis.helpers.MethodInvocationNodeHelper;
@@ -19,6 +20,7 @@ import nl.ramsolutions.sw.magik.analysis.typing.TypeString;
 import nl.ramsolutions.sw.magik.analysis.typing.TypeStringResolver;
 import nl.ramsolutions.sw.magik.analysis.typing.reasoner.LocalTypeReasonerState;
 import nl.ramsolutions.sw.magik.api.MagikGrammar;
+import nl.ramsolutions.sw.magik.languageserver.MagikSettings;
 import org.eclipse.lsp4j.ServerCapabilities;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -83,8 +85,10 @@ public class DefinitionsProvider {
     final IDefinitionKeeper definitionKeeper = magikFile.getDefinitionKeeper();
     final String conditionName = wantedNode.getTokenValue();
     return definitionKeeper.getConditionDefinitions(conditionName).stream()
-        .map(conditionDef -> conditionDef.getLocation())
-        .map(Location::validLocation)
+        .map(Definition::getLocation)
+        .map(
+            (Location location) ->
+                Location.validLocation(location, MagikSettings.INSTANCE.getPathMappings()))
         .toList();
   }
 
@@ -105,7 +109,10 @@ public class DefinitionsProvider {
         ScopeEntry.Type.CONSTANT,
         ScopeEntry.Type.PARAMETER)) {
       final AstNode definitionNode = scopeEntry.getDefinitionNode();
-      final Location definitionLocation = new Location(magikFile.getUri(), definitionNode);
+      final Location definitionLocation =
+          Location.validLocation(
+              new Location(magikFile.getUri(), definitionNode),
+              MagikSettings.INSTANCE.getPathMappings());
       return List.of(definitionLocation);
     }
 
@@ -115,8 +122,10 @@ public class DefinitionsProvider {
     final TypeString typeString = TypeString.ofIdentifier(identifier, pakkage);
     final TypeStringResolver resolver = magikFile.getTypeStringResolver();
     return resolver.resolve(typeString).stream()
-        .map(def -> def.getLocation())
-        .map(Location::validLocation)
+        .map(Definition::getLocation)
+        .map(
+            (Location location) ->
+                Location.validLocation(location, MagikSettings.INSTANCE.getPathMappings()))
         .toList();
   }
 
@@ -136,7 +145,9 @@ public class DefinitionsProvider {
     final TypeStringResolver resolver = magikFile.getTypeStringResolver();
     return resolver.getMethodDefinitions(typeStr, methodName).stream()
         .map(MethodDefinition::getLocation)
-        .map(Location::validLocation)
+        .map(
+            (Location location) ->
+                Location.validLocation(location, MagikSettings.INSTANCE.getPathMappings()))
         .toList();
   }
 }

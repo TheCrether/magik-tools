@@ -7,6 +7,7 @@ import com.google.gson.JsonParseException;
 import java.lang.reflect.Type;
 import java.util.List;
 import java.util.Set;
+import nl.ramsolutions.sw.magik.PathMapping;
 import nl.ramsolutions.sw.magik.analysis.definitions.Definition;
 import nl.ramsolutions.sw.magik.analysis.definitions.ParameterDefinition;
 import nl.ramsolutions.sw.magik.analysis.definitions.ProcedureDefinition;
@@ -14,6 +15,10 @@ import nl.ramsolutions.sw.magik.analysis.typing.ExpressionResultString;
 import nl.ramsolutions.sw.magik.analysis.typing.TypeString;
 
 public class ProcedureDefinitionDeserializer extends DefinitionDeserializer<ProcedureDefinition> {
+  public ProcedureDefinitionDeserializer(List<PathMapping> mappings) {
+    super(mappings);
+  }
+
   @Override
   public ProcedureDefinition deserialize(
       JsonElement json, Type type, JsonDeserializationContext context) throws JsonParseException {
