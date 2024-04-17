@@ -22,14 +22,14 @@ public class ExemplarDefinitionDeserializer extends BaseDeserializer<ExemplarDef
   public ExemplarDefinition deserialize(
       JsonElement json, Type type, JsonDeserializationContext context) throws JsonParseException {
     JsonObject jObj = json.getAsJsonObject();
-    String moduleName = nullableString(jObj, "module_name");
+    String moduleName = nullableString(jObj, "mod_name");
     String doc = nullableString(jObj, "doc");
     ExemplarDefinition.Sort sort = get(context, jObj, "sort", ExemplarDefinition.Sort.class);
-    TypeString typeName = getTypeString(context, jObj, "type_name");
+    TypeString typeName = getTypeString(context, jObj, "type_n");
 
     List<SlotDefinition> slots = getList(context, jObj, "slots", SlotDefinition.class);
-    List<TypeString> parents = getList(context, jObj, "parents", TypeString.class);
-    Set<String> topics = getSet(context, jObj, "topics", String.class);
+    List<TypeString> parents = getList(context, jObj, "par", TypeString.class);
+    Set<String> topics = getSet(context, jObj, "top", String.class);
 
     Location location = getLocation(jObj);
 

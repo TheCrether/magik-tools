@@ -255,7 +255,7 @@ public class HoverProvider {
    * Provide hover for a procedure invocation.
    *
    * @param magikFile Magik file.
-   * @param atomNode Hovered node.
+   * @param hoveredNode Hovered node.
    * @param builder Builder to add text to.
    */
   private void provideHoverProcedureInvocation(

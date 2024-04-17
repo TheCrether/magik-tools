@@ -58,7 +58,7 @@ public abstract class BaseDeserializer<T> implements JsonDeserializer<T> {
   @Nullable
   public Location getLocation(JsonObject obj) {
     Location location = null;
-    String source = nullableString(obj, "source_file");
+    String source = nullableString(obj, "src");
     if (source != null) {
       Path path = Path.of(source);
       location = Location.validLocation(new Location(path.toUri()), this.mappings);
@@ -105,7 +105,7 @@ public abstract class BaseDeserializer<T> implements JsonDeserializer<T> {
       }
     }
 
-    return parsedFiles.get(path);
+    return Collections.unmodifiableList(parsedFiles.getOrDefault(path, new ArrayList<>()));
   }
 
   public static <X> Definition getParsedDefinition(Location location, String name, Class<X> clazz) {

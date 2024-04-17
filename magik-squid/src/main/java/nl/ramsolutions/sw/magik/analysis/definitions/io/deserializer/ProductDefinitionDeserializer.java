@@ -21,16 +21,16 @@ public class ProductDefinitionDeserializer extends BaseDeserializer<ProductDefin
     JsonObject jObj = json.getAsJsonObject();
 
     String name = getString(jObj, "name");
-    String version = nullableString(jObj, "version");
-    String versionComment = nullableString(jObj, "version_comment");
+    String version = nullableString(jObj, "ver");
+    String versionComment = nullableString(jObj, "ver_com");
 
     Location location = getLocation(jObj);
 
     ProductDefinition def = new ProductDefinition(location, name, version, versionComment);
 
     getList(context, jObj, "children", String.class).forEach(def::addChild);
-    getList(context, jObj, "modules", String.class).forEach(def::addModule);
-    getList(context, jObj, "requireds", String.class).forEach(def::addRequired);
+    getList(context, jObj, "mods", String.class).forEach(def::addModule);
+    getList(context, jObj, "req", String.class).forEach(def::addRequired);
 
     return def;
   }

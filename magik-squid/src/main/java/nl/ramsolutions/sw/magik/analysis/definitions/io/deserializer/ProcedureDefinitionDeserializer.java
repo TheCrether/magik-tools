@@ -27,17 +27,17 @@ public class ProcedureDefinitionDeserializer extends DefinitionDeserializer<Proc
     Definition base = getDefinition(jObj);
 
     Set<ProcedureDefinition.Modifier> modifiers =
-        getSet(context, jObj, "modifiers", ProcedureDefinition.Modifier.class);
-    TypeString typeName = getTypeString(context, jObj, "type_name");
+        getSet(context, jObj, "mods", ProcedureDefinition.Modifier.class);
+    TypeString typeName = getTypeString(context, jObj, "type_n");
 
-    String procedureName = nullableString(jObj, "procedure_name");
+    String procedureName = nullableString(jObj, "proc_name");
 
     List<ParameterDefinition> parameters =
-        getList(context, jObj, "parameters", ParameterDefinition.class);
+        getList(context, jObj, "params", ParameterDefinition.class);
     ExpressionResultString returnTypes =
-        get(context, jObj, "return_types", ExpressionResultString.class);
+        get(context, jObj, "ret", ExpressionResultString.class);
     ExpressionResultString loopTypes =
-        get(context, jObj, "loop_types", ExpressionResultString.class);
+        get(context, jObj, "loop", ExpressionResultString.class);
 
     return new ProcedureDefinition(
         base.getLocation(),

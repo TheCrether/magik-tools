@@ -39,7 +39,8 @@ public final class JsonDefinitionReader {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(JsonDefinitionReader.class);
   public static final String TYPE_DB_DEFAULT_ALIAS = "$default";
-  private static final String TYPE_DB_DEFAULT_PATH = "../types_db.jsonl"; // relative to smallworldGis path
+  private static final String TYPE_DB_DEFAULT_PATH =
+      "../types_db.jsonl"; // relative to smallworldGis path
 
   private final Gson gson;
   private final IDefinitionKeeper definitionKeeper;
@@ -61,6 +62,9 @@ public final class JsonDefinitionReader {
         BufferedReader bufferedReader = new BufferedReader(fileReader)) {
       String line = bufferedReader.readLine();
       while (line != null) {
+        if (lineNo % 10000 == 0) {
+          LOGGER.debug("On line {} of {}", lineNo, path);
+        }
         this.processLineSafe(lineNo, line);
 
         ++lineNo;
@@ -246,7 +250,7 @@ public final class JsonDefinitionReader {
   }
 
   /**
-   * parses a path for a type db and will replace {@link JsonDefinitionReader.TYPE_DB_DEFAULT_ALIAS}
+   * parses a path for a type db and will replace {@value JsonDefinitionReader#TYPE_DB_DEFAULT_ALIAS}
    * with the default type db path
    *
    * @param gisPath the gisPath if the default alias gets replaced

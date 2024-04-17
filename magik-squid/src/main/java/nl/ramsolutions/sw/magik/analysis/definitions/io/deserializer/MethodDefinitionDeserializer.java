@@ -25,8 +25,8 @@ public class MethodDefinitionDeserializer extends DefinitionDeserializer<MethodD
 
     Definition base = getDefinition(jObj);
 
-    TypeString typeName = getTypeString(context, jObj, "type_name");
-    String methodName = jObj.get("method_name").getAsString();
+    TypeString typeName = getTypeString(context, jObj, "type_n");
+    String methodName = jObj.get("m_name").getAsString();
 
     Location loc = base.getLocation();
     if (loc != null && type instanceof Class) {
@@ -37,25 +37,25 @@ public class MethodDefinitionDeserializer extends DefinitionDeserializer<MethodD
     }
 
     Set<MethodDefinition.Modifier> modifiers =
-        getSet(context, jObj, "modifiers", MethodDefinition.Modifier.class);
+        getSet(context, jObj, "mods", MethodDefinition.Modifier.class);
     List<ParameterDefinition> parameters =
-        getList(context, jObj, "parameters", ParameterDefinition.class);
+        getList(context, jObj, "params", ParameterDefinition.class);
 
     ParameterDefinition assignmentParameter =
-        get(context, jObj, "assignment_parameter", ParameterDefinition.class);
+        get(context, jObj, "a_params", ParameterDefinition.class);
 
-    Set<String> topics = getSet(context, jObj, "topics", String.class);
+    Set<String> topics = getSet(context, jObj, "top", String.class);
 
     ExpressionResultString returnTypes =
-        get(context, jObj, "return_types", ExpressionResultString.class);
+        get(context, jObj, "ret", ExpressionResultString.class);
     ExpressionResultString loopTypes =
-        get(context, jObj, "loop_types", ExpressionResultString.class);
+        get(context, jObj, "loop", ExpressionResultString.class);
 
-    Set<GlobalUsage> usedGlobals = getSet(context, jObj, "used_globals", GlobalUsage.class);
-    Set<MethodUsage> usedMethods = getSet(context, jObj, "used_methods", MethodUsage.class);
-    Set<SlotUsage> usedSlots = getSet(context, jObj, "used_slots", SlotUsage.class);
+    Set<GlobalUsage> usedGlobals = getSet(context, jObj, "u_globals", GlobalUsage.class);
+    Set<MethodUsage> usedMethods = getSet(context, jObj, "u_methods", MethodUsage.class);
+    Set<SlotUsage> usedSlots = getSet(context, jObj, "u_slots", SlotUsage.class);
     Set<ConditionUsage> usedConditions =
-        getSet(context, jObj, "used_conditions", ConditionUsage.class);
+        getSet(context, jObj, "u_conds", ConditionUsage.class);
 
     return new MethodDefinition(
         loc,

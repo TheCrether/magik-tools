@@ -20,9 +20,9 @@ public class ModuleDefinitionDeserializer extends BaseDeserializer<ModuleDefinit
       JsonElement json, Type type, JsonDeserializationContext context) throws JsonParseException {
     JsonObject jObj = json.getAsJsonObject();
     String name = jObj.get("name").getAsString();
-    String baseVersion = jObj.get("base_version").getAsString();
-    String currentVersion = nullableString(jObj, "current_version");
-    List<String> requireds = getList(context, jObj, "requireds", String.class);
+    String baseVersion = jObj.get("base_ver").getAsString();
+    String currentVersion = nullableString(jObj, "cur_ver");
+    List<String> requireds = getList(context, jObj, "req", String.class);
 
     Location location = getLocation(jObj);
 

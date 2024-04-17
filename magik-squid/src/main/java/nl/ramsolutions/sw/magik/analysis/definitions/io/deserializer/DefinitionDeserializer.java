@@ -50,6 +50,6 @@ public abstract class DefinitionDeserializer<T> extends BaseDeserializer<T> {
 
   public Definition getDefinition(JsonObject jObj) {
     return new DeserializedDefinition(
-        getLocation(jObj), nullableString(jObj, "module_name"), nullableString(jObj, "doc"), null);
+        getLocation(jObj), nullableString(jObj, "mod_n"), nullableString(jObj, "doc"), null);
   }
 }
