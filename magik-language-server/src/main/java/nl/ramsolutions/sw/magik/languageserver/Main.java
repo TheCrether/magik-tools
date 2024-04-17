@@ -34,11 +34,17 @@ public final class Main {
           .longOpt("stdio")
           .desc("Use STDIO (default, no other option to interface with this language server)")
           .build();
+  private static final Option OPTION_NET =
+      Option.builder()
+          .longOpt("net")
+          .desc("Open the LSP on port 5007 instead of using STDIN for commands")
+          .build();
 
   static {
     OPTIONS = new Options();
     OPTIONS.addOption(OPTION_DEBUG);
     OPTIONS.addOption(OPTION_STDIO);
+    OPTIONS.addOption(OPTION_NET);
   }
 
   private Main() {}
@@ -94,7 +100,7 @@ public final class Main {
 
     final MagikLanguageServer server = new MagikLanguageServer();
     Launcher<LanguageClient> launcher;
-    if (commandLine.hasOption(OPTION_DEBUG)) {
+    if (commandLine.hasOption(OPTION_NET)) {
       Function<MessageConsumer, MessageConsumer> wrapper = consumer -> (MessageConsumer) consumer;
       launcher =
           createSocketLauncher(
