@@ -12,7 +12,9 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 import nl.ramsolutions.sw.definitions.ModuleDefinition;
 import nl.ramsolutions.sw.definitions.ProductDefinition;
@@ -36,8 +38,10 @@ import org.slf4j.LoggerFactory;
 public final class JsonDefinitionReader {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(JsonDefinitionReader.class);
-  private final Gson gson;
+  public static final String TYPE_DB_DEFAULT_ALIAS = "$default";
+  private static final String TYPE_DB_DEFAULT_PATH = "../types_db.jsonl"; // relative to smallworldGis path
 
+  private final Gson gson;
   private final IDefinitionKeeper definitionKeeper;
   private final List<PathMapping> mappings;
 
@@ -239,5 +243,37 @@ public final class JsonDefinitionReader {
     final JsonDefinitionReader reader = new JsonDefinitionReader(definitionKeeper, mappings);
     BaseDeserializer.clearParsedFiles();
     reader.run(path);
+  }
+
+  /**
+   * parses a path for a type db and will replace {@link JsonDefinitionReader.TYPE_DB_DEFAULT_ALIAS}
+   * with the default type db path
+   *
+   * @param gisPath the gisPath if the default alias gets replaced
+   * @param pathStr the path that should get parsed
+   * @return the parsed Path or null if the file can't be found
+   */
+  @Nullable
+  public static Path parseTypeDBPath(String gisPath, String pathStr) {
+    Path path = Path.of(pathStr);
+    if (pathStr.equals(TYPE_DB_DEFAULT_ALIAS)) {
+      path = generateDefaultTypeDBPath(gisPath);
+    }
+
+    if (!Files.exists(path)) {
+      return null;
+    }
+
+    return path;
+  }
+
+  /**
+   * Generate the default type db path
+   *
+   * @param gisPath the Smallworld GIS path to use as the basis
+   * @return the path
+   */
+  public static Path generateDefaultTypeDBPath(String gisPath) {
+    return Paths.get(gisPath, TYPE_DB_DEFAULT_PATH);
   }
 }

@@ -188,8 +188,12 @@ public class MagikWorkspaceService implements WorkspaceService {
 
     typeDbPaths.forEach(
         pathStr -> {
-          final Path path = Path.of(pathStr);
-          if (!Files.exists(path)) {
+          Path path =
+              JsonDefinitionReader.parseTypeDBPath(
+                  Objects.requireNonNull(
+                      MagikSettings.INSTANCE.getSmallworldGis(), "smallworldGis not defined"),
+                  pathStr);
+          if (path == null) {
             LOGGER.warn("Path to types database does not exist: {}", pathStr);
             return;
           }
