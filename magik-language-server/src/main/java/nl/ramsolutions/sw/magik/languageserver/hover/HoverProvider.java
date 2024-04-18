@@ -106,7 +106,8 @@ public class HoverProvider {
       }
     }
 
-    final String content = builder.isEmpty() ? "Undefined" : builder.toString();
+//    final String content = builder.isEmpty() ? "Undefined" : builder.toString();
+    final String content = builder.toString();
     final MarkupContent contents = new MarkupContent(MarkupKind.MARKDOWN, content);
     final Range range = new Range(hoveredTokenNode);
     final org.eclipse.lsp4j.Range rangeLsp4j = Lsp4jConversion.rangeToLsp4j(range);
@@ -295,8 +296,8 @@ public class HoverProvider {
         final ExpressionResultString result = reasonerState.getNodeType(previousSiblingNode);
         final TypeString typeStr = result.get(0, TypeString.UNDEFINED);
         final TypeStringResolver resolver = magikFile.getTypeStringResolver();
-        resolver
-            .getMethodDefinitions(typeStr)
+        resolver.getMethodDefinitions(typeStr).stream()
+            .filter(methodDefinition -> methodDefinition.getMethodName().equals(methodName))
             .forEach(methodDef -> this.buildMethodSignatureDoc(methodDef, builder));
       }
     }

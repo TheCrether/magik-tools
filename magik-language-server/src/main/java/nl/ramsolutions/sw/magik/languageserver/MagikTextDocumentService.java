@@ -178,17 +178,47 @@ public class MagikTextDocumentService implements TextDocumentService {
     final TextDocumentItem textDocument = params.getTextDocument();
     LOGGER.debug("didOpen, uri: {}", textDocument.getUri());
 
+    this.openFile(textDocument.getUri(), textDocument.getText());
+  }
+
+  public void openFile(String uriStr, String text) {
     // Store file contents.
-    final String uriStr = textDocument.getUri();
     final URI uri = URI.create(uriStr);
     final TextDocumentIdentifier textDocumentIdentifier = new TextDocumentIdentifier(uriStr);
-    final String text = textDocument.getText();
     final MagikTypedFile openFile =
-        new MagikTypedFile(this.analysisConfiguration, uri, text, this.definitionKeeper);
+      new MagikTypedFile(this.analysisConfiguration, uri, text, this.definitionKeeper);
     this.openFiles.put(textDocumentIdentifier, openFile);
 
     // Publish diagnostics to client.
     this.publishDiagnostics(openFile);
+  }
+
+  public void reopenAllFiles() {
+    Map<TextDocumentIdentifier, MagikTypedFile> openFilesCopy = new HashMap<>(this.openFiles);
+//    this.clearDiagnostics(); // TODO if this is even necessary
+
+    for (MagikTypedFile openFile : openFilesCopy.values()) {
+      this.openFile(openFile.getUri().toString(), openFile.getSource());
+    }
+  }
+
+  public void clearDiagnostics() {
+    Map<TextDocumentIdentifier, MagikTypedFile> openFilesCopy = new HashMap<>(this.openFiles);
+    for (TextDocumentIdentifier key : openFilesCopy.keySet()) {
+      this.clearDiagnostic(key);
+    }
+  }
+
+  public void clearDiagnostic(TextDocumentIdentifier textDocumentIdentifier) {
+    // Clear stored document.
+    this.openFiles.remove(textDocumentIdentifier);
+
+    // Clear published diagnostics.
+    final String uri = textDocumentIdentifier.getUri();
+    final List<Diagnostic> diagnostics = Collections.emptyList();
+    final PublishDiagnosticsParams publishParams = new PublishDiagnosticsParams(uri, diagnostics);
+    final LanguageClient languageClient = this.languageServer.getLanguageClient();
+    languageClient.publishDiagnostics(publishParams);
   }
 
   @Override
@@ -202,14 +232,7 @@ public class MagikTextDocumentService implements TextDocumentService {
     final TextDocumentContentChangeEvent contentChangeEvent = contentChangeEvents.get(0);
     final String text = contentChangeEvent.getText();
     final String uriStr = versionedTextDocumentIdentifier.getUri();
-    final URI uri = URI.create(uriStr);
-    final TextDocumentIdentifier textDocumentIdentifier = new TextDocumentIdentifier(uriStr);
-    final MagikTypedFile openFile =
-        new MagikTypedFile(this.analysisConfiguration, uri, text, this.definitionKeeper);
-    this.openFiles.put(textDocumentIdentifier, openFile);
-
-    // Publish diagnostics to client.
-    this.publishDiagnostics(openFile);
+    this.openFile(uriStr, text);
   }
 
   @Override
@@ -217,15 +240,7 @@ public class MagikTextDocumentService implements TextDocumentService {
     final TextDocumentIdentifier textDocumentIdentifier = params.getTextDocument();
     LOGGER.debug("didClose, uri: {}", textDocumentIdentifier.getUri());
 
-    // Clear stored document.
-    this.openFiles.remove(textDocumentIdentifier);
-
-    // Clear published diagnostics.
-    final String uri = textDocumentIdentifier.getUri();
-    final List<Diagnostic> diagnostics = Collections.emptyList();
-    final PublishDiagnosticsParams publishParams = new PublishDiagnosticsParams(uri, diagnostics);
-    final LanguageClient languageClient = this.languageServer.getLanguageClient();
-    languageClient.publishDiagnostics(publishParams);
+    clearDiagnostic(textDocumentIdentifier);
   }
 
   @Override
@@ -286,14 +301,14 @@ public class MagikTextDocumentService implements TextDocumentService {
 
   @Override
   public CompletableFuture<Hover> hover(final HoverParams params) {
-    final TextDocumentIdentifier textDocument = params.getTextDocument();
+    final TextDocumentIdentifier textDocumentIdentifier = params.getTextDocument();
     LOGGER.trace(
         "hover: uri: {}, position: {},{}",
-        textDocument.getUri(),
+        textDocumentIdentifier.getUri(),
         params.getPosition().getLine(),
         params.getPosition().getCharacter());
 
-    final MagikTypedFile magikFile = this.openFiles.get(textDocument);
+    final MagikTypedFile magikFile = this.openFiles.get(textDocumentIdentifier);
     final Position position = params.getPosition();
     return CompletableFuture.supplyAsync(
         () -> this.hoverProvider.provideHover(magikFile, position));

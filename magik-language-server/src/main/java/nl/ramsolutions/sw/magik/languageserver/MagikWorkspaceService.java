@@ -36,6 +36,7 @@ import org.eclipse.lsp4j.WorkspaceSymbolParams;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.lsp4j.jsonrpc.services.JsonRequest;
 import org.eclipse.lsp4j.services.LanguageClient;
+import org.eclipse.lsp4j.services.TextDocumentService;
 import org.eclipse.lsp4j.services.WorkspaceService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -312,6 +313,13 @@ public class MagikWorkspaceService implements WorkspaceService {
 
     // Run magik indexer.
     this.runMagikIndexer();
+
+    // reindex all open files (not only ones that are in the workspace folders)
+    TextDocumentService textDocumentService = this.languageServer.getTextDocumentService();
+    if (textDocumentService instanceof MagikTextDocumentService) {
+      MagikTextDocumentService magikTextDocumentService = (MagikTextDocumentService) textDocumentService;
+      magikTextDocumentService.reopenAllFiles();
+    }
   }
 
   @SuppressWarnings("IllegalCatch")

@@ -246,12 +246,12 @@ public class TypeStringResolver {
   }
 
   private void getMethodDefinitions(
-      final TypeString typeString, final Map<String, Set<MethodDefinition>> methodDefinitions) {
-    Stream.concat(Stream.of(typeString), this.getAllParents(typeString).stream())
+      final TypeString baseTypeString, final Map<String, Set<MethodDefinition>> methodDefinitions) {
+    Stream.concat(Stream.of(baseTypeString), this.getAllParents(baseTypeString).stream())
         .forEach(
-            typeStr -> {
+            innerTypeStr -> {
               this.definitionKeeper
-                  .getMethodDefinitions(typeString)
+                  .getMethodDefinitions(innerTypeStr)
                   .forEach(
                       methodDefinition -> {
                         final String methodName = methodDefinition.getMethodName();

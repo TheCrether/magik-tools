@@ -6,10 +6,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Properties;
+import java.util.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,14 +17,20 @@ public class MagikToolsProperties {
   private static final String DEFAULT_PROPERTIES_FILENAME = "magik-tools-defaults.properties";
   private static final String LIST_SEPARATOR = ",";
 
-  private final Properties properties = new Properties();
+  private static final Properties defaultProperties = new Properties();
+
+  private Properties properties = new Properties();
 
   public MagikToolsProperties() throws IOException {
-    this(
-        MagikToolsProperties.class
-            .getClassLoader()
-            .getResourceAsStream(DEFAULT_PROPERTIES_FILENAME));
-    LOGGER.debug("Read default configuration from: {}", DEFAULT_PROPERTIES_FILENAME);
+    if (MagikToolsProperties.defaultProperties.isEmpty()) {
+      LOGGER.debug(
+          "Read default configuration from: {}", MagikToolsProperties.DEFAULT_PROPERTIES_FILENAME);
+      MagikToolsProperties.defaultProperties.load(
+          MagikToolsProperties.class
+              .getClassLoader()
+              .getResourceAsStream(DEFAULT_PROPERTIES_FILENAME));
+    }
+    this.properties.putAll(defaultProperties);
   }
 
   public MagikToolsProperties(final Path path) throws IOException {
@@ -36,6 +39,8 @@ public class MagikToolsProperties {
   }
 
   private MagikToolsProperties(final InputStream stream) throws IOException {
+    this.properties = new Properties();
+    this.properties.putAll(MagikToolsProperties.defaultProperties);
     this.properties.load(stream);
   }
 

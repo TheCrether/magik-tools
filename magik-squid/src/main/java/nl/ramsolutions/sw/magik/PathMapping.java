@@ -4,13 +4,13 @@ import java.nio.file.Path;
 import java.util.Objects;
 
 public class PathMapping {
-  private final String from;
-  private final String to;
+  private final Path from;
+  private final Path to;
   private Boolean readOnly = false;
 
   public PathMapping(String from, String to) {
-    this.from = from;
-    this.to = to;
+    this.from = Path.of(from);
+    this.to = Path.of(to);
   }
 
   public PathMapping(String from, String to, Boolean readOnly) {
@@ -18,11 +18,11 @@ public class PathMapping {
     this.readOnly = readOnly;
   }
 
-  public String getFrom() {
+  public Path getFrom() {
     return from;
   }
 
-  public String getTo() {
+  public Path getTo() {
     return to;
   }
 
@@ -47,9 +47,11 @@ public class PathMapping {
 
   public Location mapLocation(Location location) {
     String path = location.getPath().toString();
-    if (path.startsWith(this.from)) {
+    if (path.startsWith(this.from.toString())) {
       location =
-          new Location(Path.of(path.replace(this.from, this.to)).toUri(), location.getRange());
+          new Location(
+              Path.of(path.replace(this.from.toString(), this.to.toString())).toUri(),
+              location.getRange());
     }
 
     return location;

@@ -5,17 +5,23 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import edu.umd.cs.findbugs.annotations.CheckForNull;
+
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+
 import nl.ramsolutions.sw.magik.PathMapping;
 
-/** Magik settings. */
+/**
+ * Magik settings.
+ */
 public final class MagikSettings { // NOSONAR
 
-  /** Singleton instance. */
+  /**
+   * Singleton instance.
+   */
   public static final MagikSettings INSTANCE = new MagikSettings();
 
   private static final String TOP_LEVEL = "magik";
@@ -38,8 +44,11 @@ public final class MagikSettings { // NOSONAR
 
   private List<PathMapping> pathMappings = null;
 
-  /** Private constructor. */
-  private MagikSettings() {}
+  /**
+   * Private constructor.
+   */
+  private MagikSettings() {
+  }
 
   /**
    * Set new settings.
@@ -89,10 +98,10 @@ public final class MagikSettings { // NOSONAR
 
     final List<String> paths = new ArrayList<>();
     libsDirs.forEach(
-        jsonElement -> {
-          final String path = jsonElement.getAsString();
-          paths.add(path);
-        });
+      jsonElement -> {
+        final String path = jsonElement.getAsString();
+        paths.add(path);
+      });
     return paths;
   }
 
@@ -119,10 +128,10 @@ public final class MagikSettings { // NOSONAR
 
     final List<String> paths = new ArrayList<>();
     typesDatabasePaths.forEach(
-        jsonElement -> {
-          final String path = jsonElement.getAsString();
-          paths.add(path);
-        });
+      jsonElement -> {
+        final String path = jsonElement.getAsString();
+        paths.add(path);
+      });
     return paths;
   }
 
@@ -330,20 +339,24 @@ public final class MagikSettings { // NOSONAR
   }
 
   public List<PathMapping> getPathMappings() {
-    if (this.pathMappings != null) {
-      return this.pathMappings;
+    if (this.pathMappings == null) {
+      final JsonObject magik = this.settings.getAsJsonObject(TOP_LEVEL);
+      if (magik == null) {
+        return null;
+      }
+
+      final JsonElement pathMappingElement = magik.get(PATH_MAPPING);
+      if (pathMappingElement == null) {
+        return null;
+      }
+
+      this.pathMappings =
+        pathMappingElement.getAsJsonArray().asList().stream()
+          .map(JsonElement::getAsJsonObject)
+          .map(el -> new PathMapping(el.get("from").getAsString(), el.get("to").getAsString()))
+          .toList();
     }
 
-    final JsonObject magik = this.settings.getAsJsonObject(TOP_LEVEL);
-    if (magik == null) {
-      return null;
-    }
-
-    final JsonElement pathMappingElement = magik.get(PATH_MAPPING);
-    if (pathMappingElement == null) {
-      return null;
-    }
-
-    return Arrays.asList(new Gson().fromJson(pathMappingElement, PathMapping[].class));
+    return this.pathMappings;
   }
 }
