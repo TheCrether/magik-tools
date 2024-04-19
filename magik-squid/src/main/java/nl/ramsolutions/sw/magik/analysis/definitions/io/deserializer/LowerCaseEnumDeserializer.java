@@ -2,11 +2,10 @@ package nl.ramsolutions.sw.magik.analysis.definitions.io.deserializer;
 
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
-import nl.ramsolutions.sw.magik.PathMapping;
-
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
+import nl.ramsolutions.sw.magik.PathMapping;
 
 public final class LowerCaseEnumDeserializer<E extends Enum<?>> extends BaseDeserializer<E> {
 
@@ -18,8 +17,7 @@ public final class LowerCaseEnumDeserializer<E extends Enum<?>> extends BaseDese
   }
 
   @Override
-  public E deserialize(JsonParser jp, DeserializationContext context)
-      throws IOException {
+  public E deserialize(JsonParser jp, DeserializationContext context) throws IOException {
     final String value = jp.getValueAsString().toUpperCase();
     if (clazz.isEnum()) {
       return Arrays.stream(clazz.getEnumConstants())

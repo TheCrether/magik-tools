@@ -321,6 +321,8 @@ public class MagikWorkspaceService implements WorkspaceService {
           (MagikTextDocumentService) textDocumentService;
       magikTextDocumentService.reopenAllFiles();
     }
+
+    this.languageServer.getLanguageClient().sendIndexed(); // tell vs code that the indexing is done
   }
 
   @SuppressWarnings("IllegalCatch")

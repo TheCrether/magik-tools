@@ -20,8 +20,8 @@ import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.eclipse.lsp4j.jsonrpc.Launcher;
 import org.eclipse.lsp4j.jsonrpc.MessageConsumer;
-import org.eclipse.lsp4j.launch.LSPLauncher;
 import org.eclipse.lsp4j.services.LanguageClient;
+import org.eclipse.lsp4j.services.LanguageServer;
 
 /** Main entry point. */
 public final class Main {
@@ -99,9 +99,9 @@ public final class Main {
     }
 
     final MagikLanguageServer server = new MagikLanguageServer();
-    Launcher<LanguageClient> launcher;
+    Launcher<MagikLanguageClient> launcher;
+    Function<MessageConsumer, MessageConsumer> wrapper = consumer -> (MessageConsumer) consumer;
     if (commandLine.hasOption(OPTION_NET)) {
-      Function<MessageConsumer, MessageConsumer> wrapper = consumer -> (MessageConsumer) consumer;
       launcher =
           createSocketLauncher(
               server,
@@ -109,7 +109,14 @@ public final class Main {
               Executors.newCachedThreadPool(),
               wrapper);
     } else {
-      launcher = LSPLauncher.createServerLauncher(server, System.in, System.out);
+      launcher =
+          Launcher.createIoLauncher(
+              server,
+              MagikLanguageClient.class,
+              System.in,
+              System.out,
+              Executors.newCachedThreadPool(),
+              wrapper);
     }
 
     assert launcher != null;
@@ -119,8 +126,8 @@ public final class Main {
     launcher.startListening();
   }
 
-  static <T> Launcher<T> createSocketLauncher(
-      Object localService,
+  static Launcher<MagikLanguageClient> createSocketLauncher(
+      LanguageServer languageServer,
       SocketAddress socketAddress,
       ExecutorService executorService,
       Function<MessageConsumer, MessageConsumer> wrapper)
@@ -131,8 +138,8 @@ public final class Main {
     try {
       socketChannel = serverSocket.accept().get();
       return Launcher.createIoLauncher(
-          localService,
-          (Class<T>) LanguageClient.class,
+          languageServer,
+          MagikLanguageClient.class,
           Channels.newInputStream(socketChannel),
           Channels.newOutputStream(socketChannel),
           executorService,

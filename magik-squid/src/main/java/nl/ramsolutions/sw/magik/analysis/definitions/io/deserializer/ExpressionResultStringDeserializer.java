@@ -3,15 +3,14 @@ package nl.ramsolutions.sw.magik.analysis.definitions.io.deserializer;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonNode;
-import nl.ramsolutions.sw.magik.PathMapping;
-import nl.ramsolutions.sw.magik.analysis.typing.ExpressionResultString;
-import nl.ramsolutions.sw.magik.analysis.typing.TypeString;
-import nl.ramsolutions.sw.magik.parser.TypeStringParser;
-
 import java.io.IOException;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.StreamSupport;
+import nl.ramsolutions.sw.magik.PathMapping;
+import nl.ramsolutions.sw.magik.analysis.typing.ExpressionResultString;
+import nl.ramsolutions.sw.magik.analysis.typing.TypeString;
+import nl.ramsolutions.sw.magik.parser.TypeStringParser;
 
 public final class ExpressionResultStringDeserializer
     extends BaseDeserializer<ExpressionResultString> {

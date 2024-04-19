@@ -34,7 +34,7 @@ public class MagikLanguageServer implements LanguageServer, LanguageClientAware 
   private final MagikTextDocumentService magikTextDocumentService;
   private final MagikWorkspaceService magikWorkspaceService;
   private final MagikNotebookDocumentService magikNotebookDocumentService;
-  private LanguageClient languageClient;
+  private MagikLanguageClient languageClient;
 
   /**
    * Constructor.
@@ -142,7 +142,7 @@ public class MagikLanguageServer implements LanguageServer, LanguageClientAware 
 
   @Override
   public void connect(final LanguageClient newLanguageClient) {
-    this.languageClient = newLanguageClient;
+    this.languageClient = (MagikLanguageClient) newLanguageClient;
   }
 
   /**
@@ -150,7 +150,7 @@ public class MagikLanguageServer implements LanguageServer, LanguageClientAware 
    *
    * @return Language client.
    */
-  public LanguageClient getLanguageClient() {
+  public MagikLanguageClient getLanguageClient() {
     return this.languageClient;
   }
 

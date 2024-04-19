@@ -3,7 +3,6 @@ package nl.ramsolutions.sw.magik.analysis.definitions.io.deserializer;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.google.gson.JsonParseException;
 import java.io.IOException;
 import java.util.List;
 import nl.ramsolutions.sw.definitions.ModuleDefinition;
