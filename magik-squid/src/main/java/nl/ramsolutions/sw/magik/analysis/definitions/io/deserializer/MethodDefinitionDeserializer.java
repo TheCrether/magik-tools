@@ -1,10 +1,10 @@
 package nl.ramsolutions.sw.magik.analysis.definitions.io.deserializer;
 
-import com.google.gson.JsonDeserializationContext;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.google.gson.JsonParseException;
-import java.lang.reflect.Type;
+import java.io.IOException;
 import java.util.List;
 import java.util.Set;
 import nl.ramsolutions.sw.magik.Location;
@@ -19,43 +19,40 @@ public class MethodDefinitionDeserializer extends DefinitionDeserializer<MethodD
   }
 
   @Override
-  public MethodDefinition deserialize(
-      JsonElement json, Type type, JsonDeserializationContext context) throws JsonParseException {
-    JsonObject jObj = json.getAsJsonObject();
+  public MethodDefinition deserialize(JsonParser jp, DeserializationContext context)
+      throws JsonParseException, IOException {
+    JsonNode node = jp.getCodec().readTree(jp);
 
-    Definition base = getDefinition(jObj);
+    Definition base = getDefinition(node);
 
-    TypeString typeName = getTypeString(context, jObj, "type_n");
-    String methodName = jObj.get("m_name").getAsString();
+    TypeString typeName = getTypeString(context, node, "type_n");
+    String methodName = getString(node, "m_name");
 
     Location loc = base.getLocation();
-    if (loc != null && type instanceof Class) {
-      Definition parsed = getParsedDefinition(loc, methodName, (Class<?>) type);
+    if (loc != null) {
+      Definition parsed = getParsedDefinition(loc, methodName, MethodDefinition.class);
       if (parsed != null) {
         loc = parsed.getLocation();
       }
     }
 
     Set<MethodDefinition.Modifier> modifiers =
-        getSet(context, jObj, "mods", MethodDefinition.Modifier.class);
+        getSet(context, node, "mods", MethodDefinition.Modifier.class);
     List<ParameterDefinition> parameters =
-        getList(context, jObj, "params", ParameterDefinition.class);
+        getList(context, node, "params", ParameterDefinition.class);
 
     ParameterDefinition assignmentParameter =
-        get(context, jObj, "a_params", ParameterDefinition.class);
+        get(context, node, "a_params", ParameterDefinition.class);
 
-    Set<String> topics = getSet(context, jObj, "top", String.class);
+    Set<String> topics = getSet(context, node, "top", String.class);
 
-    ExpressionResultString returnTypes =
-        get(context, jObj, "ret", ExpressionResultString.class);
-    ExpressionResultString loopTypes =
-        get(context, jObj, "loop", ExpressionResultString.class);
+    ExpressionResultString returnTypes = get(context, node, "ret", ExpressionResultString.class);
+    ExpressionResultString loopTypes = get(context, node, "loop", ExpressionResultString.class);
 
-    Set<GlobalUsage> usedGlobals = getSet(context, jObj, "u_globals", GlobalUsage.class);
-    Set<MethodUsage> usedMethods = getSet(context, jObj, "u_methods", MethodUsage.class);
-    Set<SlotUsage> usedSlots = getSet(context, jObj, "u_slots", SlotUsage.class);
-    Set<ConditionUsage> usedConditions =
-        getSet(context, jObj, "u_conds", ConditionUsage.class);
+    Set<GlobalUsage> usedGlobals = getSet(context, node, "u_globals", GlobalUsage.class);
+    Set<MethodUsage> usedMethods = getSet(context, node, "u_methods", MethodUsage.class);
+    Set<SlotUsage> usedSlots = getSet(context, node, "u_slots", SlotUsage.class);
+    Set<ConditionUsage> usedConditions = getSet(context, node, "u_conds", ConditionUsage.class);
 
     return new MethodDefinition(
         loc,

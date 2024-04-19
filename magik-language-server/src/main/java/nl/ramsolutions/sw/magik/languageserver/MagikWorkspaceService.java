@@ -317,7 +317,8 @@ public class MagikWorkspaceService implements WorkspaceService {
     // reindex all open files (not only ones that are in the workspace folders)
     TextDocumentService textDocumentService = this.languageServer.getTextDocumentService();
     if (textDocumentService instanceof MagikTextDocumentService) {
-      MagikTextDocumentService magikTextDocumentService = (MagikTextDocumentService) textDocumentService;
+      MagikTextDocumentService magikTextDocumentService =
+          (MagikTextDocumentService) textDocumentService;
       magikTextDocumentService.reopenAllFiles();
     }
   }

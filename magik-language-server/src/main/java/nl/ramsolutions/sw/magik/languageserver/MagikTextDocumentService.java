@@ -186,7 +186,7 @@ public class MagikTextDocumentService implements TextDocumentService {
     final URI uri = URI.create(uriStr);
     final TextDocumentIdentifier textDocumentIdentifier = new TextDocumentIdentifier(uriStr);
     final MagikTypedFile openFile =
-      new MagikTypedFile(this.analysisConfiguration, uri, text, this.definitionKeeper);
+        new MagikTypedFile(this.analysisConfiguration, uri, text, this.definitionKeeper);
     this.openFiles.put(textDocumentIdentifier, openFile);
 
     // Publish diagnostics to client.
@@ -195,7 +195,7 @@ public class MagikTextDocumentService implements TextDocumentService {
 
   public void reopenAllFiles() {
     Map<TextDocumentIdentifier, MagikTypedFile> openFilesCopy = new HashMap<>(this.openFiles);
-//    this.clearDiagnostics(); // TODO if this is even necessary
+    //    this.clearDiagnostics(); // TODO if this is even necessary
 
     for (MagikTypedFile openFile : openFilesCopy.values()) {
       this.openFile(openFile.getUri().toString(), openFile.getSource());

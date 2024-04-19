@@ -33,6 +33,7 @@ import nl.ramsolutions.sw.magik.analysis.typing.TypeString;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+// TODO rewrite this to use jackson and serializers
 /** JSON-line TypeKeeper writer. */
 public final class JsonDefinitionWriter {
 

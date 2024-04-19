@@ -1,10 +1,10 @@
 package nl.ramsolutions.sw.magik.analysis.definitions.io.deserializer;
 
-import com.google.gson.JsonDeserializationContext;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.google.gson.JsonParseException;
-import java.lang.reflect.Type;
+import java.io.IOException;
 import java.util.List;
 import nl.ramsolutions.sw.magik.PathMapping;
 import nl.ramsolutions.sw.magik.analysis.definitions.Definition;
@@ -16,14 +16,14 @@ public class PackageDefinitionDeserializer extends DefinitionDeserializer<Packag
   }
 
   @Override
-  public PackageDefinition deserialize(
-      JsonElement json, Type type, JsonDeserializationContext context) throws JsonParseException {
-    JsonObject jObj = json.getAsJsonObject();
+  public PackageDefinition deserialize(JsonParser jp, DeserializationContext context)
+      throws IOException {
+    JsonNode node = jp.getCodec().readTree(jp);
 
-    Definition base = getDefinition(jObj);
+    Definition base = getDefinition(node);
 
-    String name = getString(jObj, "name");
-    List<String> uses = getList(context, jObj, "uses", String.class);
+    String name = getString(node, "name");
+    List<String> uses = getList(context, node, "uses", String.class);
 
     return new PackageDefinition(
         base.getLocation(), base.getModuleName(), base.getDoc(), base.getNode(), name, uses);

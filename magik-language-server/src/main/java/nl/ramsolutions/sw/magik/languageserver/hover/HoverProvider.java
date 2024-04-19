@@ -106,7 +106,6 @@ public class HoverProvider {
       }
     }
 
-//    final String content = builder.isEmpty() ? "Undefined" : builder.toString();
     final String content = builder.toString();
     final MarkupContent contents = new MarkupContent(MarkupKind.MARKDOWN, content);
     final Range range = new Range(hoveredTokenNode);

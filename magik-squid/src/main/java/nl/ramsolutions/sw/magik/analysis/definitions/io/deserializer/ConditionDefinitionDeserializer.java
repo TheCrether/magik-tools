@@ -1,14 +1,14 @@
 package nl.ramsolutions.sw.magik.analysis.definitions.io.deserializer;
 
-import com.google.gson.JsonDeserializationContext;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParseException;
-import java.lang.reflect.Type;
-import java.util.List;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.JsonNode;
 import nl.ramsolutions.sw.magik.PathMapping;
 import nl.ramsolutions.sw.magik.analysis.definitions.ConditionDefinition;
 import nl.ramsolutions.sw.magik.analysis.definitions.Definition;
+
+import java.io.IOException;
+import java.util.List;
 
 public class ConditionDefinitionDeserializer extends DefinitionDeserializer<ConditionDefinition> {
   public ConditionDefinitionDeserializer(List<PathMapping> mappings) {
@@ -16,15 +16,15 @@ public class ConditionDefinitionDeserializer extends DefinitionDeserializer<Cond
   }
 
   @Override
-  public ConditionDefinition deserialize(
-      JsonElement json, Type type, JsonDeserializationContext context) throws JsonParseException {
-    JsonObject jObj = json.getAsJsonObject();
+  public ConditionDefinition deserialize(JsonParser jp, DeserializationContext context)
+      throws IOException {
+    JsonNode node = jp.getCodec().readTree(jp);
 
-    Definition base = getDefinition(jObj);
+    Definition base = getDefinition(node);
 
-    String name = getString(jObj, "name");
-    String parent = nullableString(jObj, "par");
-    List<String> dataNames = getList(context, jObj, "d_names", String.class);
+    String name = getString(node, "name");
+    String parent = nullableString(node, "par");
+    List<String> dataNames = getList(context, node, "d_names", String.class);
 
     return new ConditionDefinition(
         base.getLocation(),

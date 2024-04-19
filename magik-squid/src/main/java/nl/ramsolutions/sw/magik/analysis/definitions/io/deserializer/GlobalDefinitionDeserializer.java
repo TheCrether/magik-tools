@@ -1,15 +1,15 @@
 package nl.ramsolutions.sw.magik.analysis.definitions.io.deserializer;
 
-import com.google.gson.JsonDeserializationContext;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParseException;
-import java.lang.reflect.Type;
-import java.util.List;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.JsonNode;
 import nl.ramsolutions.sw.magik.PathMapping;
 import nl.ramsolutions.sw.magik.analysis.definitions.Definition;
 import nl.ramsolutions.sw.magik.analysis.definitions.GlobalDefinition;
 import nl.ramsolutions.sw.magik.analysis.typing.TypeString;
+
+import java.io.IOException;
+import java.util.List;
 
 public class GlobalDefinitionDeserializer extends DefinitionDeserializer<GlobalDefinition> {
   public GlobalDefinitionDeserializer(List<PathMapping> mappings) {
@@ -17,14 +17,14 @@ public class GlobalDefinitionDeserializer extends DefinitionDeserializer<GlobalD
   }
 
   @Override
-  public GlobalDefinition deserialize(
-      JsonElement json, Type type, JsonDeserializationContext context) throws JsonParseException {
-    JsonObject jObj = json.getAsJsonObject();
+  public GlobalDefinition deserialize(JsonParser jp, DeserializationContext context)
+      throws IOException {
+    JsonNode node = jp.getCodec().readTree(jp);
 
-    Definition base = getDefinition(jObj);
+    Definition base = getDefinition(node);
 
-    TypeString typeName = getTypeString(context, jObj, "type_n");
-    TypeString aliasedTypeName = getTypeString(context, jObj, "alias_type_n");
+    TypeString typeName = getTypeString(context, node, "type_n");
+    TypeString aliasedTypeName = getTypeString(context, node, "alias_type_n");
 
     return new GlobalDefinition(
         base.getLocation(),

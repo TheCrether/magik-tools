@@ -1,10 +1,10 @@
 package nl.ramsolutions.sw.magik.analysis.definitions.io.deserializer;
 
-import com.google.gson.JsonDeserializationContext;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.google.gson.JsonParseException;
-import java.lang.reflect.Type;
+import java.io.IOException;
 import java.util.List;
 import nl.ramsolutions.sw.definitions.ProductDefinition;
 import nl.ramsolutions.sw.magik.Location;
@@ -16,21 +16,21 @@ public class ProductDefinitionDeserializer extends BaseDeserializer<ProductDefin
   }
 
   @Override
-  public ProductDefinition deserialize(
-      JsonElement json, Type type, JsonDeserializationContext context) throws JsonParseException {
-    JsonObject jObj = json.getAsJsonObject();
+  public ProductDefinition deserialize(JsonParser jp, DeserializationContext context)
+      throws IOException {
+    JsonNode node = jp.getCodec().readTree(jp);
 
-    String name = getString(jObj, "name");
-    String version = nullableString(jObj, "ver");
-    String versionComment = nullableString(jObj, "ver_com");
+    String name = getString(node, "name");
+    String version = nullableString(node, "ver");
+    String versionComment = nullableString(node, "ver_com");
 
-    Location location = getLocation(jObj);
+    Location location = getLocation(node);
 
     ProductDefinition def = new ProductDefinition(location, name, version, versionComment);
 
-    getList(context, jObj, "children", String.class).forEach(def::addChild);
-    getList(context, jObj, "mods", String.class).forEach(def::addModule);
-    getList(context, jObj, "req", String.class).forEach(def::addRequired);
+    getList(context, node, "children", String.class).forEach(def::addChild);
+    getList(context, node, "mods", String.class).forEach(def::addModule);
+    getList(context, node, "req", String.class).forEach(def::addRequired);
 
     return def;
   }

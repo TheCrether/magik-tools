@@ -1,10 +1,9 @@
 package nl.ramsolutions.sw.magik.analysis.definitions.io.deserializer;
 
-import com.google.gson.JsonDeserializationContext;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParseException;
-import java.lang.reflect.Type;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.JsonNode;
+import java.io.IOException;
 import java.util.List;
 import nl.ramsolutions.sw.magik.PathMapping;
 import nl.ramsolutions.sw.magik.analysis.definitions.BinaryOperatorDefinition;
@@ -18,17 +17,17 @@ public class BinaryOperatorDefinitionDeserializer
   }
 
   @Override
-  public BinaryOperatorDefinition deserialize(
-      JsonElement json, Type type, JsonDeserializationContext context) throws JsonParseException {
-    JsonObject jObj = json.getAsJsonObject();
+  public BinaryOperatorDefinition deserialize(JsonParser jp, DeserializationContext context)
+      throws IOException {
+    JsonNode node = jp.getCodec().readTree(jp);
 
-    Definition base = getDefinition(jObj);
+    Definition base = getDefinition(node);
 
-    String operator = getString(jObj, "operator");
+    String operator = getString(node, "operator");
 
-    TypeString lhsTypeName = getTypeString(context, jObj, "lhs_type_name");
-    TypeString rhsTypeName = getTypeString(context, jObj, "rhs_type_name");
-    TypeString resultTypeName = getTypeString(context, jObj, "result_type_name");
+    TypeString lhsTypeName = getTypeString(context, node, "lhs_type_name");
+    TypeString rhsTypeName = getTypeString(context, node, "rhs_type_name");
+    TypeString resultTypeName = getTypeString(context, node, "result_type_name");
 
     return new BinaryOperatorDefinition(
         base.getLocation(),

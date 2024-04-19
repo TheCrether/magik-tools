@@ -1,10 +1,10 @@
 package nl.ramsolutions.sw.magik.analysis.definitions.io.deserializer;
 
-import com.google.gson.JsonDeserializationContext;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.google.gson.JsonParseException;
-import java.lang.reflect.Type;
+import java.io.IOException;
 import java.util.List;
 import nl.ramsolutions.sw.definitions.ModuleDefinition;
 import nl.ramsolutions.sw.magik.Location;
@@ -16,15 +16,16 @@ public class ModuleDefinitionDeserializer extends BaseDeserializer<ModuleDefinit
   }
 
   @Override
-  public ModuleDefinition deserialize(
-      JsonElement json, Type type, JsonDeserializationContext context) throws JsonParseException {
-    JsonObject jObj = json.getAsJsonObject();
-    String name = jObj.get("name").getAsString();
-    String baseVersion = jObj.get("base_ver").getAsString();
-    String currentVersion = nullableString(jObj, "cur_ver");
-    List<String> requireds = getList(context, jObj, "req", String.class);
+  public ModuleDefinition deserialize(JsonParser jp, DeserializationContext context)
+      throws IOException {
+    JsonNode node = jp.getCodec().readTree(jp);
 
-    Location location = getLocation(jObj);
+    String name = getString(node, "name");
+    String baseVersion = getString(node, "base_ver");
+    String currentVersion = nullableString(node, "cur_ver");
+    List<String> requireds = getList(context, node, "req", String.class);
+
+    Location location = getLocation(node);
 
     return new ModuleDefinition(location, name, baseVersion, currentVersion, requireds);
   }

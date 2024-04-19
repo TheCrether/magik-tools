@@ -1,14 +1,17 @@
 package nl.ramsolutions.sw.magik.analysis.definitions.io.deserializer;
 
-import com.google.gson.JsonDeserializationContext;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonParseException;
-import java.lang.reflect.Type;
-import java.util.List;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.JsonNode;
 import nl.ramsolutions.sw.magik.PathMapping;
 import nl.ramsolutions.sw.magik.analysis.typing.ExpressionResultString;
 import nl.ramsolutions.sw.magik.analysis.typing.TypeString;
 import nl.ramsolutions.sw.magik.parser.TypeStringParser;
+
+import java.io.IOException;
+import java.util.List;
+import java.util.Objects;
+import java.util.stream.StreamSupport;
 
 public final class ExpressionResultStringDeserializer
     extends BaseDeserializer<ExpressionResultString> {
@@ -18,16 +21,17 @@ public final class ExpressionResultStringDeserializer
   }
 
   @Override
-  public ExpressionResultString deserialize(
-      final JsonElement json, final Type typeOfT, final JsonDeserializationContext context)
-      throws JsonParseException {
-    if (json.isJsonPrimitive()
-        && json.getAsString().equals(ExpressionResultString.UNDEFINED_SERIALIZED_NAME)) {
+  public ExpressionResultString deserialize(JsonParser jp, DeserializationContext context)
+      throws IOException {
+    JsonNode json = jp.getCodec().readTree(jp);
+    if (asString(json) != null
+        && json.asText().equals(ExpressionResultString.UNDEFINED_SERIALIZED_NAME)) {
       return ExpressionResultString.UNDEFINED;
-    } else if (json.isJsonArray()) {
+    } else if (json.isArray()) {
       final List<TypeString> types =
-          json.getAsJsonArray().asList().stream()
-              .map(JsonElement::getAsString)
+          StreamSupport.stream(json.spliterator(), false)
+              .map(BaseDeserializer::asString)
+              .filter(Objects::nonNull)
               .map(TypeStringParser::parseTypeString)
               .toList();
       return new ExpressionResultString(types);

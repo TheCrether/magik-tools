@@ -1,6 +1,6 @@
 package nl.ramsolutions.sw.magik.analysis.definitions.io.deserializer;
 
-import com.google.gson.JsonObject;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.sonar.sslr.api.AstNode;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
@@ -48,8 +48,8 @@ public abstract class DefinitionDeserializer<T> extends BaseDeserializer<T> {
     }
   }
 
-  public Definition getDefinition(JsonObject jObj) {
+  public Definition getDefinition(JsonNode node) {
     return new DeserializedDefinition(
-        getLocation(jObj), nullableString(jObj, "mod_n"), nullableString(jObj, "doc"), null);
+        getLocation(node), nullableString(node, "mod_n"), nullableString(node, "doc"), null);
   }
 }

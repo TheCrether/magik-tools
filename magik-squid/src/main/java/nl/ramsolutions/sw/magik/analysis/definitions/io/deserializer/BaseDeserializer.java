@@ -1,14 +1,15 @@
 package nl.ramsolutions.sw.magik.analysis.definitions.io.deserializer;
 
-import com.google.gson.JsonDeserializationContext;
-import com.google.gson.JsonDeserializer;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 import javax.annotation.Nullable;
 import nl.ramsolutions.sw.magik.Location;
 import nl.ramsolutions.sw.magik.MagikFile;
@@ -16,49 +17,72 @@ import nl.ramsolutions.sw.magik.PathMapping;
 import nl.ramsolutions.sw.magik.analysis.definitions.Definition;
 import nl.ramsolutions.sw.magik.analysis.typing.TypeString;
 
-public abstract class BaseDeserializer<T> implements JsonDeserializer<T> {
+public abstract class BaseDeserializer<T> extends StdDeserializer<T> {
   private static HashMap<Path, List<Definition>> parsedFiles = new HashMap<>();
   private static Set<Path> erroredFiles = new HashSet<>();
 
   private final List<PathMapping> mappings;
 
   public BaseDeserializer(List<PathMapping> mappings) {
+    super((Class<?>) null);
     this.mappings = mappings;
   }
 
   @Nullable
-  public static String nullableString(JsonObject obj, String field) {
-    JsonElement strObj = obj.get(field);
-    if (strObj == null || strObj.isJsonNull()) {
-      return null;
-    }
-    return strObj.getAsString();
+  public static String nullableString(JsonNode node, String field) {
+    JsonNode strNode = node.get(field);
+    return asString(strNode);
   }
 
-  public static Stream<JsonElement> getStream(JsonObject obj, String field) {
-    JsonElement listObj = obj.get(field);
-    if (listObj == null || listObj.isJsonNull()) {
+  @Nullable
+  public static String asString(JsonNode node) {
+    if (node == null || node.isNull() || node.isMissingNode()) {
+      return null;
+    }
+    return node.asText();
+  }
+
+  public static Stream<JsonNode> getStream(JsonNode node, String field) {
+    JsonNode arrNode = node.get(field);
+    if (arrNode == null || !arrNode.isArray()) {
       return Stream.empty();
     }
-    return listObj.getAsJsonArray().asList().stream();
+
+    return StreamSupport.stream(arrNode.spliterator(), false);
   }
 
   public static <X> List<X> getList(
-      JsonDeserializationContext context, JsonObject obj, String field, Class<X> clazz) {
-    return getStream(obj, field).map(e -> context.<X>deserialize(e, clazz)).toList();
+      DeserializationContext context, JsonNode node, String field, Class<X> clazz) {
+    return getStream(node, field)
+        .map(
+            e -> {
+              try {
+                return context.readTreeAsValue(e, clazz);
+              } catch (IOException ex) {
+                throw new RuntimeException(ex);
+              }
+            })
+        .toList();
   }
 
   public static <X> Set<X> getSet(
-      JsonDeserializationContext context, JsonObject obj, String field, Class<X> clazz) {
-    return getStream(obj, field)
-        .map(e -> context.<X>deserialize(e, clazz))
+      DeserializationContext context, JsonNode node, String field, Class<X> clazz) {
+    return getStream(node, field)
+        .map(
+            e -> {
+              try {
+                return context.readTreeAsValue(e, clazz);
+              } catch (IOException ex) {
+                throw new RuntimeException(ex);
+              }
+            })
         .collect(Collectors.toSet());
   }
 
   @Nullable
-  public Location getLocation(JsonObject obj) {
+  public Location getLocation(JsonNode node) {
     Location location = null;
-    String source = nullableString(obj, "src");
+    String source = nullableString(node, "src");
     if (source != null) {
       Path path = Path.of(source);
       location = Location.validLocation(new Location(path.toUri()), this.mappings);
@@ -66,18 +90,27 @@ public abstract class BaseDeserializer<T> implements JsonDeserializer<T> {
     return location;
   }
 
-  public static String getString(JsonObject obj, String field) {
-    return obj.get(field).getAsString();
+  public static String getString(JsonNode node, String field) {
+    JsonNode strNode = node.get(field);
+    String str = asString(strNode);
+    if (str == null) {
+      throw new RuntimeException("Missing required field " + field);
+    }
+    return str;
   }
 
   public static TypeString getTypeString(
-      JsonDeserializationContext context, JsonObject obj, String field) {
-    return get(context, obj, field, TypeString.class);
+      DeserializationContext context, JsonNode node, String field) {
+    return get(context, node, field, TypeString.class);
   }
 
   public static <X> X get(
-      JsonDeserializationContext context, JsonObject obj, String field, Class<X> clazz) {
-    return context.deserialize(obj.get(field), clazz);
+      DeserializationContext context, JsonNode node, String field, Class<X> clazz) {
+    try {
+      return context.readTreeAsValue(node.get(field), clazz);
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   public static List<Definition> getDefinitions(Location location) {

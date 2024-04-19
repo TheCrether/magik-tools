@@ -1,10 +1,10 @@
 package nl.ramsolutions.sw.magik.analysis.definitions.io.deserializer;
 
-import com.google.gson.JsonDeserializationContext;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.google.gson.JsonParseException;
-import java.lang.reflect.Type;
+import java.io.IOException;
 import java.util.List;
 import java.util.Set;
 import nl.ramsolutions.sw.magik.PathMapping;
@@ -20,24 +20,22 @@ public class ProcedureDefinitionDeserializer extends DefinitionDeserializer<Proc
   }
 
   @Override
-  public ProcedureDefinition deserialize(
-      JsonElement json, Type type, JsonDeserializationContext context) throws JsonParseException {
-    JsonObject jObj = json.getAsJsonObject();
+  public ProcedureDefinition deserialize(JsonParser jp, DeserializationContext context)
+      throws IOException {
+    JsonNode node = jp.getCodec().readTree(jp);
 
-    Definition base = getDefinition(jObj);
+    Definition base = getDefinition(node);
 
     Set<ProcedureDefinition.Modifier> modifiers =
-        getSet(context, jObj, "mods", ProcedureDefinition.Modifier.class);
-    TypeString typeName = getTypeString(context, jObj, "type_n");
+        getSet(context, node, "mods", ProcedureDefinition.Modifier.class);
+    TypeString typeName = getTypeString(context, node, "type_n");
 
-    String procedureName = nullableString(jObj, "proc_name");
+    String procedureName = nullableString(node, "proc_name");
 
     List<ParameterDefinition> parameters =
-        getList(context, jObj, "params", ParameterDefinition.class);
-    ExpressionResultString returnTypes =
-        get(context, jObj, "ret", ExpressionResultString.class);
-    ExpressionResultString loopTypes =
-        get(context, jObj, "loop", ExpressionResultString.class);
+        getList(context, node, "params", ParameterDefinition.class);
+    ExpressionResultString returnTypes = get(context, node, "ret", ExpressionResultString.class);
+    ExpressionResultString loopTypes = get(context, node, "loop", ExpressionResultString.class);
 
     return new ProcedureDefinition(
         base.getLocation(),
