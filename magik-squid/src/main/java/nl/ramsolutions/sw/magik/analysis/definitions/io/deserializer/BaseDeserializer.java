@@ -90,11 +90,19 @@ public abstract class BaseDeserializer<T> extends StdDeserializer<T> {
     return location;
   }
 
-  public static String getString(JsonNode node, String field) {
+  public static String getStringField(JsonNode node, String field) {
     JsonNode strNode = node.get(field);
-    String str = asString(strNode);
-    if (str == null) {
+    try {
+      return getString(strNode);
+    } catch (IllegalStateException ex) {
       throw new RuntimeException("Missing required field " + field);
+    }
+  }
+
+  public static String getString(JsonNode node) {
+    String str = asString(node);
+    if (str == null) {
+      throw new IllegalStateException("Missing required string node " + node);
     }
     return str;
   }

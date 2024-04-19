@@ -17,9 +17,9 @@ public class ProductDefinitionDeserializer extends BaseDeserializer<ProductDefin
   @Override
   public ProductDefinition deserialize(JsonParser jp, DeserializationContext context)
       throws IOException {
-    JsonNode node = jp.getCodec().readTree(jp);
+    JsonNode node = jp.readValueAsTree();
 
-    String name = getString(node, "name");
+    String name = getStringField(node, "name");
     String version = nullableString(node, "ver");
     String versionComment = nullableString(node, "ver_com");
 

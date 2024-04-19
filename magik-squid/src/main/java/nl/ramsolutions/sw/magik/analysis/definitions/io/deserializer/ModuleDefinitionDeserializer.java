@@ -17,10 +17,10 @@ public class ModuleDefinitionDeserializer extends BaseDeserializer<ModuleDefinit
   @Override
   public ModuleDefinition deserialize(JsonParser jp, DeserializationContext context)
       throws IOException {
-    JsonNode node = jp.getCodec().readTree(jp);
+    JsonNode node = jp.readValueAsTree();
 
-    String name = getString(node, "name");
-    String baseVersion = getString(node, "base_ver");
+    String name = getStringField(node, "name");
+    String baseVersion = getStringField(node, "base_ver");
     String currentVersion = nullableString(node, "cur_ver");
     List<String> requireds = getList(context, node, "req", String.class);
 

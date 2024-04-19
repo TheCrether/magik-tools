@@ -17,11 +17,11 @@ public class PackageDefinitionDeserializer extends DefinitionDeserializer<Packag
   @Override
   public PackageDefinition deserialize(JsonParser jp, DeserializationContext context)
       throws IOException {
-    JsonNode node = jp.getCodec().readTree(jp);
+    JsonNode node = jp.readValueAsTree();
 
     Definition base = getDefinition(node);
 
-    String name = getString(node, "name");
+    String name = getStringField(node, "name");
     List<String> uses = getList(context, node, "uses", String.class);
 
     return new PackageDefinition(

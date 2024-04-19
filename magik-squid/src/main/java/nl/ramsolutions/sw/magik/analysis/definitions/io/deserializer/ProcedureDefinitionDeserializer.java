@@ -21,7 +21,7 @@ public class ProcedureDefinitionDeserializer extends DefinitionDeserializer<Proc
   @Override
   public ProcedureDefinition deserialize(JsonParser jp, DeserializationContext context)
       throws IOException {
-    JsonNode node = jp.getCodec().readTree(jp);
+    JsonNode node = jp.readValueAsTree();
 
     Definition base = getDefinition(node);
 

@@ -16,8 +16,8 @@ public final class TypeStringDeserializer extends BaseDeserializer<TypeString> {
 
   @Override
   public TypeString deserialize(
-      JsonParser jsonParser, DeserializationContext deserializationContext) throws IOException {
-    final String identifier = jsonParser.getValueAsString();
+      JsonParser jp, DeserializationContext context) throws IOException {
+    final String identifier = getString(jp.readValueAsTree());
     return TypeStringParser.parseTypeString(identifier);
   }
 }

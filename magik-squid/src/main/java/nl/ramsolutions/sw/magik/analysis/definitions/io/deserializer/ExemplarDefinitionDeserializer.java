@@ -21,8 +21,8 @@ public class ExemplarDefinitionDeserializer extends BaseDeserializer<ExemplarDef
   @Override
   public ExemplarDefinition deserialize(JsonParser jp, DeserializationContext context)
       throws IOException {
-    JsonNode node = jp.getCodec().readTree(jp);
-    String moduleName = nullableString(node, "mod_name");
+    JsonNode node = jp.readValueAsTree();
+    String moduleName = nullableString(node, "mod_n");
     String doc = nullableString(node, "doc");
     Sort sort = get(context, node, "sort", ExemplarDefinition.Sort.class);
     TypeString typeName = getTypeString(context, node, "type_n");

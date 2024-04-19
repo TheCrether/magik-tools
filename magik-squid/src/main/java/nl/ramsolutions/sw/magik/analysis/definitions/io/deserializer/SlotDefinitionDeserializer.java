@@ -19,10 +19,10 @@ public class SlotDefinitionDeserializer extends BaseDeserializer<SlotDefinition>
   public SlotDefinition deserialize(JsonParser jsonParser, DeserializationContext context)
       throws IOException {
     JsonNode node = jsonParser.getCodec().readTree(jsonParser);
-    String moduleName = nullableString(node, "mod_name");
+    String moduleName = nullableString(node, "mod_n");
     String doc = nullableString(node, "doc");
-    TypeString typeName = getTypeString(context, node, "type_name");
-    String name = getString(node, "name");
+    TypeString typeName = getTypeString(context, node, "type_n");
+    String name = getStringField(node, "name");
 
     Location location = getLocation(node);
 

@@ -19,11 +19,11 @@ public class BinaryOperatorDefinitionDeserializer
   @Override
   public BinaryOperatorDefinition deserialize(JsonParser jp, DeserializationContext context)
       throws IOException {
-    JsonNode node = jp.getCodec().readTree(jp);
+    JsonNode node = jp.readValueAsTree();
 
     Definition base = getDefinition(node);
 
-    String operator = getString(node, "operator");
+    String operator = getStringField(node, "operator");
 
     TypeString lhsTypeName = getTypeString(context, node, "lhs_type_name");
     TypeString rhsTypeName = getTypeString(context, node, "rhs_type_name");

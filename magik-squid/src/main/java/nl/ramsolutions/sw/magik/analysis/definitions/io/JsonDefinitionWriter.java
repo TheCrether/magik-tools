@@ -134,8 +134,7 @@ public final class JsonDefinitionWriter {
             definition -> {
               final Gson gson = this.buildGson();
               final JsonObject instruction = (JsonObject) gson.toJsonTree(definition);
-              instruction.addProperty(
-                  Instruction.INSTRUCTION.getValue(), Instruction.PRODUCT.getValue());
+              instruction.addProperty(Instruction.FIELD_NAME, Instruction.PRODUCT.getValue());
               this.writeInstruction(writer, instruction);
             });
   }
@@ -148,8 +147,7 @@ public final class JsonDefinitionWriter {
             definition -> {
               final Gson gson = this.buildGson();
               final JsonObject instruction = (JsonObject) gson.toJsonTree(definition);
-              instruction.addProperty(
-                  Instruction.INSTRUCTION.getValue(), Instruction.MODULE.getValue());
+              instruction.addProperty(Instruction.FIELD_NAME, Instruction.MODULE.getValue());
               this.writeInstruction(writer, instruction);
             });
   }
@@ -162,8 +160,7 @@ public final class JsonDefinitionWriter {
             definition -> {
               final Gson gson = this.buildGson();
               final JsonObject instruction = (JsonObject) gson.toJsonTree(definition);
-              instruction.addProperty(
-                  Instruction.INSTRUCTION.getValue(), Instruction.PACKAGE.getValue());
+              instruction.addProperty(Instruction.FIELD_NAME, Instruction.PACKAGE.getValue());
               this.writeInstruction(writer, instruction);
             });
   }
@@ -177,8 +174,7 @@ public final class JsonDefinitionWriter {
             definition -> {
               final Gson gson = this.buildGson();
               final JsonObject instruction = (JsonObject) gson.toJsonTree(definition);
-              instruction.addProperty(
-                  Instruction.INSTRUCTION.getValue(), Instruction.TYPE.getValue());
+              instruction.addProperty(Instruction.FIELD_NAME, Instruction.TYPE.getValue());
               this.writeInstruction(writer, instruction);
             });
   }
@@ -195,8 +191,7 @@ public final class JsonDefinitionWriter {
             definition -> {
               final Gson gson = this.buildGson();
               final JsonObject instruction = (JsonObject) gson.toJsonTree(definition);
-              instruction.addProperty(
-                  Instruction.INSTRUCTION.getValue(), Instruction.METHOD.getValue());
+              instruction.addProperty(Instruction.FIELD_NAME, Instruction.METHOD.getValue());
               this.writeInstruction(writer, instruction);
             });
   }
@@ -210,8 +205,7 @@ public final class JsonDefinitionWriter {
             definition -> {
               final Gson gson = this.buildGson();
               final JsonObject instruction = (JsonObject) gson.toJsonTree(definition);
-              instruction.addProperty(
-                  Instruction.INSTRUCTION.getValue(), Instruction.METHOD.getValue());
+              instruction.addProperty(Instruction.FIELD_NAME, Instruction.METHOD.getValue());
               this.writeInstruction(writer, instruction);
             });
   }
@@ -225,8 +219,7 @@ public final class JsonDefinitionWriter {
             definition -> {
               final Gson gson = this.buildGson();
               final JsonObject instruction = (JsonObject) gson.toJsonTree(definition);
-              instruction.addProperty(
-                  Instruction.INSTRUCTION.getValue(), Instruction.CONDITION.getValue());
+              instruction.addProperty(Instruction.FIELD_NAME, Instruction.CONDITION.getValue());
               this.writeInstruction(writer, instruction);
             });
   }
@@ -247,7 +240,7 @@ public final class JsonDefinitionWriter {
               final Gson gson = this.buildGson();
               final JsonObject instruction = (JsonObject) gson.toJsonTree(definition);
               instruction.addProperty(
-                  Instruction.BINARY_OPERATOR.getValue(), Instruction.BINARY_OPERATOR.getValue());
+                  Instruction.FIELD_NAME, Instruction.BINARY_OPERATOR.getValue());
               this.writeInstruction(writer, instruction);
             });
   }
@@ -261,8 +254,7 @@ public final class JsonDefinitionWriter {
             definition -> {
               final Gson gson = this.buildGson();
               final JsonObject instruction = (JsonObject) gson.toJsonTree(definition);
-              instruction.addProperty(
-                  Instruction.INSTRUCTION.getValue(), Instruction.GLOBAL.getValue());
+              instruction.addProperty(Instruction.FIELD_NAME, Instruction.GLOBAL.getValue());
               this.writeInstruction(writer, instruction);
             });
   }

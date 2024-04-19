@@ -21,12 +21,12 @@ public class MethodDefinitionDeserializer extends DefinitionDeserializer<MethodD
   @Override
   public MethodDefinition deserialize(JsonParser jp, DeserializationContext context)
       throws JsonParseException, IOException {
-    JsonNode node = jp.getCodec().readTree(jp);
+    JsonNode node = jp.readValueAsTree();
 
     Definition base = getDefinition(node);
 
     TypeString typeName = getTypeString(context, node, "type_n");
-    String methodName = getString(node, "m_name");
+    String methodName = getStringField(node, "m_name");
 
     Location loc = base.getLocation();
     if (loc != null) {

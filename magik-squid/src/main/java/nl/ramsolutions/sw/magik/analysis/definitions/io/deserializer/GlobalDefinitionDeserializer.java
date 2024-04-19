@@ -18,7 +18,7 @@ public class GlobalDefinitionDeserializer extends DefinitionDeserializer<GlobalD
   @Override
   public GlobalDefinition deserialize(JsonParser jp, DeserializationContext context)
       throws IOException {
-    JsonNode node = jp.getCodec().readTree(jp);
+    JsonNode node = jp.readValueAsTree();
 
     Definition base = getDefinition(node);
 

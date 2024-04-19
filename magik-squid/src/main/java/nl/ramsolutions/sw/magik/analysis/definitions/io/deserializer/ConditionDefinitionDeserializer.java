@@ -17,11 +17,11 @@ public class ConditionDefinitionDeserializer extends DefinitionDeserializer<Cond
   @Override
   public ConditionDefinition deserialize(JsonParser jp, DeserializationContext context)
       throws IOException {
-    JsonNode node = jp.getCodec().readTree(jp);
+    JsonNode node = jp.readValueAsTree();
 
     Definition base = getDefinition(node);
 
-    String name = getString(node, "name");
+    String name = getStringField(node, "name");
     String parent = nullableString(node, "par");
     List<String> dataNames = getList(context, node, "d_names", String.class);
 

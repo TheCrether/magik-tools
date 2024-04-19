@@ -22,7 +22,7 @@ public final class ExpressionResultStringDeserializer
   @Override
   public ExpressionResultString deserialize(JsonParser jp, DeserializationContext context)
       throws IOException {
-    JsonNode json = jp.getCodec().readTree(jp);
+    JsonNode json = jp.readValueAsTree();
     if (asString(json) != null
         && json.asText().equals(ExpressionResultString.UNDEFINED_SERIALIZED_NAME)) {
       return ExpressionResultString.UNDEFINED;

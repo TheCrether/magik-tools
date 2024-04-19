@@ -18,15 +18,15 @@ public class ParameterDefinitionDeserializer extends DefinitionDeserializer<Para
   @Override
   public ParameterDefinition deserialize(JsonParser jp, DeserializationContext context)
       throws IOException {
-    JsonNode node = jp.getCodec().readTree(jp);
+    JsonNode node = jp.readValueAsTree();
 
     Definition base = getDefinition(node);
 
-    String name = getString(node, "name");
+    String name = getStringField(node, "name");
 
     ParameterDefinition.Modifier modifier =
-        get(context, node, "modifier", ParameterDefinition.Modifier.class);
-    TypeString typeName = getTypeString(context, node, "type_name");
+        get(context, node, "mod", ParameterDefinition.Modifier.class);
+    TypeString typeName = getTypeString(context, node, "type_n");
 
     return new ParameterDefinition(
         base.getLocation(),

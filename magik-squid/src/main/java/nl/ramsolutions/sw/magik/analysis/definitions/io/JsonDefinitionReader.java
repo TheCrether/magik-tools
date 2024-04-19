@@ -169,8 +169,8 @@ public final class JsonDefinitionReader {
     }
 
     final JsonNode node = objectMapper.readTree(line);
-    final JsonNode instructionObj = node.get(Instruction.INSTRUCTION.getValue());
-    final Instruction instruction = Instruction.fromValue(instructionObj.asText());
+    final JsonNode instructionObj = node.get(Instruction.FIELD_NAME);
+    final Instruction instruction = Instruction.fromValue(instructionObj.intValue());
 
     switch (instruction) {
       case PRODUCT:
@@ -210,7 +210,8 @@ public final class JsonDefinitionReader {
         break;
 
       default:
-        break;
+        throw new IllegalStateException(
+            "Unexpected instruction: " + instruction + "\nline: " + line);
     }
   }
 
