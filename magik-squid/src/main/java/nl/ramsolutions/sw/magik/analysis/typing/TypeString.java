@@ -412,6 +412,10 @@ public final class TypeString implements Comparable<TypeString> {
 
   /** Get parts of (combined) string. */
   public List<TypeString> getCombinedTypes() {
+    if (this.combinedTypes.isEmpty()) {
+      return List.of(this);
+    }
+
     return Collections.unmodifiableList(this.combinedTypes);
   }
 
@@ -446,7 +450,7 @@ public final class TypeString implements Comparable<TypeString> {
               .map(typeString -> typeString.substituteType(from, to))
               .toList()
               .toArray(TypeString[]::new);
-      return TypeString.ofCombination(combinedSubstitutedArr);
+      return TypeString.combine(combinedSubstitutedArr);
     }
 
     if (this.hasGenerics()) {

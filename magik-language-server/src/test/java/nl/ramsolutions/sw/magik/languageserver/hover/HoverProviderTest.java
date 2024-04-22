@@ -22,17 +22,18 @@ import org.junit.jupiter.api.Test;
 @SuppressWarnings("checkstyle:MagicNumber")
 class HoverProviderTest {
 
+  private static final URI DEFAULT_URI = URI.create("memory://source.magik");
+
   private Hover provideHover(
       final String code, final Position position, final IDefinitionKeeper definitionKeeper) {
-    final URI uri = URI.create("tests://unittest");
-    final MagikTypedFile magikFile = new MagikTypedFile(uri, code, definitionKeeper);
+    final MagikTypedFile magikFile = new MagikTypedFile(DEFAULT_URI, code, definitionKeeper);
     final HoverProvider provider = new HoverProvider();
     return provider.provideHover(magikFile, position);
   }
 
   @Test
   void testProvideHoverMethodDefinitionName() {
-    // Set up a method in the TypeKeeper.
+    // Set up a method.
     final IDefinitionKeeper definitionKeeper = new DefinitionKeeper();
     definitionKeeper.add(
         new MethodDefinition(
@@ -49,7 +50,8 @@ class HoverProviderTest {
             ExpressionResultString.UNDEFINED,
             ExpressionResultString.EMPTY));
 
-    final String code = """
+    final String code =
+        """
         _method object.hover_me_method()
         _endmethod""";
     final Position position = new Position(0, 18); // On 'hover_me_method'.
@@ -79,7 +81,8 @@ class HoverProviderTest {
             Collections.emptyList(),
             Collections.emptySet()));
 
-    final String code = """
+    final String code =
+        """
         _method hover_me_type.method()
         _endmethod""";
     final Position position = new Position(0, 10); // On 'hover_me_type'.

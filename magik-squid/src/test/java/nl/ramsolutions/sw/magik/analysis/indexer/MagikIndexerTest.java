@@ -105,7 +105,7 @@ class MagikIndexerTest {
     assertThat(binOpDef.getLhsTypeName()).isEqualTo(TypeString.ofIdentifier("integer", "user"));
     assertThat(binOpDef.getRhsTypeName()).isEqualTo(TypeString.ofIdentifier("integer", "user"));
     assertThat(binOpDef.getResultTypeName())
-        .isEqualTo(TypeString.ofCombination(TypeString.SW_FALSE, TypeString.SW_MAYBE));
+        .isEqualTo(TypeString.combine(TypeString.SW_FALSE, TypeString.SW_MAYBE));
   }
 
   @Test
@@ -162,7 +162,8 @@ class MagikIndexerTest {
     assertThat(newMethodDefs).hasSize(1);
     final MethodDefinition newMethodDef = newMethodDefs.stream().findAny().orElseThrow();
     assertThat(newMethodDef.getDoc())
-        .isEqualTo("""
+        .isEqualTo(
+            """
         Constructor.
         @return {_self}""");
     assertThat(newMethodDef.getReturnTypes())
@@ -176,7 +177,8 @@ class MagikIndexerTest {
     assertThat(initMethodDefs).hasSize(1);
     final MethodDefinition initMethodDef = initMethodDefs.stream().findAny().orElseThrow();
     assertThat(initMethodDef.getDoc())
-        .isEqualTo("""
+        .isEqualTo(
+            """
         Initializer.
         @return {_self}""");
     assertThat(initMethodDef.getReturnTypes())

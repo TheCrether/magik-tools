@@ -26,10 +26,11 @@ import org.junit.jupiter.api.Test;
 @SuppressWarnings("checkstyle:MagicNumber")
 class CompletionProviderTest {
 
+  private static final URI DEFAULT_URI = URI.create("memory://source.magik");
+
   private List<CompletionItem> getCompletions(
       final String code, final IDefinitionKeeper definitionKeeper, final Position position) {
-    final URI uri = URI.create("tests://unittest");
-    final MagikTypedFile magikFile = new MagikTypedFile(uri, code, definitionKeeper);
+    final MagikTypedFile magikFile = new MagikTypedFile(DEFAULT_URI, code, definitionKeeper);
     final CompletionProvider provider = new CompletionProvider();
     return provider.provideCompletions(magikFile, position);
   }
@@ -41,7 +42,8 @@ class CompletionProviderTest {
 
   @Test
   void testKeywordCompletion() {
-    final String code = """
+    final String code =
+        """
         _method a.b
             _
         _endmethod""";
@@ -57,7 +59,8 @@ class CompletionProviderTest {
 
   @Test
   void testMethodCompletionBare() {
-    final String code = """
+    final String code =
+        """
         _method a.b
             1.
         _endmethod""";
@@ -90,7 +93,8 @@ class CompletionProviderTest {
 
   @Test
   void testMethodCompletionSelf() {
-    final String code = """
+    final String code =
+        """
         _method a.b
             _self.
         _endmethod""";
@@ -133,7 +137,8 @@ class CompletionProviderTest {
 
   @Test
   void testMethodCompletionExisting() {
-    final String code = """
+    final String code =
+        """
         _method a.b
             1.fi
         _endmethod""";
@@ -166,7 +171,8 @@ class CompletionProviderTest {
 
   @Test
   void testGlobalCompletion() {
-    final String code = """
+    final String code =
+        """
         _method a.b
          \s\s\s
         _endmethod""";
@@ -208,7 +214,8 @@ class CompletionProviderTest {
 
   @Test
   void testGlobalCompletionSlot() {
-    final String code = """
+    final String code =
+        """
         _method a.b
          \s\s\s
         _endmethod""";

@@ -14,9 +14,6 @@ import java.util.Objects;
 /** Location within a file. */
 public class Location {
 
-  private static final Location DUMMY_LOCATION =
-      new Location(URI.create("tests://unittest"), Range.DEFAULT_RANGE);
-
   /** Location/Range comparator. */
   public static class LocationRangeComparator implements Comparator<Location>, Serializable {
 
@@ -159,7 +156,7 @@ public class Location {
   public static Location validLocation(
       @Nullable Location location, final @Nullable List<PathMapping> mappings) {
     if (location == null) {
-      return DUMMY_LOCATION;
+      return MagikFile.DEFAULT_LOCATION;
     }
 
     if (mappings != null) {

@@ -22,14 +22,14 @@ public class ProductDefinitionDeserializer extends BaseDeserializer<ProductDefin
     String name = getStringField(node, "name");
     String version = nullableString(node, "ver");
     String versionComment = nullableString(node, "ver_com");
+    List<String> requireds = getList(context, node, "req", String.class);
 
     Location location = getLocation(node);
 
-    ProductDefinition def = new ProductDefinition(location, name, version, versionComment);
+    ProductDefinition def = new ProductDefinition(location, name, version, versionComment, null, null, requireds);
 
     getList(context, node, "children", String.class).forEach(def::addChild);
     getList(context, node, "mods", String.class).forEach(def::addModule);
-    getList(context, node, "req", String.class).forEach(def::addRequired);
 
     return def;
   }

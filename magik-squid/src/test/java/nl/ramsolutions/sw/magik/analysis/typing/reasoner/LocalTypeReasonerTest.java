@@ -28,11 +28,11 @@ import org.junit.jupiter.api.Test;
 @SuppressWarnings("checkstyle:MagicNumber")
 class LocalTypeReasonerTest {
 
-  private static final URI TEST_URI = URI.create("tests://unittest");
+  private static final URI DEFAULT_URI = URI.create("memory://source.magik");
 
   private MagikTypedFile createMagikFile(
       final String code, final IDefinitionKeeper definitionKeeper) {
-    return new MagikTypedFile(TEST_URI, code, definitionKeeper);
+    return new MagikTypedFile(DEFAULT_URI, code, definitionKeeper);
   }
 
   @Test
@@ -161,7 +161,7 @@ class LocalTypeReasonerTest {
     assertThat(result)
         .isEqualTo(
             new ExpressionResultString(
-                TypeString.ofCombination(TypeString.SW_INTEGER, TypeString.SW_SYMBOL)));
+                TypeString.combine(TypeString.SW_INTEGER, TypeString.SW_SYMBOL)));
   }
 
   @Test
@@ -610,7 +610,7 @@ class LocalTypeReasonerTest {
     assertThat(result)
         .isEqualTo(
             new ExpressionResultString(
-                TypeString.ofCombination(TypeString.SW_INTEGER, TypeString.SW_UNSET)));
+                TypeString.combine(TypeString.SW_INTEGER, TypeString.SW_UNSET)));
   }
 
   @Test
@@ -1110,7 +1110,8 @@ class LocalTypeReasonerTest {
 
   @Test
   void testSingleSuperType() {
-    final String code = """
+    final String code =
+        """
         _method t.m
           _super.m
         _endmethod""";
@@ -1154,7 +1155,8 @@ class LocalTypeReasonerTest {
 
   @Test
   void testSingleNamedSuperType() {
-    final String code = """
+    final String code =
+        """
         _method t.m
           _super(r).m
         _endmethod""";
@@ -1283,7 +1285,7 @@ class LocalTypeReasonerTest {
     assertThat(result)
         .isEqualTo(
             new ExpressionResultString(
-                TypeString.ofCombination(TypeString.SW_FLOAT, TypeString.SW_INTEGER)));
+                TypeString.combine(TypeString.SW_FLOAT, TypeString.SW_INTEGER)));
   }
 
   @Test
@@ -1927,7 +1929,6 @@ class LocalTypeReasonerTest {
                     TypeString.SW_SIMPLE_VECTOR.getIdentifier(),
                     TypeString.SW_SIMPLE_VECTOR.getPakkage(),
                     TypeString.ofGenericDefinition(
-                        "E",
-                        TypeString.ofCombination(TypeString.SW_INTEGER, TypeString.SW_SYMBOL)))));
+                        "E", TypeString.combine(TypeString.SW_INTEGER, TypeString.SW_SYMBOL)))));
   }
 }
