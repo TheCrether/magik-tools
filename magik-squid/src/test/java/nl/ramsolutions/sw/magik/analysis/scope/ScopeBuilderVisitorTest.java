@@ -10,9 +10,10 @@ import org.junit.jupiter.api.Test;
 @SuppressWarnings("checkstyle:MagicNumber")
 class ScopeBuilderVisitorTest {
 
+  private static final URI DEFAULT_URI = URI.create("memory://source.magik");
+
   private ScopeBuilderVisitor buildCode(String code) {
-    final URI uri = URI.create("tests://unittest");
-    final MagikFile magikFile = new MagikFile(uri, code);
+    final MagikFile magikFile = new MagikFile(DEFAULT_URI, code);
     final ScopeBuilderVisitor visitor = new ScopeBuilderVisitor();
     visitor.scanFile(magikFile);
     return visitor;
@@ -20,7 +21,8 @@ class ScopeBuilderVisitorTest {
 
   @Test
   void testLocal() {
-    final String code = """
+    final String code =
+        """
         _method object.m
             _local a
         _endmethod""";
@@ -36,7 +38,8 @@ class ScopeBuilderVisitorTest {
 
   @Test
   void testLocalSerial() {
-    final String code = """
+    final String code =
+        """
         _method object.m
             _local a, b
         _endmethod""";
@@ -141,7 +144,8 @@ class ScopeBuilderVisitorTest {
 
   @Test
   void testAssignment() {
-    final String code = """
+    final String code =
+        """
         _method object.m
             a << 1
         _endmethod""";
@@ -157,7 +161,8 @@ class ScopeBuilderVisitorTest {
 
   @Test
   void testAssignmentPackage() {
-    final String code = """
+    final String code =
+        """
         _method object.m
             sw:a << 1
         _endmethod""";
@@ -295,7 +300,8 @@ class ScopeBuilderVisitorTest {
 
   @Test
   void testParameter() {
-    final String code = """
+    final String code =
+        """
         _method object.m(a, _optional b)
         _endmethod""";
     final ScopeBuilderVisitor visitor = this.buildCode(code);
@@ -314,7 +320,8 @@ class ScopeBuilderVisitorTest {
 
   @Test
   void testParameterIndexer() {
-    final String code = """
+    final String code =
+        """
         _method object[a, b]
         _endmethod""";
     final ScopeBuilderVisitor visitor = this.buildCode(code);
@@ -333,7 +340,8 @@ class ScopeBuilderVisitorTest {
 
   @Test
   void testParameterAssignment() {
-    final String code = """
+    final String code =
+        """
         _method object.m << a
         _endmethod""";
     final ScopeBuilderVisitor visitor = this.buildCode(code);

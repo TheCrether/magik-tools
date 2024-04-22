@@ -18,7 +18,14 @@
 - Completion provider now marks deprecated types and methods.
 - Handle directory renames properly in `magik-language-server`.
 - Improve handling of product.def/module.def in `magik-language-server` in VSCode.
+  - Semantic tokens.
+  - Folding.
+  - Hovering.
+  - Definition.
+  - References.
 - Remove old typing classes and use the new typing classes.
+- Fix providing Formatting CodeActions on all locations, instead of asked range.
+- Fix hovering over atoms.
 
 0.9.1 (2024-03-13)
 

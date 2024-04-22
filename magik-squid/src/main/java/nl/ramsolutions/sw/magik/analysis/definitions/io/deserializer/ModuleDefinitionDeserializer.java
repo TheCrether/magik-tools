@@ -26,6 +26,6 @@ public class ModuleDefinitionDeserializer extends BaseDeserializer<ModuleDefinit
 
     Location location = getLocation(node);
 
-    return new ModuleDefinition(location, name, baseVersion, currentVersion, requireds);
+    return new ModuleDefinition(location, name, baseVersion, currentVersion, null, requireds);
   }
 }
