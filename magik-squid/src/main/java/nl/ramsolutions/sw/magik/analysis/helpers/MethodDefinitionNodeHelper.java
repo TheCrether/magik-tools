@@ -124,7 +124,10 @@ public class MethodDefinitionNodeHelper {
         .collect(
             Collectors.toMap(
                 parameterNode ->
-                    parameterNode.getFirstDescendant(MagikGrammar.IDENTIFIER).getTokenValue(),
+                    parameterNode
+                        .getFirstDescendant(MagikGrammar.IDENTIFIER)
+                        .getTokenValue()
+                        .toLowerCase(),
                 parameterNode -> parameterNode));
   }
 

@@ -26,7 +26,8 @@ public class ProductDefinitionDeserializer extends BaseDeserializer<ProductDefin
 
     Location location = getLocation(node);
 
-    ProductDefinition def = new ProductDefinition(location, name, version, versionComment, null, null, requireds);
+    ProductDefinition def =
+        new ProductDefinition(location, name, version, versionComment, null, null, requireds);
 
     getList(context, node, "children", String.class).forEach(def::addChild);
     getList(context, node, "mods", String.class).forEach(def::addModule);

@@ -272,11 +272,24 @@ public class TypeStringResolver {
             });
   }
 
-  public Collection<MethodDefinition> getMethodDefinitions(
+  public List<MethodDefinition> getMethodDefinitions(
       final TypeString typeString, final String methodName) {
     return this.getMethodDefinitions(typeString).stream()
         .filter(methodDef -> methodDef.getMethodName().equalsIgnoreCase(methodName))
         .toList();
+  }
+
+  public List<MethodDefinition> tryToGetOneMethodDefinition(
+      final TypeString typeString, final String methodName) {
+    List<MethodDefinition> definitions = this.getMethodDefinitions(typeString, methodName);
+
+    for (MethodDefinition def : definitions) {
+      if (def.getTypeName().equals(typeString) && def.getMethodName().equals(methodName)) {
+        return List.of(def); // or just put this to the beginning of the list?
+      }
+    }
+
+    return definitions;
   }
 
   /**

@@ -27,7 +27,7 @@ public class SwMethodDocCheck extends MagikCheck {
   private static final String MESSAGE = "No or invalid method doc: %s.";
 
   private static final boolean DEFAULT_ALLOW_BLANK_METHOD_DOC = false;
-  private static final String PARAMETER_REGEXP = "[ \t]?([\\p{Lu}\\d_?]+)[^\\p{Lu}\\d_?]?";
+  private static final String PARAMETER_REGEXP = "@param\\s?(\\{.*\\})?\\s?([\\w\\d_?]+)";
   private static final Pattern PARAMETER_PATTERN = Pattern.compile(PARAMETER_REGEXP);
 
   /** Allow blank method doc. */
@@ -100,8 +100,8 @@ public class SwMethodDocCheck extends MagikCheck {
 
     final Matcher matcher = PARAMETER_PATTERN.matcher(methodDoc);
     while (matcher.find()) {
-      final String name = matcher.group(1);
-      uppercased.add(name);
+      final String name = matcher.group(2);
+      if (name != null) uppercased.add(name.toUpperCase());
     }
 
     return uppercased;

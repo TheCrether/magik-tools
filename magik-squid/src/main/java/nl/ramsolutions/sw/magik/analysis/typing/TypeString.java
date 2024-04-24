@@ -1,5 +1,6 @@
 package nl.ramsolutions.sw.magik.analysis.typing;
 
+import com.sonar.sslr.api.AstNode;
 import edu.umd.cs.findbugs.annotations.CheckForNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Arrays;
@@ -9,6 +10,8 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import nl.ramsolutions.sw.magik.analysis.helpers.MethodDefinitionNodeHelper;
+import nl.ramsolutions.sw.magik.api.MagikGrammar;
 import nl.ramsolutions.sw.magik.api.TypeStringGrammar;
 
 /**
@@ -588,5 +591,24 @@ public final class TypeString implements Comparable<TypeString> {
     }
 
     return TypeString.ofCombination(combinedTypes.toArray(TypeString[]::new));
+  }
+
+  public TypeString resolveSelf(AstNode node) {
+    TypeString toReturn = this;
+    if (isSelf()) {
+      final AstNode definitionNode =
+          node.getFirstAncestor(MagikGrammar.METHOD_DEFINITION, MagikGrammar.PROCEDURE_DEFINITION);
+      if (definitionNode == null) {
+        return toReturn;
+      }
+
+      if (definitionNode.is(MagikGrammar.METHOD_DEFINITION)) {
+        final MethodDefinitionNodeHelper helper = new MethodDefinitionNodeHelper(definitionNode);
+        toReturn = helper.getTypeString();
+      } else {
+        toReturn = TypeString.SW_PROCEDURE;
+      }
+    }
+    return toReturn;
   }
 }

@@ -135,7 +135,7 @@ public class ExpressionResultString {
    */
   public String getTypeNames(final String separator) {
     if (this == ExpressionResultString.UNDEFINED) {
-      return "UNDEFINED...";
+      return "unknown";
     }
 
     // Determine first index of trailing homogenous sequence.

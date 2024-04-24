@@ -43,7 +43,10 @@ public class ProcedureDefinitionNodeHelper {
         .collect(
             Collectors.toMap(
                 parameterNode ->
-                    parameterNode.getFirstChild(MagikGrammar.IDENTIFIER).getTokenValue(),
+                    parameterNode
+                        .getFirstChild(MagikGrammar.IDENTIFIER)
+                        .getTokenValue()
+                        .toLowerCase(),
                 parameterNode -> parameterNode));
   }
 

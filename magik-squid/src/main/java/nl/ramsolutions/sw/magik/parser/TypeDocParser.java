@@ -180,7 +180,8 @@ public class TypeDocParser {
     final AstNode node = this.getTypeDocNode();
     return node.getChildren(TypeDocGrammar.PARAM).stream()
         .filter(this::noEmptyName)
-        .collect(Collectors.toMap(this::getNameNode, this::getName));
+        .collect(
+            Collectors.toMap(this::getNameNode, astNode -> this.getName(astNode).toLowerCase()));
   }
 
   /**

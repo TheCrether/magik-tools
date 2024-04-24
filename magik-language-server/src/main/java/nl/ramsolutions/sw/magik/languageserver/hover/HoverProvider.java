@@ -15,14 +15,7 @@ import nl.ramsolutions.sw.magik.ModuleDefFile;
 import nl.ramsolutions.sw.magik.ProductDefFile;
 import nl.ramsolutions.sw.magik.Range;
 import nl.ramsolutions.sw.magik.analysis.AstQuery;
-import nl.ramsolutions.sw.magik.analysis.definitions.ConditionDefinition;
-import nl.ramsolutions.sw.magik.analysis.definitions.ExemplarDefinition;
-import nl.ramsolutions.sw.magik.analysis.definitions.IDefinitionKeeper;
-import nl.ramsolutions.sw.magik.analysis.definitions.MethodDefinition;
-import nl.ramsolutions.sw.magik.analysis.definitions.PackageDefinition;
-import nl.ramsolutions.sw.magik.analysis.definitions.ProcedureDefinition;
-import nl.ramsolutions.sw.magik.analysis.definitions.SlotDefinition;
-import nl.ramsolutions.sw.magik.analysis.definitions.TypeStringDefinition;
+import nl.ramsolutions.sw.magik.analysis.definitions.*;
 import nl.ramsolutions.sw.magik.analysis.helpers.MethodDefinitionNodeHelper;
 import nl.ramsolutions.sw.magik.analysis.helpers.MethodInvocationNodeHelper;
 import nl.ramsolutions.sw.magik.analysis.typing.ExpressionResultString;
@@ -45,6 +38,7 @@ public class HoverProvider {
   private static final Logger LOGGER = LoggerFactory.getLogger(HoverProvider.class);
 
   private static final String SECTION_END = "\n\n---\n\n";
+  private static final String BR = "  \n"; // this is the same as an <br /> tag in markdown
 
   /**
    * Set server capabilities.
@@ -369,10 +363,13 @@ public class HoverProvider {
       if (methodName != null) {
         final LocalTypeReasonerState reasonerState = magikFile.getTypeReasonerState();
         final ExpressionResultString result = reasonerState.getNodeType(previousSiblingNode);
-        final TypeString typeStr = result.get(0, TypeString.UNDEFINED);
+        final TypeString resultTypeStr = result.get(0, TypeString.UNDEFINED);
+        final TypeString typeStr = resultTypeStr.resolveSelf(hoveredNode);
         final TypeStringResolver resolver = magikFile.getTypeStringResolver();
+
         resolver
-            .getMethodDefinitions(typeStr, methodName)
+            .tryToGetOneMethodDefinition(typeStr, methodName)
+            // could be found, use it
             .forEach(methodDef -> this.buildMethodSignatureDoc(methodDef, builder));
       }
     }
@@ -391,14 +388,15 @@ public class HoverProvider {
     final AstNode exemplarNameNode = methodDefNode.getFirstChild(MagikGrammar.EXEMPLAR_NAME);
     final LocalTypeReasonerState reasonerState = magikFile.getTypeReasonerState();
     final ExpressionResultString result = reasonerState.getNodeType(exemplarNameNode);
-    final TypeString typeStr = result.get(0, TypeString.UNDEFINED);
+    final TypeString resultTypeStr = result.get(0, TypeString.UNDEFINED);
+    final TypeString typeStr = resultTypeStr.resolveSelf(hoveredNode);
 
     final MethodDefinitionNodeHelper methodDefHelper =
         new MethodDefinitionNodeHelper(methodDefNode);
     final String methodName = methodDefHelper.getMethodName();
     final TypeStringResolver resolver = magikFile.getTypeStringResolver();
     resolver
-        .getMethodDefinitions(typeStr, methodName)
+        .tryToGetOneMethodDefinition(typeStr, methodName)
         .forEach(methodDef -> this.buildMethodSignatureDoc(methodDef, builder));
   }
 
@@ -414,21 +412,23 @@ public class HoverProvider {
     final LocalTypeReasonerState reasonerState = magikFile.getTypeReasonerState();
     final ExpressionResultString result = reasonerState.getNodeType(node);
     final TypeString resultTypeStr = result.get(0, TypeString.UNDEFINED);
-    final TypeString typeStr;
-    if (resultTypeStr.isSelf()) {
-      final AstNode definitionNode =
-          node.getFirstAncestor(MagikGrammar.METHOD_DEFINITION, MagikGrammar.PROCEDURE_DEFINITION);
-      if (definitionNode == null) {
-        typeStr = resultTypeStr;
-      } else if (definitionNode.is(MagikGrammar.METHOD_DEFINITION)) {
-        final MethodDefinitionNodeHelper helper = new MethodDefinitionNodeHelper(definitionNode);
-        typeStr = helper.getTypeString();
-      } else {
-        typeStr = TypeString.SW_PROCEDURE;
-      }
-    } else {
-      typeStr = resultTypeStr;
-    }
+    final TypeString typeStr = resultTypeStr.resolveSelf(node);
+    //    if (resultTypeStr.isSelf()) {
+    //      final AstNode definitionNode =
+    //          node.getFirstAncestor(MagikGrammar.METHOD_DEFINITION,
+    // MagikGrammar.PROCEDURE_DEFINITION);
+    //      if (definitionNode == null) {
+    //        typeStr = resultTypeStr;
+    //      } else if (definitionNode.is(MagikGrammar.METHOD_DEFINITION)) {
+    //        final MethodDefinitionNodeHelper helper = new
+    // MethodDefinitionNodeHelper(definitionNode);
+    //        typeStr = helper.getTypeString();
+    //      } else {
+    //        typeStr = TypeString.SW_PROCEDURE;
+    //      }
+    //    } else {
+    //      typeStr = resultTypeStr;
+    //    }
 
     final TypeStringResolver resolver = magikFile.getTypeStringResolver();
     resolver.resolve(typeStr).stream()
@@ -482,34 +482,65 @@ public class HoverProvider {
 
   private void buildMethodSignatureDoc(
       final MethodDefinition methodDef, final StringBuilder builder) {
-    builder.append("## ").append(methodDef.getNameWithParameters()).append("\n\n").append(" → ");
+    builder
+        .append("```magik\n_method ")
+        .append(methodDef.getNameWithParameters())
+        .append("\n```\n\n")
+        .append("→ ");
 
+    // return type
     final String callResultString = methodDef.getReturnTypes().getTypeNames(", ");
     builder.append(this.formatTypeString(callResultString));
 
+    builder.append("\n\n");
+
+    // iterable
     if (methodDef.getModifiers().contains(MethodDefinition.Modifier.ITER)) {
-      builder.append("\n\n").append(" ⟳ ");
+      builder.append("⟳ Iterable");
       final String iterResultString = methodDef.getLoopTypes().getTypeNames(", ");
       builder.append(this.formatTypeString(iterResultString));
+
+      builder.append("\n\n");
     }
 
-    builder.append(SECTION_END);
+    // parameters
+    if (!methodDef.getParameters().isEmpty()) {
+      builder.append("- **Parameters**:");
+      for (final ParameterDefinition parameter : methodDef.getParameters()) {
+        builder
+            .append("\n  - **")
+            .append(parameter.getName())
+            .append("** *")
+            .append(this.formatTypeString(parameter.getTypeName()))
+            .append("*");
+        if (parameter.getDoc() != null) {
+          builder.append(": ").append(parameter.getDoc());
+        }
+      }
 
-    // Method module.
-    final String moduleName = Objects.requireNonNullElse(methodDef.getModuleName(), "");
-    builder.append("Module: ").append(moduleName).append(SECTION_END);
-
-    // Method topics.
-    final String topics = methodDef.getTopics().stream().collect(Collectors.joining(", "));
-    builder.append("Topics: ").append(topics).append(SECTION_END);
+      builder.append("\n\n");
+    }
 
     // Method doc.
     final String methodDoc = methodDef.getDoc();
     if (methodDoc != null) {
       final String methodDocMd =
-          methodDoc.lines().map(String::trim).collect(Collectors.joining("\n\n"));
-      builder.append(methodDocMd).append(SECTION_END);
+          methodDoc
+              .lines()
+              .map(line -> line.trim().length() > 0 ? "*" + line.trim() + "*" : "")
+              .collect(Collectors.joining(BR));
+      builder.append(methodDocMd).append("\n\n");
     }
+
+    // Method module.
+    final String moduleName = methodDef.getModuleName();
+    if (moduleName != null) {
+      builder.append("Module: ").append(moduleName).append(BR);
+    }
+
+    // Method topics.
+    final String topics = methodDef.getTopics().stream().collect(Collectors.joining(", "));
+    builder.append("Topics: ").append(topics).append("\n\n");
   }
 
   private void buildProcSignatureDoc(
