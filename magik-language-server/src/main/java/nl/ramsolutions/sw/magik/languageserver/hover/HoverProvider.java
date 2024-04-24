@@ -1,10 +1,7 @@
 package nl.ramsolutions.sw.magik.languageserver.hover;
 
 import com.sonar.sslr.api.AstNode;
-import java.util.Collection;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
 import nl.ramsolutions.sw.definitions.ModuleDefinition;
 import nl.ramsolutions.sw.definitions.ProductDefinition;
@@ -37,8 +34,9 @@ public class HoverProvider {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(HoverProvider.class);
 
-  private static final String SECTION_END = "\n\n---\n\n";
-  private static final String BR = "  \n"; // this is the same as an <br /> tag in markdown
+  private static final String SECTION_END = "\n\n";
+  private static final String BR =
+      "  \n"; // will be interpreted as <br /> according to markdown spec
 
   /**
    * Set server capabilities.
@@ -191,15 +189,10 @@ public class HoverProvider {
         .forEach(
             pakkageDef -> {
               // Name.
-              builder.append("## ").append(pakkageDef.getName()).append(SECTION_END);
+              appendCodeBlock(builder, false, true, pakkageDef.getName());
 
               // Doc.
-              final String doc = pakkageDef.getDoc();
-              if (doc != null) {
-                final String docMd =
-                    doc.lines().map(String::trim).collect(Collectors.joining("\n\n"));
-                builder.append(docMd).append(SECTION_END);
-              }
+              appendDoc(builder, pakkageDef);
 
               // Uses.
               this.addPackageHierarchy(magikFile, pakkageDef, builder, 0);
@@ -244,23 +237,18 @@ public class HoverProvider {
         .forEach(
             conditionDef -> {
               // Name.
-              builder.append("## ").append(conditionDef.getName()).append(SECTION_END);
+              appendCodeBlock(builder, false, true, conditionDef.getName());
 
               // Doc.
-              final String doc = conditionDef.getDoc();
-              if (doc != null) {
-                final String docMd =
-                    doc.lines().map(String::trim).collect(Collectors.joining("\n\n"));
-                builder.append(docMd).append(SECTION_END);
-              }
+              appendDoc(builder, conditionDef);
 
               // Taxonomy.
-              builder.append("## Taxonomy: \n\n");
+              builder.append("### Taxonomy:\n\n");
               this.addConditionTaxonomy(magikFile, conditionDef, builder, 0);
               builder.append(SECTION_END);
 
               // Data names.
-              builder.append("## Data:\n");
+              builder.append("### Data:\n");
               conditionDef
                   .getDataNames()
                   .forEach(dataName -> builder.append("* ").append(dataName).append("\n"));
@@ -413,22 +401,6 @@ public class HoverProvider {
     final ExpressionResultString result = reasonerState.getNodeType(node);
     final TypeString resultTypeStr = result.get(0, TypeString.UNDEFINED);
     final TypeString typeStr = resultTypeStr.resolveSelf(node);
-    //    if (resultTypeStr.isSelf()) {
-    //      final AstNode definitionNode =
-    //          node.getFirstAncestor(MagikGrammar.METHOD_DEFINITION,
-    // MagikGrammar.PROCEDURE_DEFINITION);
-    //      if (definitionNode == null) {
-    //        typeStr = resultTypeStr;
-    //      } else if (definitionNode.is(MagikGrammar.METHOD_DEFINITION)) {
-    //        final MethodDefinitionNodeHelper helper = new
-    // MethodDefinitionNodeHelper(definitionNode);
-    //        typeStr = helper.getTypeString();
-    //      } else {
-    //        typeStr = TypeString.SW_PROCEDURE;
-    //      }
-    //    } else {
-    //      typeStr = resultTypeStr;
-    //    }
 
     final TypeStringResolver resolver = magikFile.getTypeStringResolver();
     resolver.resolve(typeStr).stream()
@@ -482,17 +454,11 @@ public class HoverProvider {
 
   private void buildMethodSignatureDoc(
       final MethodDefinition methodDef, final StringBuilder builder) {
-    builder
-        .append("```magik\n_method ")
-        .append(methodDef.getNameWithParameters())
-        .append("\n```\n\n")
-        .append("→ ");
+    appendCodeBlock(builder, true, false, "_method " + methodDef.getNameWithParameters());
 
     // return type
     final String callResultString = methodDef.getReturnTypes().getTypeNames(", ");
-    builder.append(this.formatTypeString(callResultString));
-
-    builder.append("\n\n");
+    appendResultType(builder, callResultString);
 
     // iterable
     if (methodDef.getModifiers().contains(MethodDefinition.Modifier.ITER)) {
@@ -500,12 +466,12 @@ public class HoverProvider {
       final String iterResultString = methodDef.getLoopTypes().getTypeNames(", ");
       builder.append(this.formatTypeString(iterResultString));
 
-      builder.append("\n\n");
+      builder.append(SECTION_END);
     }
 
     // parameters
     if (!methodDef.getParameters().isEmpty()) {
-      builder.append("- **Parameters**:");
+      builder.append("### Parameters:");
       for (final ParameterDefinition parameter : methodDef.getParameters()) {
         builder
             .append("\n  - **")
@@ -518,29 +484,22 @@ public class HoverProvider {
         }
       }
 
-      builder.append("\n\n");
+      builder.append(SECTION_END);
     }
 
     // Method doc.
-    final String methodDoc = methodDef.getDoc();
-    if (methodDoc != null) {
-      final String methodDocMd =
-          methodDoc
-              .lines()
-              .map(line -> line.trim().length() > 0 ? "*" + line.trim() + "*" : "")
-              .collect(Collectors.joining(BR));
-      builder.append(methodDocMd).append("\n\n");
-    }
+    appendDoc(builder, methodDef);
 
     // Method module.
-    final String moduleName = methodDef.getModuleName();
-    if (moduleName != null) {
-      builder.append("Module: ").append(moduleName).append(BR);
-    }
+    appendModuleName(builder, methodDef);
 
     // Method topics.
-    final String topics = methodDef.getTopics().stream().collect(Collectors.joining(", "));
-    builder.append("Topics: ").append(topics).append("\n\n");
+    final String topics = String.join(", ", methodDef.getTopics());
+    if (topics.trim().length() > 0) {
+      builder.append("Topics: ").append(topics);
+    }
+
+    builder.append(SECTION_END);
   }
 
   private void buildProcSignatureDoc(
@@ -549,29 +508,27 @@ public class HoverProvider {
 
     // TODO: Removed something with generics.
 
+    // proc name
     final String joiner = procDef.getName().startsWith("[") ? "" : ".";
-    builder
-        .append("## ")
-        .append(this.formatTypeString(typeStr))
-        .append(joiner)
-        .append(procDef.getNameWithParameters())
-        .append("\n\n")
-        .append(" → ");
+    appendCodeBlock(
+        builder,
+        true,
+        false,
+        this.formatTypeString(typeStr) + joiner + procDef.getNameWithParameters());
 
+    // return type
     final String callResultString = procDef.getReturnTypes().getTypeNames(", ");
-    builder.append(this.formatTypeString(callResultString));
+    appendResultType(builder, callResultString);
 
     if (procDef.getModifiers().contains(ProcedureDefinition.Modifier.ITER)) {
-      builder.append("\n\n").append(" ⟳ ");
+      builder.append("⟳ Iterable");
       final String iterResultString = procDef.getLoopTypes().getTypeNames(", ");
       builder.append(this.formatTypeString(iterResultString));
+      builder.append(SECTION_END);
     }
 
-    builder.append(SECTION_END);
-
     // Procedure module.
-    final String moduleName = Objects.requireNonNullElse(procDef.getModuleName(), "");
-    builder.append("Module: ").append(moduleName).append(SECTION_END);
+    appendModuleName(builder, procDef, true);
 
     // TODO: Procedure topics.
     // final String topics =
@@ -579,44 +536,37 @@ public class HoverProvider {
     // builder.append("Topics: ").append(topics).append(SECTION_END);
 
     // Procedure doc.
-    final String methodDoc = procDef.getDoc();
-    if (methodDoc != null) {
-      final String methodDocMd =
-          methodDoc.lines().map(String::trim).collect(Collectors.joining("\n\n"));
-      builder.append(methodDocMd).append(SECTION_END);
-    }
+    appendDoc(builder, procDef);
   }
 
   private void buildTypeSignatureDoc(
       final MagikTypedFile magikFile,
       final ExemplarDefinition exemplarDef,
       final StringBuilder builder) {
+    // type name
     final TypeString typeStr = exemplarDef.getTypeString();
-    builder.append("## ").append(this.formatTypeString(typeStr)).append(SECTION_END);
+    appendCodeBlock(builder, true, true, this.formatTypeString(typeStr));
 
-    final String moduleName = Objects.requireNonNullElse(exemplarDef.getModuleName(), "");
-    builder.append("Module: ").append(moduleName).append(SECTION_END);
+    appendDoc(builder, exemplarDef);
 
-    final String topics = exemplarDef.getTopics().stream().collect(Collectors.joining(", "));
-    builder.append("Topics: ").append(topics).append(SECTION_END);
+    appendModuleName(builder, exemplarDef);
 
-    final String typeDoc = exemplarDef.getDoc();
-    if (typeDoc != null) {
-      final String typeDocMd =
-          typeDoc.lines().map(String::trim).collect(Collectors.joining("\n\n"));
-      builder.append(typeDocMd).append(SECTION_END);
+    final String topics = String.join(", ", exemplarDef.getTopics());
+    if (topics.trim().length() > 0) {
+      builder.append("Topics: ").append(topics);
+      builder.append(SECTION_END);
     }
 
     final Collection<SlotDefinition> slots = exemplarDef.getSlots();
     if (!slots.isEmpty()) {
-      builder.append("## Slots\n");
+      builder.append("### Slots\n");
       slots.stream()
           .sorted(Comparator.comparing(SlotDefinition::getName))
           .forEach(
               slot -> {
                 final TypeString slotType = slot.getTypeName();
                 builder
-                    .append("* ")
+                    .append("- ")
                     .append(slot.getName())
                     .append(": ")
                     .append(this.formatTypeString(slotType))
@@ -627,7 +577,7 @@ public class HoverProvider {
 
     final List<TypeString> generics = exemplarDef.getTypeString().getGenerics();
     if (!generics.isEmpty()) {
-      builder.append("## Generic definitions\n");
+      builder.append("### Generic definitions\n");
       generics.stream()
           .forEach(
               genericTypeStr ->
@@ -636,18 +586,10 @@ public class HoverProvider {
     }
 
     if (!exemplarDef.getParents().isEmpty()) {
-      builder.append("## Supers\n");
+      builder.append("### Supers\n");
       this.addSuperDoc(magikFile, exemplarDef, builder, 0);
       builder.append(SECTION_END);
     }
-  }
-
-  private String formatTypeString(final TypeString typeStr) {
-    return this.formatTypeString(typeStr.getFullString());
-  }
-
-  private String formatTypeString(final String typeStr) {
-    return typeStr.replace("<", "[").replace(">", "]");
   }
 
   private void provideHoverProductName(
@@ -683,10 +625,13 @@ public class HoverProvider {
 
     final String description = productDef.getDescription();
     if (description != null) {
-      builder.append("## Description").append("\n");
-      final String descriptionMd =
-          description.lines().map(String::trim).collect(Collectors.joining("\n\n"));
-      builder.append(descriptionMd).append(SECTION_END);
+      builder.append("### Description").append("\n");
+      final String typeDocMd =
+        description
+          .lines()
+          .map(line -> line.trim().length() > 0 ? "*" + line.trim() + "*" : "")
+          .collect(Collectors.joining(BR));
+      builder.append(typeDocMd).append(SECTION_END);
     }
   }
 
@@ -703,7 +648,7 @@ public class HoverProvider {
       final ModuleDefinition moduleDef,
       final StringBuilder builder) {
     final String moduleName = moduleDef.getName();
-    builder.append("## ").append(moduleName).append(SECTION_END);
+    appendCodeBlock(builder, false, true, moduleName);
 
     final String baseVersion = moduleDef.getBaseVersion();
     final String currentVersion = Objects.requireNonNullElse(moduleDef.getCurrentVersion(), "");
@@ -716,10 +661,101 @@ public class HoverProvider {
 
     final String description = moduleDef.getDescription();
     if (description != null) {
-      builder.append("## Description").append("\n");
-      final String descriptionMd =
-          description.lines().map(String::trim).collect(Collectors.joining("\n\n"));
-      builder.append(descriptionMd).append(SECTION_END);
+      builder.append("### Description").append("\n");
+      final String typeDocMd =
+        description
+          .lines()
+          .map(line -> line.trim().length() > 0 ? "*" + line.trim() + "*" : "")
+          .collect(Collectors.joining(BR));
+      builder.append(typeDocMd).append(SECTION_END);
     }
+  }
+
+  /**
+   * append the module name of a definition, but not as a section end
+   * @param builder the string builder
+   * @param def the definition
+   */
+  private void appendModuleName(StringBuilder builder, Definition def) {
+    appendModuleName(builder, def, false);
+  }
+
+  /**
+   * append the module name of a definition
+   * @param builder the string builder
+   * @param def the definition
+   * @param end if the module name is a section end, if true -> add {@link HoverProvider#SECTION_END}
+   */
+  private void appendModuleName(StringBuilder builder, Definition def, Boolean end) {
+    final String moduleName = def.getModuleName();
+    if (moduleName != null) {
+      builder.append("Module: ").append(moduleName).append(end ? SECTION_END : BR);
+    }
+  }
+
+  /**
+   * append documentation of a definition in a consistent manner
+   * @param builder the string builder
+   * @param def the definition
+   */
+  private void appendDoc(StringBuilder builder, Definition def) {
+    final String typeDoc = def.getDoc();
+    if (typeDoc != null) {
+      final String typeDocMd =
+          typeDoc
+              .lines()
+              .map(line -> line.trim().length() > 0 ? "*" + line.trim() + "*" : "")
+              .collect(Collectors.joining(BR));
+      builder.append(typeDocMd).append(SECTION_END);
+    }
+  }
+
+  /**
+   * appends a Markdown code block
+   * @param builder the string builder
+   * @param isMagik if the code block is a magik code block
+   * @param end if the code block is a section end, if true -> add {@link HoverProvider#SECTION_END} after the code block
+   * @param code the lines of code to be added
+   */
+  private void appendCodeBlock(
+      StringBuilder builder, boolean isMagik, boolean end, String... code) {
+    builder
+        .append("```")
+        .append(isMagik ? "magik" : "")
+        .append("\n")
+        .append(String.join("\n", code))
+        .append("\n```")
+        .append(end ? SECTION_END : BR);
+  }
+
+  /**
+   * append a result text to string builder and add {@link HoverProvider#SECTION_END}
+   * @param builder the string builder
+   * @param typeString the type string which should be used
+   */
+  private void appendResultType(StringBuilder builder, String typeString) {
+    builder.append("→ ");
+    builder.append(
+        typeString.trim().isEmpty() ? "_unset" : this.formatTypeString(typeString.trim()));
+
+    builder.append(SECTION_END);
+  }
+
+  /**
+   * format a type string: replace <> with []
+   * @param typeStr the type string to format
+   * @return formatted type string
+   */
+  private String formatTypeString(final TypeString typeStr) {
+    return this.formatTypeString(typeStr.getFullString());
+  }
+
+  /**
+   * format a type string: replace <> with []
+   * @param typeStr the type string to format
+   * @return formatted type string
+   */
+  private String formatTypeString(final String typeStr) {
+    return typeStr.replace("<", "[").replace(">", "]");
   }
 }
