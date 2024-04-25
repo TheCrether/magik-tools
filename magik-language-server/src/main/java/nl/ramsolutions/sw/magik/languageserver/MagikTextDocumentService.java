@@ -1,10 +1,7 @@
 package nl.ramsolutions.sw.magik.languageserver;
 
 import java.net.URI;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import nl.ramsolutions.sw.OpenedFile;
 import nl.ramsolutions.sw.magik.MagikTypedFile;
@@ -12,6 +9,9 @@ import nl.ramsolutions.sw.magik.ModuleDefFile;
 import nl.ramsolutions.sw.magik.ProductDefFile;
 import nl.ramsolutions.sw.magik.analysis.MagikAnalysisConfiguration;
 import nl.ramsolutions.sw.magik.analysis.definitions.IDefinitionKeeper;
+import nl.ramsolutions.sw.magik.checks.CheckList;
+import nl.ramsolutions.sw.magik.checks.MagikCheck;
+import nl.ramsolutions.sw.magik.checks.MagikChecksConfiguration;
 import nl.ramsolutions.sw.magik.languageserver.codeactions.CodeActionProvider;
 import nl.ramsolutions.sw.magik.languageserver.completion.CompletionProvider;
 import nl.ramsolutions.sw.magik.languageserver.definitions.DefinitionsProvider;
@@ -28,64 +28,15 @@ import nl.ramsolutions.sw.magik.languageserver.selectionrange.SelectionRangeProv
 import nl.ramsolutions.sw.magik.languageserver.semantictokens.SemanticTokenProvider;
 import nl.ramsolutions.sw.magik.languageserver.signaturehelp.SignatureHelpProvider;
 import nl.ramsolutions.sw.magik.languageserver.typehierarchy.TypeHierarchyProvider;
-import org.eclipse.lsp4j.CodeAction;
-import org.eclipse.lsp4j.CodeActionContext;
-import org.eclipse.lsp4j.CodeActionParams;
-import org.eclipse.lsp4j.Command;
-import org.eclipse.lsp4j.CompletionItem;
-import org.eclipse.lsp4j.CompletionList;
-import org.eclipse.lsp4j.CompletionParams;
-import org.eclipse.lsp4j.DefinitionParams;
-import org.eclipse.lsp4j.Diagnostic;
-import org.eclipse.lsp4j.DidChangeTextDocumentParams;
-import org.eclipse.lsp4j.DidCloseTextDocumentParams;
-import org.eclipse.lsp4j.DidOpenTextDocumentParams;
-import org.eclipse.lsp4j.DidSaveTextDocumentParams;
-import org.eclipse.lsp4j.DocumentFormattingParams;
-import org.eclipse.lsp4j.DocumentSymbol;
-import org.eclipse.lsp4j.DocumentSymbolParams;
-import org.eclipse.lsp4j.FoldingRange;
-import org.eclipse.lsp4j.FoldingRangeRequestParams;
-import org.eclipse.lsp4j.FormattingOptions;
-import org.eclipse.lsp4j.Hover;
-import org.eclipse.lsp4j.HoverParams;
-import org.eclipse.lsp4j.ImplementationParams;
-import org.eclipse.lsp4j.InlayHint;
-import org.eclipse.lsp4j.InlayHintParams;
-import org.eclipse.lsp4j.Location;
-import org.eclipse.lsp4j.LocationLink;
-import org.eclipse.lsp4j.Position;
-import org.eclipse.lsp4j.PrepareRenameDefaultBehavior;
-import org.eclipse.lsp4j.PrepareRenameParams;
-import org.eclipse.lsp4j.PrepareRenameResult;
-import org.eclipse.lsp4j.PublishDiagnosticsParams;
-import org.eclipse.lsp4j.Range;
-import org.eclipse.lsp4j.ReferenceParams;
-import org.eclipse.lsp4j.RenameParams;
-import org.eclipse.lsp4j.SelectionRange;
-import org.eclipse.lsp4j.SelectionRangeParams;
-import org.eclipse.lsp4j.SemanticTokens;
-import org.eclipse.lsp4j.SemanticTokensParams;
-import org.eclipse.lsp4j.ServerCapabilities;
-import org.eclipse.lsp4j.SignatureHelp;
-import org.eclipse.lsp4j.SignatureHelpParams;
-import org.eclipse.lsp4j.SymbolInformation;
-import org.eclipse.lsp4j.TextDocumentContentChangeEvent;
-import org.eclipse.lsp4j.TextDocumentIdentifier;
-import org.eclipse.lsp4j.TextDocumentItem;
-import org.eclipse.lsp4j.TextDocumentSyncKind;
-import org.eclipse.lsp4j.TextEdit;
-import org.eclipse.lsp4j.TypeHierarchyItem;
-import org.eclipse.lsp4j.TypeHierarchyPrepareParams;
-import org.eclipse.lsp4j.TypeHierarchySubtypesParams;
-import org.eclipse.lsp4j.TypeHierarchySupertypesParams;
-import org.eclipse.lsp4j.WorkspaceEdit;
+import org.eclipse.lsp4j.*;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.lsp4j.jsonrpc.messages.Either3;
+import org.eclipse.lsp4j.jsonrpc.services.JsonRequest;
 import org.eclipse.lsp4j.services.LanguageClient;
 import org.eclipse.lsp4j.services.TextDocumentService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.sonar.check.RuleProperty;
 
 /** Magik TextDocumentService. */
 public class MagikTextDocumentService implements TextDocumentService {
@@ -653,6 +604,11 @@ public class MagikTextDocumentService implements TextDocumentService {
 
     final OpenedFile openedFile = this.openedFiles.get(textDocument);
     if (!(openedFile instanceof MagikTypedFile)) {
+      if (textDocument.getUri().contains("magiklintrc.properties")) {
+        // TODO use the params to get if the user is behind a = or not and then check if integer
+        // etc.
+        return getAllChecks();
+      }
       return CompletableFuture.supplyAsync(() -> Either.forLeft(Collections.emptyList()));
     }
 
@@ -1025,6 +981,63 @@ public class MagikTextDocumentService implements TextDocumentService {
               range.getEnd().getLine(),
               range.getEnd().getCharacter());
           return codeActionsLsp4j;
+        });
+  }
+
+  @JsonRequest("custom/getAllChecks")
+  public CompletableFuture<Either<List<CompletionItem>, CompletionList>> getAllChecks() {
+    final long start = System.nanoTime();
+
+    LOGGER.debug("getAllChecks");
+
+    //    final OpenedFile openedFile = this.openedFiles.get(textDocument);
+    //    if (!(openedFile instanceof MagikTypedFile)) {
+    //      return CompletableFuture.supplyAsync(() -> Either.forLeft(Collections.emptyList()));
+    //    }
+
+    //    final MagikTypedFile magikFile = (MagikTypedFile) openedFile;
+    return CompletableFuture.supplyAsync(
+        () -> {
+          List<Class<? extends MagikCheck>> checks = CheckList.getChecks();
+          List<CompletionItem> completions =
+              checks.stream()
+                  .flatMap(
+                      c -> {
+                        String checkKey = MagikChecksConfiguration.checkKey(c);
+
+                        return Arrays.stream(c.getFields())
+                            .map(field -> field.getAnnotation(RuleProperty.class))
+                            .filter(Objects::nonNull)
+                            .map(
+                                property -> {
+                                  final String propertyKey =
+                                      MagikChecksConfiguration.propertyKey(property);
+                                  final String configKey = checkKey + "." + propertyKey;
+                                  CompletionItem item = new CompletionItem(configKey);
+
+                                  item.setInsertText(configKey);
+
+                                  String builder =
+                                      "Type: `"
+                                          + property.type()
+                                          + "` Default: `"
+                                          + property.defaultValue();
+                                  item.setDetail(builder);
+
+                                  item.setDocumentation(
+                                      new MarkupContent(
+                                          MarkupKind.MARKDOWN, "*" + property.description() + "*"));
+                                  item.setKind(CompletionItemKind.Property);
+
+                                  return item;
+                                });
+                      })
+                  .sorted(Comparator.comparing(CompletionItem::getInsertText))
+                  .toList();
+
+          LOGGER_DURATION.trace(
+              "Duration: {} getAllChecks", (System.nanoTime() - start) / 1000000000.0);
+          return Either.forLeft(completions);
         });
   }
 }

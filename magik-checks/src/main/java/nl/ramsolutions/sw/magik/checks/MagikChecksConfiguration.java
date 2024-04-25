@@ -62,7 +62,7 @@ public class MagikChecksConfiguration {
     final List<String> disableds = this.properties.getPropertyList(KEY_DISABLED_CHECKS);
     final List<String> enableds = this.properties.getPropertyList(KEY_ENABLED_CHECKS);
 
-    for (final Class<?> checkClass : this.checkClasses) {
+    for (final Class<? extends MagikCheck> checkClass : this.checkClasses) {
       final String checkKey = MagikChecksConfiguration.checkKey(checkClass);
       final boolean checkEnabled =
           enableds.contains(checkKey)
@@ -106,21 +106,19 @@ public class MagikChecksConfiguration {
               .filter(Objects::nonNull)
               .collect(Collectors.toSet());
 
-      @SuppressWarnings("unchecked")
-      final MagikCheckHolder holder =
-          new MagikCheckHolder((Class<MagikCheck>) checkClass, parameters, checkEnabled);
+      final MagikCheckHolder holder = new MagikCheckHolder(checkClass, parameters, checkEnabled);
       holders.add(holder);
     }
     return holders;
   }
 
-  private static String checkKey(final Class<?> checkClass) {
+  public static String checkKey(final Class<?> checkClass) {
     final Rule annotation = checkClass.getAnnotation(Rule.class);
     final String checkKey = annotation.key();
     return MagikCheckHolder.toKebabCase(checkKey);
   }
 
-  private static String propertyKey(final RuleProperty ruleProperty) {
+  public static String propertyKey(final RuleProperty ruleProperty) {
     return ruleProperty.key().replace(" ", "-");
   }
 }
