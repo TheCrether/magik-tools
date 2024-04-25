@@ -627,10 +627,10 @@ public class HoverProvider {
     if (description != null) {
       builder.append("### Description").append("\n");
       final String typeDocMd =
-        description
-          .lines()
-          .map(line -> line.trim().length() > 0 ? "*" + line.trim() + "*" : "")
-          .collect(Collectors.joining(BR));
+          description
+              .lines()
+              .map(line -> line.trim().length() > 0 ? "*" + line.trim() + "*" : "")
+              .collect(Collectors.joining(BR));
       builder.append(typeDocMd).append(SECTION_END);
     }
   }
@@ -663,16 +663,17 @@ public class HoverProvider {
     if (description != null) {
       builder.append("### Description").append("\n");
       final String typeDocMd =
-        description
-          .lines()
-          .map(line -> line.trim().length() > 0 ? "*" + line.trim() + "*" : "")
-          .collect(Collectors.joining(BR));
+          description
+              .lines()
+              .map(line -> line.trim().length() > 0 ? "*" + line.trim() + "*" : "")
+              .collect(Collectors.joining(BR));
       builder.append(typeDocMd).append(SECTION_END);
     }
   }
 
   /**
    * append the module name of a definition, but not as a section end
+   *
    * @param builder the string builder
    * @param def the definition
    */
@@ -682,9 +683,11 @@ public class HoverProvider {
 
   /**
    * append the module name of a definition
+   *
    * @param builder the string builder
    * @param def the definition
-   * @param end if the module name is a section end, if true -> add {@link HoverProvider#SECTION_END}
+   * @param end if the module name is a section end, if true -> add {@link
+   *     HoverProvider#SECTION_END}
    */
   private void appendModuleName(StringBuilder builder, Definition def, Boolean end) {
     final String moduleName = def.getModuleName();
@@ -695,6 +698,7 @@ public class HoverProvider {
 
   /**
    * append documentation of a definition in a consistent manner
+   *
    * @param builder the string builder
    * @param def the definition
    */
@@ -712,9 +716,11 @@ public class HoverProvider {
 
   /**
    * appends a Markdown code block
+   *
    * @param builder the string builder
    * @param isMagik if the code block is a magik code block
-   * @param end if the code block is a section end, if true -> add {@link HoverProvider#SECTION_END} after the code block
+   * @param end if the code block is a section end, if true -> add {@link HoverProvider#SECTION_END}
+   *     after the code block
    * @param code the lines of code to be added
    */
   private void appendCodeBlock(
@@ -730,6 +736,7 @@ public class HoverProvider {
 
   /**
    * append a result text to string builder and add {@link HoverProvider#SECTION_END}
+   *
    * @param builder the string builder
    * @param typeString the type string which should be used
    */
@@ -743,6 +750,7 @@ public class HoverProvider {
 
   /**
    * format a type string: replace <> with []
+   *
    * @param typeStr the type string to format
    * @return formatted type string
    */
@@ -752,6 +760,7 @@ public class HoverProvider {
 
   /**
    * format a type string: replace <> with []
+   *
    * @param typeStr the type string to format
    * @return formatted type string
    */

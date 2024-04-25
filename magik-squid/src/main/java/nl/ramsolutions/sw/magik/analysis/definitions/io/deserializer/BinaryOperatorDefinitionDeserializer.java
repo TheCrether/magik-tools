@@ -25,9 +25,9 @@ public class BinaryOperatorDefinitionDeserializer
 
     String operator = getStringField(node, "operator");
 
-    TypeString lhsTypeName = getTypeString(context, node, "lhs_type_name");
-    TypeString rhsTypeName = getTypeString(context, node, "rhs_type_name");
-    TypeString resultTypeName = getTypeString(context, node, "result_type_name");
+    TypeString lhsTypeName = getTypeString(context, node, "lhs_type_n");
+    TypeString rhsTypeName = getTypeString(context, node, "rhs_type_n");
+    TypeString resultTypeName = getTypeString(context, node, "result_type_n");
 
     return new BinaryOperatorDefinition(
         base.getLocation(),
