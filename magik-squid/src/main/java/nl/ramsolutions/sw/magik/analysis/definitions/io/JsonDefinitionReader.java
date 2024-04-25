@@ -27,6 +27,9 @@ import org.slf4j.LoggerFactory;
 public final class JsonDefinitionReader {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(JsonDefinitionReader.class);
+  private static final Logger LOGGER_DURATION =
+      LoggerFactory.getLogger(JsonDefinitionReader.class.getName() + "Duration");
+
   public static final String TYPE_DB_DEFAULT_ALIAS = "$default";
   private static final String TYPE_DB_DEFAULT_PATH =
       "../types_db.jsonl"; // relative to smallworldGis path
@@ -94,7 +97,10 @@ public final class JsonDefinitionReader {
       final @Nullable List<PathMapping> mappings)
       throws IOException {
     final JsonDefinitionReader reader = new JsonDefinitionReader(definitionKeeper, mappings);
+    final long start = System.nanoTime();
     reader.run(path);
+    LOGGER_DURATION.trace(
+        "Duration: {} readTypes, type db: {}", (System.nanoTime() - start) / 1000000000.0, path);
     BaseDeserializer.clearParsedFiles(); // free memory
   }
 

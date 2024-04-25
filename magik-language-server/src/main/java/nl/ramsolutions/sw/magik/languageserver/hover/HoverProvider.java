@@ -21,6 +21,7 @@ import nl.ramsolutions.sw.magik.analysis.typing.TypeStringResolver;
 import nl.ramsolutions.sw.magik.analysis.typing.reasoner.LocalTypeReasonerState;
 import nl.ramsolutions.sw.magik.api.MagikGrammar;
 import nl.ramsolutions.sw.magik.languageserver.Lsp4jConversion;
+import nl.ramsolutions.sw.magik.languageserver.MagikSettings;
 import org.eclipse.lsp4j.Hover;
 import org.eclipse.lsp4j.MarkupContent;
 import org.eclipse.lsp4j.MarkupKind;
@@ -495,9 +496,7 @@ public class HoverProvider {
 
     // Method topics.
     final String topics = String.join(", ", methodDef.getTopics());
-    if (topics.trim().length() > 0) {
-      builder.append("Topics: ").append(topics);
-    }
+    appendTopics(builder, topics);
 
     builder.append(SECTION_END);
   }
@@ -552,10 +551,9 @@ public class HoverProvider {
     appendModuleName(builder, exemplarDef);
 
     final String topics = String.join(", ", exemplarDef.getTopics());
-    if (topics.trim().length() > 0) {
-      builder.append("Topics: ").append(topics);
-      builder.append(SECTION_END);
-    }
+    appendTopics(builder, topics);
+
+    builder.append(SECTION_END);
 
     final Collection<SlotDefinition> slots = exemplarDef.getSlots();
     if (!slots.isEmpty()) {
@@ -746,6 +744,12 @@ public class HoverProvider {
         typeString.trim().isEmpty() ? "_unset" : this.formatTypeString(typeString.trim()));
 
     builder.append(SECTION_END);
+  }
+
+  private void appendTopics(StringBuilder builder, String topicsStr) {
+    if (topicsStr.trim().length() > 0 && MagikSettings.INSTANCE.getShowTopicsOnHover()) {
+      builder.append("Topics: ").append(topicsStr);
+    }
   }
 
   /**

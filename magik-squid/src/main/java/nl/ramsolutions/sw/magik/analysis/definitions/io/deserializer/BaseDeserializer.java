@@ -18,10 +18,28 @@ import nl.ramsolutions.sw.magik.analysis.definitions.Definition;
 import nl.ramsolutions.sw.magik.analysis.typing.TypeString;
 
 public abstract class BaseDeserializer<T> extends StdDeserializer<T> {
-  private static HashMap<Path, List<Definition>> parsedFiles = new HashMap<>();
-  private static Set<Path> erroredFiles = new HashSet<>();
+  private static final HashMap<Path, IndexedFile> parsedFiles = new HashMap<>();
+  private static final Set<Path> erroredFiles = new HashSet<>();
 
   private final List<PathMapping> mappings;
+
+  private static class IndexedFile {
+    private final List<Definition> definitions;
+    private final long indexedAt;
+
+    private IndexedFile(List<Definition> definitions, long indexedAt) {
+      this.definitions = definitions;
+      this.indexedAt = indexedAt;
+    }
+
+    public List<Definition> getDefinitions() {
+      return definitions;
+    }
+
+    public long getIndexedAt() {
+      return indexedAt;
+    }
+  }
 
   public BaseDeserializer(List<PathMapping> mappings) {
     super((Class<?>) null);
@@ -136,17 +154,31 @@ public abstract class BaseDeserializer<T> extends StdDeserializer<T> {
       return new ArrayList<>();
     }
 
+    long now = System.currentTimeMillis();
+
+    if (parsedFiles.containsKey(path)) {
+      IndexedFile file = parsedFiles.get(path);
+      if (file.getIndexedAt() < path.toFile().lastModified()) {
+        parsedFiles.remove(path);
+      }
+    }
+
     if (!parsedFiles.containsKey(path)) {
       try {
         MagikFile file = new MagikFile(path);
-        parsedFiles.put(path, file.getDefinitions());
+        parsedFiles.put(path, new IndexedFile(file.getDefinitions(), now));
       } catch (Exception e) {
         erroredFiles.add(path);
         return new ArrayList<>();
       }
     }
 
-    return Collections.unmodifiableList(parsedFiles.getOrDefault(path, new ArrayList<>()));
+    IndexedFile file = parsedFiles.get(path);
+    if (file == null) {
+      return Collections.unmodifiableList(new ArrayList<>());
+    }
+
+    return Collections.unmodifiableList(file.getDefinitions());
   }
 
   public static <X> Definition getParsedDefinition(Location location, String name, Class<X> clazz) {
@@ -157,7 +189,6 @@ public abstract class BaseDeserializer<T> extends StdDeserializer<T> {
   }
 
   public static void clearParsedFiles() {
-    erroredFiles = new HashSet<>();
-    parsedFiles = new HashMap<>();
+    erroredFiles.clear();
   }
 }

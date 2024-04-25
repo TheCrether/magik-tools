@@ -12,6 +12,7 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import nl.ramsolutions.sw.IgnoreHandler;
 import nl.ramsolutions.sw.magik.FileEvent;
+import nl.ramsolutions.sw.magik.PathMapping;
 import nl.ramsolutions.sw.magik.analysis.MagikAnalysisConfiguration;
 import nl.ramsolutions.sw.magik.analysis.definitions.IDefinitionKeeper;
 import nl.ramsolutions.sw.magik.analysis.definitions.io.JsonDefinitionReader;
@@ -34,6 +35,8 @@ import org.slf4j.LoggerFactory;
 public class MagikWorkspaceService implements WorkspaceService {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(MagikWorkspaceService.class);
+  private static final Logger LOGGER_DURATION =
+      LoggerFactory.getLogger(MagikWorkspaceService.class.getName() + "Duration");
 
   private final MagikLanguageServer languageServer;
   private final MagikAnalysisConfiguration analysisConfiguration;
@@ -81,6 +84,11 @@ public class MagikWorkspaceService implements WorkspaceService {
   public void didChangeConfiguration(final DidChangeConfigurationParams params) {
     LOGGER.trace("didChangeConfiguration");
 
+    final MagikSettings oldSettings = MagikSettings.INSTANCE;
+    final List<String> oldTypeDBPaths = oldSettings.getTypingTypeDatabasePaths();
+    final List<String> oldLibsDirs = oldSettings.getLibsDirs();
+    final List<PathMapping> oldPathMappings = oldSettings.getPathMappings();
+
     final JsonObject settings = (JsonObject) params.getSettings();
 
     LOGGER.debug("New settings: {}", settings);
@@ -104,7 +112,21 @@ public class MagikWorkspaceService implements WorkspaceService {
     this.analysisConfiguration.setMagikIndexerIndexConditionUsages(
         magikIndexerIndexConditionUsages);
 
-    this.runIndexersInBackground();
+    if (collectionsDiffers(oldTypeDBPaths, MagikSettings.INSTANCE.getTypingTypeDatabasePaths())
+        || collectionsDiffers(oldLibsDirs, MagikSettings.INSTANCE.getLibsDirs())
+        || collectionsDiffers(oldPathMappings, MagikSettings.INSTANCE.getPathMappings())) {
+      this.runIndexersInBackground();
+    }
+  }
+
+  private <T> boolean collectionsDiffers(Collection<T> collection1, Collection<T> collection2) {
+    if (collection1.size() != collection2.size()) {
+      return true;
+    }
+
+    int sizeBefore = collection1.size();
+    collection1.retainAll(collection2);
+    return sizeBefore != collection1.size();
   }
 
   private void runIgnoreFilesIndexer() {
@@ -174,6 +196,8 @@ public class MagikWorkspaceService implements WorkspaceService {
    * @param typeDbPaths Paths to type databases.
    */
   public void readTypesDbs(final List<String> typeDbPaths) {
+    final long start = System.nanoTime();
+
     LOGGER.trace("Reading type databases from: {}", typeDbPaths);
 
     typeDbPaths.forEach(
@@ -195,6 +219,8 @@ public class MagikWorkspaceService implements WorkspaceService {
             LOGGER.error(exception.getMessage(), exception);
           }
         });
+
+    LOGGER_DURATION.trace("Duration: {} readTypesDbs", (System.nanoTime() - start) / 1000000000.0);
   }
 
   @Override
@@ -244,6 +270,7 @@ public class MagikWorkspaceService implements WorkspaceService {
   }
 
   // region: Additional commands.
+
   /**
    * Re-index all magik files.
    *
@@ -285,6 +312,7 @@ public class MagikWorkspaceService implements WorkspaceService {
   // endregion
 
   private void runIndexers() {
+    final long start = System.nanoTime();
     LOGGER.trace("Run indexers");
 
     // Read types db.
@@ -311,6 +339,8 @@ public class MagikWorkspaceService implements WorkspaceService {
           (MagikTextDocumentService) textDocumentService;
       magikTextDocumentService.reopenAllFiles();
     }
+
+    LOGGER_DURATION.trace("Duration: {} runIndexers", (System.nanoTime() - start) / 1000000000.0);
 
     this.languageServer.getLanguageClient().sendIndexed(); // tell vs code that the indexing is done
   }

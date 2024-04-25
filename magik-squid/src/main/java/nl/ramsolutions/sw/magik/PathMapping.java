@@ -35,14 +35,12 @@ public class PathMapping {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
     PathMapping that = (PathMapping) o;
-    return Objects.equals(getFrom(), that.getFrom())
-        && Objects.equals(getTo(), that.getTo())
-        && Objects.equals(getReadOnly(), that.getReadOnly());
+    return Objects.equals(getFrom(), that.getFrom()) && Objects.equals(getTo(), that.getTo());
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(getFrom(), getTo(), getReadOnly());
+    return Objects.hash(getFrom(), getTo());
   }
 
   public Location mapLocation(Location location) {

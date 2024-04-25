@@ -31,6 +31,7 @@ public final class MagikSettings { // NOSONAR
   private static final String INDEX_SLOT_USAGES = "indexSlotUsages";
   private static final String INDEX_CONDITION_USAGES = "indexConditionUsages";
   private static final String PATH_MAPPING = "pathMapping";
+  private static final String SHOW_TOPICS_ON_HOVER = "showTopicsOnHover";
 
   private JsonObject settings = new JsonObject();
 
@@ -42,7 +43,7 @@ public final class MagikSettings { // NOSONAR
   /**
    * Set new settings.
    *
-   * @param settings
+   * @param settings the new settings
    */
   public void setSettings(final JsonObject settings) {
     this.settings = settings;
@@ -331,21 +332,40 @@ public final class MagikSettings { // NOSONAR
     if (this.pathMappings == null) {
       final JsonObject magik = this.settings.getAsJsonObject(TOP_LEVEL);
       if (magik == null) {
-        return null;
+        this.pathMappings = new ArrayList<>();
+        return this.pathMappings;
       }
 
       final JsonElement pathMappingElement = magik.get(PATH_MAPPING);
       if (pathMappingElement == null) {
-        return null;
+        this.pathMappings = new ArrayList<>();
+        return this.pathMappings;
       }
 
       this.pathMappings =
-          pathMappingElement.getAsJsonArray().asList().stream()
-              .map(JsonElement::getAsJsonObject)
-              .map(el -> new PathMapping(el.get("from").getAsString(), el.get("to").getAsString()))
-              .toList();
+          new ArrayList<>(
+              pathMappingElement.getAsJsonArray().asList().stream()
+                  .map(JsonElement::getAsJsonObject)
+                  .map(
+                      el ->
+                          new PathMapping(el.get("from").getAsString(), el.get("to").getAsString()))
+                  .toList());
     }
 
     return this.pathMappings;
+  }
+
+  public Boolean getShowTopicsOnHover() {
+    final JsonObject magik = this.settings.getAsJsonObject(TOP_LEVEL);
+    if (magik == null) {
+      return true;
+    }
+
+    final JsonElement indexSlotUsages = magik.get(SHOW_TOPICS_ON_HOVER);
+    if (indexSlotUsages == null) {
+      return true;
+    }
+
+    return indexSlotUsages.getAsBoolean();
   }
 }
