@@ -15,9 +15,9 @@ import org.sonar.check.RuleProperty;
 /** Configuration. */
 public class MagikChecksConfiguration {
 
-  private static final String KEY_DISABLED_CHECKS = "disabled";
-  private static final String KEY_ENABLED_CHECKS = "enabled";
-  private static final String KEY_IGNORED_PATHS = "ignore";
+  public static final String KEY_DISABLED_CHECKS = "disabled";
+  public static final String KEY_ENABLED_CHECKS = "enabled";
+  public static final String KEY_IGNORED_PATHS = "ignore";
 
   private final MagikToolsProperties properties;
   private final List<Class<? extends MagikCheck>> checkClasses;

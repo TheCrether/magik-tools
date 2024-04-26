@@ -4,6 +4,7 @@ import java.net.URI;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import nl.ramsolutions.sw.OpenedFile;
+import nl.ramsolutions.sw.magik.LintPropertiesFile;
 import nl.ramsolutions.sw.magik.MagikTypedFile;
 import nl.ramsolutions.sw.magik.ModuleDefFile;
 import nl.ramsolutions.sw.magik.ProductDefFile;
@@ -162,6 +163,11 @@ public class MagikTextDocumentService implements TextDocumentService {
           this.publishDiagnostics(magikFile);
           break;
         }
+      case "properties":
+        {
+          openedFile = new LintPropertiesFile(uri, text);
+          break;
+        }
 
       default:
         throw new UnsupportedOperationException();
@@ -236,6 +242,12 @@ public class MagikTextDocumentService implements TextDocumentService {
 
           // Publish diagnostics to client.
           this.publishDiagnostics(magikFile);
+          break;
+        }
+
+      case "properties":
+        {
+          openedFile = new LintPropertiesFile(uri, text);
           break;
         }
 
@@ -349,6 +361,9 @@ public class MagikTextDocumentService implements TextDocumentService {
                 params.getPosition().getCharacter());
             return hover;
           });
+    } else if (openedFile instanceof LintPropertiesFile) {
+      // TODO support hovering for lint properties file
+      return CompletableFuture.supplyAsync(() -> null);
     }
 
     throw new UnsupportedOperationException();
@@ -468,6 +483,8 @@ public class MagikTextDocumentService implements TextDocumentService {
                 textDocument.getUri());
             return foldingRanges;
           });
+    } else if (openedFile instanceof LintPropertiesFile) {
+      return CompletableFuture.supplyAsync(ArrayList::new);
     }
 
     throw new UnsupportedOperationException();
@@ -603,12 +620,12 @@ public class MagikTextDocumentService implements TextDocumentService {
         params.getPosition().getCharacter());
 
     final OpenedFile openedFile = this.openedFiles.get(textDocument);
-    if (!(openedFile instanceof MagikTypedFile)) {
-      if (textDocument.getUri().contains("magiklintrc.properties")) {
-        // TODO use the params to get if the user is behind a = or not and then check if integer
-        // etc.
-        return getAllChecks();
-      }
+
+    if (textDocument.getUri().endsWith("magiklintrc.properties")) {
+      // TODO use the params to get if the user is behind a = or not and then check if integer
+      // etc.
+      return completionsForLintFile(params);
+    } else if (!(openedFile instanceof MagikTypedFile)) {
       return CompletableFuture.supplyAsync(() -> Either.forLeft(Collections.emptyList()));
     }
 
@@ -985,59 +1002,198 @@ public class MagikTextDocumentService implements TextDocumentService {
   }
 
   @JsonRequest("custom/getAllChecks")
-  public CompletableFuture<Either<List<CompletionItem>, CompletionList>> getAllChecks() {
+  public CompletableFuture<Either<List<CompletionItem>, CompletionList>> completionsForLintFile(
+      CompletionParams params) {
+    // TODO put this into the completionProvider
     final long start = System.nanoTime();
+    LOGGER.debug("completionsForLintFile");
 
-    LOGGER.debug("getAllChecks");
+    final TextDocumentIdentifier textDocument = params.getTextDocument();
+    final Position position = params.getPosition();
+    final OpenedFile openedFile = this.openedFiles.get(textDocument);
+    if (!(openedFile instanceof LintPropertiesFile lintPropertiesFile)) {
+      return CompletableFuture.supplyAsync(() -> Either.forLeft(new ArrayList<>()));
+    }
 
-    //    final OpenedFile openedFile = this.openedFiles.get(textDocument);
-    //    if (!(openedFile instanceof MagikTypedFile)) {
-    //      return CompletableFuture.supplyAsync(() -> Either.forLeft(Collections.emptyList()));
-    //    }
+    String completionType = "properties";
 
-    //    final MagikTypedFile magikFile = (MagikTypedFile) openedFile;
-    return CompletableFuture.supplyAsync(
-        () -> {
-          List<Class<? extends MagikCheck>> checks = CheckList.getChecks();
-          List<CompletionItem> completions =
-              checks.stream()
-                  .flatMap(
-                      c -> {
-                        String checkKey = MagikChecksConfiguration.checkKey(c);
+    List<String> lines = lintPropertiesFile.getSource().lines().toList();
+    int lineNo = position.getLine();
+    int charPos = position.getCharacter();
+    String line = "";
 
-                        return Arrays.stream(c.getFields())
-                            .map(field -> field.getAnnotation(RuleProperty.class))
-                            .filter(Objects::nonNull)
-                            .map(
-                                property -> {
-                                  final String propertyKey =
-                                      MagikChecksConfiguration.propertyKey(property);
-                                  final String configKey = checkKey + "." + propertyKey;
-                                  CompletionItem item = new CompletionItem(configKey);
+    int tempStartIndex = 0;
 
-                                  item.setInsertText(configKey);
+    if (lineNo < lines.size() && (line = lines.get(lineNo)) != null) {
+      int eqPosition = line.indexOf('=');
 
-                                  String builder =
-                                      "Type: `"
-                                          + property.type()
-                                          + "` Default: `"
-                                          + property.defaultValue();
-                                  item.setDetail(builder);
+      if (eqPosition != -1) {
+        String property = line.substring(0, eqPosition);
 
-                                  item.setDocumentation(
-                                      new MarkupContent(
-                                          MarkupKind.MARKDOWN, "*" + property.description() + "*"));
-                                  item.setKind(CompletionItemKind.Property);
+        // TODO add completion for enabled
+        if (property.contains(MagikChecksConfiguration.KEY_DISABLED_CHECKS)
+            || property.contains(MagikChecksConfiguration.KEY_ENABLED_CHECKS)
+            || property.contains(MagikChecksConfiguration.KEY_IGNORED_PATHS)) {
+          tempStartIndex = eqPosition + 1;
+          completionType = "rules";
+        } else if (eqPosition < charPos) {
+          completionType = "none";
+        }
+      }
+    }
 
-                                  return item;
-                                });
-                      })
-                  .sorted(Comparator.comparing(CompletionItem::getInsertText))
-                  .toList();
+    List<Class<? extends MagikCheck>> checks = CheckList.getChecks();
 
-          LOGGER_DURATION.trace(
-              "Duration: {} getAllChecks", (System.nanoTime() - start) / 1000000000.0);
-          return Either.forLeft(completions);
-        });
+    String finalLine = line == null ? "" : line;
+
+    switch (completionType) {
+      case "rules":
+        {
+          int finalStartIndex = tempStartIndex;
+          return CompletableFuture.supplyAsync(
+              () -> {
+                int startIndex = finalStartIndex;
+                int endIndex = finalLine.length() - 1;
+                Set<Character> startSeparators = Set.of('=', ',');
+
+                for (int i = startIndex; i < finalLine.length(); i++) {
+                  char c = finalLine.charAt(i);
+                  if (i < charPos && startSeparators.contains(c)) {
+                    startIndex = ++i;
+                  } else if (i >= charPos && c == ',' || i + 1 == finalLine.length()) {
+                    endIndex = i;
+                  }
+                }
+
+                if (startIndex > endIndex) {
+                  startIndex = endIndex;
+                }
+
+                String toReplaceStr = finalLine.substring(startIndex, endIndex);
+                Range toReplace =
+                    new org.eclipse.lsp4j.Range(
+                        new Position(lineNo, startIndex), new Position(lineNo, endIndex));
+
+                int finalStartIndex1 = startIndex;
+                List<CompletionItem> completions =
+                    checks.stream()
+                        .map(
+                            check -> {
+                              String rule = MagikChecksConfiguration.checkKey(check);
+                              CompletionItem item = new CompletionItem(rule);
+
+                              item.setInsertText(rule);
+                              item.setKind(CompletionItemKind.Property);
+                              item.setTextEdit(
+                                  Either.forRight(
+                                      new InsertReplaceEdit(
+                                          item.getInsertText(),
+                                          toReplace,
+                                          new org.eclipse.lsp4j.Range(
+                                              new Position(lineNo, finalStartIndex1),
+                                              new Position(
+                                                  lineNo,
+                                                  finalStartIndex1
+                                                      + item.getInsertText().length())))));
+                              // TODO find out why the completion items do not get rendered if the
+                              // toReplaceStr is empty
+                              // item.setDocumentation(); // TODO add description to @Rule
+                              // annotations
+
+                              return item;
+                            })
+                        .filter(item -> item.getInsertText().contains(toReplaceStr))
+                        .sorted(Comparator.comparing(CompletionItem::getLabel))
+                        .toList();
+
+                LOGGER_DURATION.trace(
+                    "Duration: {} completionsForLintFile/rules",
+                    (System.nanoTime() - start) / 1000000000.0);
+                return Either.forLeft(completions);
+              });
+        }
+      case "properties":
+        {
+          return CompletableFuture.supplyAsync(
+              () -> {
+                List<CompletionItem> completions =
+                    checks.stream()
+                        .flatMap(
+                            c -> {
+                              String checkKey = MagikChecksConfiguration.checkKey(c);
+
+                              return Arrays.stream(c.getFields())
+                                  .map(field -> field.getAnnotation(RuleProperty.class))
+                                  .filter(Objects::nonNull)
+                                  .map(
+                                      property -> {
+                                        final String propertyKey =
+                                            MagikChecksConfiguration.propertyKey(property);
+                                        final String configKey = checkKey + "." + propertyKey;
+                                        CompletionItem item = new CompletionItem(configKey);
+
+                                        item.setInsertText(
+                                            configKey + "=" + property.defaultValue());
+
+                                        String builder =
+                                            "Type: `"
+                                                + property.type()
+                                                + "` Default: `"
+                                                + property.defaultValue();
+                                        item.setDetail(builder);
+
+                                        item.setDocumentation(
+                                            new MarkupContent(
+                                                MarkupKind.MARKDOWN,
+                                                "*" + property.description() + "*"));
+                                        item.setKind(CompletionItemKind.Property);
+                                        item.setFilterText(finalLine);
+                                        item.setInsertTextMode(InsertTextMode.AdjustIndentation);
+                                        setInsertEditForProperty(item, position, finalLine);
+
+                                        return item;
+                                      });
+                            })
+                        .filter(item -> item.getLabel().contains(finalLine))
+                        .sorted(Comparator.comparing(CompletionItem::getLabel))
+                        .toList();
+
+                if (MagikChecksConfiguration.KEY_DISABLED_CHECKS.contains(finalLine)) {
+                  completions = new ArrayList<>(completions);
+
+                  CompletionItem disabledItem = new CompletionItem("disabled");
+                  disabledItem.setInsertText("disabled");
+                  disabledItem.setDetail("Disables rules completely");
+                  disabledItem.setKind(CompletionItemKind.Property);
+                  disabledItem.setFilterText(finalLine);
+                  disabledItem.setInsertTextMode(InsertTextMode.AdjustIndentation);
+                  setInsertEditForProperty(disabledItem, position, finalLine);
+
+                  completions.add(disabledItem);
+                }
+
+                LOGGER_DURATION.trace(
+                    "Duration: {} completionsForLintFile/properties",
+                    (System.nanoTime() - start) / 1000000000.0);
+                return Either.forLeft(completions);
+              });
+        }
+      case "none":
+        return CompletableFuture.supplyAsync(() -> Either.forLeft(new ArrayList<>()));
+    }
+    throw new UnsupportedOperationException("Unsupported completion type: " + completionType);
+  }
+
+  private void setInsertEditForProperty(CompletionItem item, Position position, String finalLine) {
+    item.setTextEdit(
+        Either.forRight(
+            new InsertReplaceEdit(
+                item.getInsertText(),
+                new org.eclipse.lsp4j.Range(
+                    new Position(position.getLine(), 0),
+                    new Position(position.getLine(), finalLine.length())),
+                new org.eclipse.lsp4j.Range(
+                    new Position(position.getLine(), 0),
+                    new Position(position.getLine(), item.getInsertText().length())))));
   }
 }
