@@ -32,7 +32,8 @@ public final class JsonDefinitionReader {
 
   public static final String TYPE_DB_DEFAULT_ALIAS = "$default";
   private static final String TYPE_DB_DEFAULT_PATH =
-      "../types_db.jsonl"; // relative to smallworldGis path
+      "../type_dbs"; // relative to smallworldGis path
+  public static final String TYPE_DB_EXT = ".types_db.jsonl";
 
   private final IDefinitionKeeper definitionKeeper;
   private final List<PathMapping> mappings;

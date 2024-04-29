@@ -1,15 +1,14 @@
 package nl.ramsolutions.sw.magik.languageserver;
 
 import com.google.gson.JsonObject;
+import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Collection;
-import java.util.List;
-import java.util.Objects;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Stream;
 import nl.ramsolutions.sw.IgnoreHandler;
 import nl.ramsolutions.sw.magik.FileEvent;
 import nl.ramsolutions.sw.magik.PathMapping;
@@ -200,25 +199,43 @@ public class MagikWorkspaceService implements WorkspaceService {
 
     LOGGER.trace("Reading type databases from: {}", typeDbPaths);
 
-    typeDbPaths.forEach(
-        pathStr -> {
-          Path path =
-              JsonDefinitionReader.parseTypeDBPath(
-                  Objects.requireNonNull(
-                      MagikSettings.INSTANCE.getSmallworldGis(), "smallworldGis not defined"),
-                  pathStr);
-          if (path == null) {
-            LOGGER.warn("Path to types database does not exist: {}", pathStr);
-            return;
-          }
-
-          try {
-            JsonDefinitionReader.readTypes(
-                path, this.definitionKeeper, MagikSettings.INSTANCE.getPathMappings());
-          } catch (final IOException exception) {
-            LOGGER.error(exception.getMessage(), exception);
-          }
-        });
+    typeDbPaths.stream()
+        .map(
+            pathStr -> {
+              Path path =
+                  JsonDefinitionReader.parseTypeDBPath(
+                      Objects.requireNonNull(
+                          MagikSettings.INSTANCE.getSmallworldGis(), "smallworldGis not defined"),
+                      pathStr);
+              if (path == null) {
+                LOGGER.warn("Path to types database does not exist: {}", pathStr);
+                return null;
+              }
+              return path;
+            })
+        .filter(Objects::nonNull)
+        .flatMap(
+            path -> {
+              if (Files.isDirectory(path)) {
+                File dir = path.toFile();
+                File[] files =
+                    dir.listFiles((dir1, name) -> name.endsWith(JsonDefinitionReader.TYPE_DB_EXT));
+                if (files != null) {
+                  return Arrays.stream(files).map(File::toPath);
+                }
+                return Stream.empty();
+              }
+              return Stream.of(path);
+            })
+        .forEach(
+            path -> {
+              try {
+                JsonDefinitionReader.readTypes(
+                    path, this.definitionKeeper, MagikSettings.INSTANCE.getPathMappings());
+              } catch (final IOException exception) {
+                LOGGER.error(exception.getMessage(), exception);
+              }
+            });
 
     LOGGER_DURATION.trace("Duration: {} readTypesDbs", (System.nanoTime() - start) / 1000000000.0);
   }
