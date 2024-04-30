@@ -23,7 +23,7 @@ public class MethodComplexityCheck extends MagikCheck {
   @RuleProperty(
       key = "maximum complexity",
       defaultValue = "" + DEFAULT_MAXIMUM_COMPLEXITY,
-      description = "Maximum complexity of method by the McCabe definition",
+      description = "Maximum complexity of method by the McCabe definition (0 to disable)",
       type = "INTEGER")
   @SuppressWarnings("checkstyle:VisibilityModifier")
   public int maximumComplexity = DEFAULT_MAXIMUM_COMPLEXITY;
@@ -43,7 +43,7 @@ public class MethodComplexityCheck extends MagikCheck {
     visitor.walkAst(node);
 
     final int complexity = visitor.getComplexity();
-    if (complexity > this.maximumComplexity) {
+    if (complexity > this.maximumComplexity && this.maximumComplexity <= 0) {
       final String message = String.format(MESSAGE, complexity, this.maximumComplexity);
       final AstNode issueNode;
       if (node.is(MagikGrammar.METHOD_DEFINITION)) {

@@ -1107,8 +1107,9 @@ public class MagikTextDocumentService implements TextDocumentService {
                         .toList();
 
                 LOGGER_DURATION.trace(
-                    "Duration: {} completionsForLintFile/rules",
-                    (System.nanoTime() - start) / 1000000000.0);
+                    "Duration: {} completionsForLintFile/rules, suggestions: {}",
+                    (System.nanoTime() - start) / 1000000000.0,
+                    completions.size());
                 return Either.forLeft(completions);
               });
         }

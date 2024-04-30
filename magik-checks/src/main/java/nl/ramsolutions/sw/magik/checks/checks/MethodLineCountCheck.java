@@ -24,7 +24,8 @@ public class MethodLineCountCheck extends MagikCheck {
   @RuleProperty(
       key = "maximum length",
       defaultValue = "" + DEFAULT_MAXIMUM_LENGTH,
-      description = "Maximum length of method in lines without white lines and comment lines",
+      description =
+          "Maximum length of method in lines without white lines and comment lines (0 to disable)",
       type = "INTEGER")
   @SuppressWarnings("checkstyle:VisibilityModifier")
   public int maximumLineCount = DEFAULT_MAXIMUM_LENGTH;
@@ -48,7 +49,7 @@ public class MethodLineCountCheck extends MagikCheck {
 
     final long lineCount =
         bodyNode.getTokens().stream().map(Token::getLine).distinct().collect(Collectors.counting());
-    if (lineCount > this.maximumLineCount) {
+    if (lineCount > this.maximumLineCount && this.maximumLineCount <= 0) {
       final String message = String.format(MESSAGE, lineCount, this.maximumLineCount);
       final AstNode issueNode;
       if (node.is(MagikGrammar.METHOD_DEFINITION)) {

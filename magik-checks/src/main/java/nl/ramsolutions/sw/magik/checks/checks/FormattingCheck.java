@@ -22,8 +22,11 @@ public class FormattingCheck extends MagikCheck {
   public static final String CHECK_KEY = "Formatting";
 
   private static final String MESSAGE = "Improper formatting: %s.";
+
   private static final String DEFAULT_INDENT_CHARACTER = "tab";
   private static final int DEFAULT_TAB_WIDTH = 8;
+  private static final boolean DEFAULT_WHITESPACE_AROUND_BRACKETS = false;
+
   private static final Set<String> AUGMENTED_ASSIGNMENT_TOKENS =
       Set.of(
           "_is", "_isnt", "_andif", "_and", "_orif", "_or", "_xor", "_div", "_mod", "_cf", "+", "-",
@@ -46,6 +49,13 @@ public class FormattingCheck extends MagikCheck {
       type = "INTEGER")
   @SuppressWarnings("checkstyle:VisibilityModifier")
   public int tabWidth = DEFAULT_TAB_WIDTH;
+
+  @RuleProperty(
+      key = "whitespace brackets",
+      description = "Whether brackets should have whitespace around ([], (), {})",
+      defaultValue = "" + DEFAULT_WHITESPACE_AROUND_BRACKETS,
+      type = "BOOLEAN")
+  public Boolean whitespaceAroundBrackets = DEFAULT_WHITESPACE_AROUND_BRACKETS;
 
   private String[] lines;
   private Token previousToken;
@@ -323,11 +333,15 @@ public class FormattingCheck extends MagikCheck {
   }
 
   private void visitTokenBracketOpen(final Token token) {
-    this.requireNonWhitespaceAfter(token);
+    if (!whitespaceAroundBrackets) {
+      this.requireNonWhitespaceAfter(token);
+    }
   }
 
   private void visitTokenBracketClose(final Token token) {
-    this.requireNonWhitespaceBefore(token);
+    if (!whitespaceAroundBrackets) {
+      this.requireNonWhitespaceBefore(token);
+    }
   }
 
   private void visitTokenBinaryOperator(final Token token) {

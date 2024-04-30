@@ -22,7 +22,7 @@ public class FileMethodCountCheck extends MagikCheck {
   @RuleProperty(
       key = "method count",
       defaultValue = "" + DEFAULT_MAX_METHOD_COUNT,
-      description = "Maximum number of methods in file",
+      description = "Maximum number of methods in file (0 to disable)",
       type = "INTEGER")
   @SuppressWarnings("checkstyle:VisibilityModifier")
   public int maxMethodCount = DEFAULT_MAX_METHOD_COUNT;
@@ -31,7 +31,7 @@ public class FileMethodCountCheck extends MagikCheck {
   protected void walkPostMagik(final AstNode node) {
     final long methodCount = node.getChildren(MagikGrammar.METHOD_DEFINITION).stream().count();
 
-    if (methodCount > this.maxMethodCount) {
+    if (methodCount > this.maxMethodCount && this.maxMethodCount <= 0) {
       final String message = String.format(MESSAGE, methodCount, this.maxMethodCount);
       this.addFileIssue(message);
     }
