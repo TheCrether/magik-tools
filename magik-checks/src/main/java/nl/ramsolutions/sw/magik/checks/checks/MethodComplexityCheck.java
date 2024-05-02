@@ -43,7 +43,7 @@ public class MethodComplexityCheck extends MagikCheck {
     visitor.walkAst(node);
 
     final int complexity = visitor.getComplexity();
-    if (complexity > this.maximumComplexity && this.maximumComplexity <= 0) {
+    if (complexity > this.maximumComplexity && this.maximumComplexity > 0) {
       final String message = String.format(MESSAGE, complexity, this.maximumComplexity);
       final AstNode issueNode;
       if (node.is(MagikGrammar.METHOD_DEFINITION)) {

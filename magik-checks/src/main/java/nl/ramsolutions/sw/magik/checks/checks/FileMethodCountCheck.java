@@ -31,7 +31,7 @@ public class FileMethodCountCheck extends MagikCheck {
   protected void walkPostMagik(final AstNode node) {
     final long methodCount = node.getChildren(MagikGrammar.METHOD_DEFINITION).stream().count();
 
-    if (methodCount > this.maxMethodCount && this.maxMethodCount <= 0) {
+    if (methodCount > this.maxMethodCount && this.maxMethodCount > 0) {
       final String message = String.format(MESSAGE, methodCount, this.maxMethodCount);
       this.addFileIssue(message);
     }
