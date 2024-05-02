@@ -141,13 +141,13 @@ public class MagikTextDocumentService implements TextDocumentService {
     final String text = textDocument.getText();
     final OpenedFile openedFile;
     switch (textDocument.getLanguageId()) {
-      case "product.def":
+      case "productdef":
         {
           openedFile = new ProductDefFile(uri, text, this.definitionKeeper);
           break;
         }
 
-      case "module.def":
+      case "moduledef":
         {
           openedFile = new ModuleDefFile(uri, text, this.definitionKeeper);
           break;
@@ -222,13 +222,13 @@ public class MagikTextDocumentService implements TextDocumentService {
     final String languageId = existingOpenedFile.getLanguageId();
     final OpenedFile openedFile;
     switch (languageId) {
-      case "product.def":
+      case "productdef":
         {
           openedFile = new ProductDefFile(uri, text, this.definitionKeeper);
           break;
         }
 
-      case "module.def":
+      case "moduledef":
         {
           openedFile = new ModuleDefFile(uri, text, this.definitionKeeper);
           break;
