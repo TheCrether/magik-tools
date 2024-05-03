@@ -206,21 +206,20 @@ public class CompletionProvider {
         final TypeString typeString = helper.getTypeString();
         definitionKeeper.getExemplarDefinitions(typeString).stream()
             .forEach(
-                exemplarDef -> {
-                  exemplarDef.getSlots().stream()
-                      .map(
-                          slot -> {
-                            final String slotName = slot.getName();
-                            final String fullSlotName =
-                                typeString.getFullString() + "." + slot.getName();
-                            final CompletionItem item = new CompletionItem(slotName);
-                            item.setInsertText(slotName);
-                            item.setDetail(fullSlotName);
-                            item.setKind(CompletionItemKind.Property);
-                            return item;
-                          })
-                      .forEach(items::add);
-                });
+                exemplarDef ->
+                    exemplarDef.getSlots().stream()
+                        .map(
+                            slot -> {
+                              final String slotName = slot.getName();
+                              final String fullSlotName =
+                                  typeString.getFullString() + "." + slot.getName();
+                              final CompletionItem item = new CompletionItem(slotName);
+                              item.setInsertText(slotName);
+                              item.setDetail(fullSlotName);
+                              item.setKind(CompletionItemKind.Property);
+                              return item;
+                            })
+                        .forEach(items::add));
       }
     }
 
@@ -294,7 +293,7 @@ public class CompletionProvider {
         .filter(methodDef -> methodDef.getMethodName().contains(methodNamePart))
         .map(
             methodDef -> {
-              final String methodName = methodDef.getMethodName();
+              final String methodName = methodDef.getMethodNameWithParameters();
               final CompletionItem item = new CompletionItem(methodName);
               item.setInsertText(methodName);
               item.setDetail(methodDef.getTypeName().getFullString());

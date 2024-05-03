@@ -10,24 +10,29 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import nl.ramsolutions.sw.magik.analysis.definitions.Definition;
 import nl.ramsolutions.sw.magik.analysis.definitions.ExemplarDefinition;
 import nl.ramsolutions.sw.magik.analysis.definitions.GlobalDefinition;
 import nl.ramsolutions.sw.magik.analysis.definitions.IDefinitionKeeper;
+import nl.ramsolutions.sw.magik.analysis.definitions.ITypeStringDefinition;
 import nl.ramsolutions.sw.magik.analysis.definitions.MethodDefinition;
 import nl.ramsolutions.sw.magik.analysis.definitions.PackageDefinition;
 import nl.ramsolutions.sw.magik.analysis.definitions.ProcedureDefinition;
 import nl.ramsolutions.sw.magik.analysis.definitions.SlotDefinition;
-import nl.ramsolutions.sw.magik.analysis.definitions.TypeStringDefinition;
 
 /** {@link TypeString} resolver tools. */
 public class TypeStringResolver {
 
+  private static final String ALL_METHODS = "_all_methods";
+
   private final IDefinitionKeeper definitionKeeper;
+  private final Map<TypeString, Set<ITypeStringDefinition>> typeCache = new HashMap<>();
+  private final Map<Map.Entry<TypeString, String>, Collection<MethodDefinition>> methodsCache =
+      new HashMap<>();
 
   public TypeStringResolver(final IDefinitionKeeper definitionKeeper) {
     this.definitionKeeper = definitionKeeper;
@@ -109,21 +114,28 @@ public class TypeStringResolver {
   }
 
   /**
-   * Get the {@link TypeStringDefinition} for the given {@link TypeString}, following package uses.
+   * Get the {@link ITypeStringDefinition} for the given {@link TypeString}, following package uses.
    *
    * @param typeString Reference to look for.
    * @return A {@link ExemplarDefinition}/{@link ProcedureDefinition}/{@link GlobalDefinition}.
    */
-  public Collection<TypeStringDefinition> resolve(final TypeString typeString) {
-    final Collection<ExemplarDefinition> exemplarDefinitions =
-        this.findExemplarDefinitions(typeString);
-    final Collection<ProcedureDefinition> procedureDefinitions =
-        this.findProcedureDefinitions(typeString);
-    final Collection<GlobalDefinition> globalDefinitions = this.findGlobalDefinitions(typeString);
-    return Stream.of(
-            exemplarDefinitions.stream(), procedureDefinitions.stream(), globalDefinitions.stream())
-        .flatMap(definition -> definition)
-        .collect(Collectors.toSet());
+  public synchronized Collection<ITypeStringDefinition> resolve(final TypeString typeString) {
+    return this.typeCache.computeIfAbsent(
+        typeString,
+        typeStr -> {
+          final Collection<ExemplarDefinition> exemplarDefinitions =
+              this.findExemplarDefinitions(typeStr);
+          final Collection<ProcedureDefinition> procedureDefinitions =
+              this.findProcedureDefinitions(typeStr);
+          final Collection<GlobalDefinition> globalDefinitions =
+              this.findGlobalDefinitions(typeStr);
+          return Stream.of(
+                  exemplarDefinitions.stream(),
+                  procedureDefinitions.stream(),
+                  globalDefinitions.stream())
+              .flatMap(stream -> stream)
+              .collect(Collectors.toSet());
+        });
   }
 
   /**
@@ -137,31 +149,27 @@ public class TypeStringResolver {
    */
   @CheckForNull
   public ExemplarDefinition getExemplarDefinition(final TypeString typeString) {
-    Collection<TypeStringDefinition> definitions = this.resolve(typeString);
+    // TODO: Return type should be Collection<ExemplarDefinition>
+    final Collection<ITypeStringDefinition> definitions = this.resolve(typeString);
     if (definitions.isEmpty()) {
       return null;
     }
 
-    // Resolve global first.
-    TypeStringDefinition definition = definitions.iterator().next();
-    while (definition instanceof GlobalDefinition globalDefinition0) {
-      final TypeString aliasedTypeString = globalDefinition0.getAliasedTypeName();
-      definitions = this.resolve(aliasedTypeString);
-      if (definitions.isEmpty()) {
-        return null;
-      }
+    // Prefer ExemplarDefinitions.
+    final ITypeStringDefinition exemplarDefefinition =
+        definitions.stream().filter(ExemplarDefinition.class::isInstance).findAny().orElse(null);
+    final ITypeStringDefinition definition =
+        exemplarDefefinition != null ? exemplarDefefinition : definitions.iterator().next();
 
-      definition = definitions.iterator().next();
+    // Resolve global first.
+    if (definition instanceof GlobalDefinition globalDefinition0) {
+      final TypeString aliasedTypeString = globalDefinition0.getAliasedTypeName();
+      return this.getExemplarDefinition(aliasedTypeString);
     }
 
     // Treat a procedure definition as the exemplar `procedure`.
     if (definition instanceof ProcedureDefinition) {
-      definitions = this.resolve(TypeString.SW_PROCEDURE);
-      if (definitions.isEmpty()) {
-        return null;
-      }
-
-      definition = definitions.iterator().next();
+      return this.getExemplarDefinition(TypeString.SW_PROCEDURE);
     }
 
     return definition instanceof ExemplarDefinition exemplarDefinition ? exemplarDefinition : null;
@@ -176,14 +184,16 @@ public class TypeStringResolver {
    */
   public boolean isKindOf(final TypeString typeString1, final TypeString typeString2) {
     for (final TypeString typeStr1 : TypeString.combine(typeString1).getCombinedTypes()) {
-      final TypeStringDefinition definition1 =
+      final ITypeStringDefinition definition1 =
           this.resolve(typeStr1).stream().findAny().orElse(null);
       if (definition1 == null) {
         continue;
       }
 
-      for (final TypeString typeStr2 : TypeString.combine(typeString2).getCombinedTypes()) {
-        final TypeStringDefinition definition2 =
+      final TypeString combinedTypeString2 = TypeString.combine(typeString2);
+      Objects.requireNonNull(combinedTypeString2);
+      for (final TypeString typeStr2 : combinedTypeString2.getCombinedTypes()) {
+        final ITypeStringDefinition definition2 =
             this.resolve(typeStr2).stream().findAny().orElse(null);
         if (definition2 == null) {
           continue;
@@ -206,7 +216,7 @@ public class TypeStringResolver {
    * @return True if is kind of, false otherwise.
    */
   public boolean isKindOf(
-      final TypeStringDefinition definition1, final TypeStringDefinition definition2) {
+      final ITypeStringDefinition definition1, final ITypeStringDefinition definition2) {
     final TypeString typeString1 = definition1.getTypeString();
     final TypeString typeString2 = definition2.getTypeString();
     if (typeString1.equals(typeString2)) {
@@ -217,24 +227,6 @@ public class TypeStringResolver {
         .anyMatch(parentTypeString1 -> this.isKindOf(parentTypeString1, typeString2));
   }
 
-  private Collection<TypeString> getParents(final Definition definition) {
-    if (definition instanceof ExemplarDefinition exemplarDefinition) {
-      return exemplarDefinition.getParents();
-    } else if (definition instanceof ProcedureDefinition) {
-      return Set.of(TypeString.SW_PROCEDURE);
-    } else if (definition instanceof GlobalDefinition globalDefinition) {
-      final TypeString typeString = globalDefinition.getAliasedTypeName();
-      final Definition aliasedDefinition = this.resolve(typeString).stream().findAny().orElse(null);
-      if (aliasedDefinition == null) {
-        return Collections.emptySet();
-      }
-
-      return this.getParents(aliasedDefinition);
-    }
-
-    throw new IllegalStateException();
-  }
-
   /**
    * Get the {@link MethodDefinition}s the {@link TypeString} responds to, including from its super
    * types.
@@ -242,41 +234,62 @@ public class TypeStringResolver {
    * @param typeString {@link TypeString} to resolve.
    * @return {@link MethodDefinition}s the {@link TypeString} responds to.
    */
-  public Collection<MethodDefinition> getMethodDefinitions(final TypeString typeString) {
-    // Try to resolve the typeString to an actual type.
-    Collection<TypeStringDefinition> resolvedTypes = this.resolve(typeString);
-    final TypeString actualTypeStr =
-        resolvedTypes.isEmpty() ? typeString : resolvedTypes.iterator().next().getTypeString();
+  public synchronized Collection<MethodDefinition> getMethodDefinitions(
+      final TypeString typeString) {
+    final Entry<TypeString, String> cacheKey = Map.entry(typeString, ALL_METHODS);
+    return this.methodsCache.computeIfAbsent(
+        cacheKey,
+        entry -> {
+          // Try to resolve the typeString to an actual type.
+          final Collection<ITypeStringDefinition> resolvedTypes = this.resolve(typeString);
+          final TypeString actualTypeStr =
+              resolvedTypes.isEmpty()
+                  ? typeString
+                  : resolvedTypes.iterator().next().getTypeString();
 
-    final Map<String, Set<MethodDefinition>> methodDefinitions = new HashMap<>();
-    this.getMethodDefinitions(actualTypeStr, methodDefinitions);
-    return methodDefinitions.values().stream().flatMap(Set::stream).collect(Collectors.toSet());
+          final Map<String, Set<MethodDefinition>> methodDefinitionsByName = new HashMap<>();
+          this.fillMethodDefinitions(actualTypeStr, methodDefinitionsByName);
+          return methodDefinitionsByName.values().stream()
+              .flatMap(Set::stream)
+              .collect(Collectors.toSet());
+        });
   }
 
-  private void getMethodDefinitions(
-      final TypeString baseTypeString, final Map<String, Set<MethodDefinition>> methodDefinitions) {
-    Stream.concat(Stream.of(baseTypeString), this.getAllParents(baseTypeString).stream())
-        .forEach(
-            typeStr -> {
-              this.definitionKeeper
-                  .getMethodDefinitions(typeStr)
-                  .forEach(
-                      methodDefinition -> {
-                        final String methodName = methodDefinition.getMethodName();
-                        // TODO: If already present, then skip? Filter duplicates with the same
-                        // name, we're trying to emulate responding to specific methods.
-                        final Set<MethodDefinition> methodsForName =
-                            methodDefinitions.computeIfAbsent(methodName, key -> new HashSet<>());
-                        methodsForName.add(methodDefinition);
-                      });
-            });
-  }
-
-  public List<MethodDefinition> getMethodDefinitions(
+  /**
+   * Get {@link MethodDefinition}s for {@link TypeString}.{@link methodName}.
+   *
+   * @param typeString Type to resolve.
+   * @param methodName Method name to resolve.
+   * @return {@link MethodDefinition}s for the given type and method name.
+   */
+  public synchronized Collection<MethodDefinition> getMethodDefinitions(
       final TypeString typeString, final String methodName) {
-    return this.getMethodDefinitions(typeString).stream()
-        .filter(methodDef -> methodDef.getMethodName().equalsIgnoreCase(methodName))
-        .toList();
+    final Entry<TypeString, String> cacheKey = Map.entry(typeString, methodName);
+    final Collection<MethodDefinition> methodDefinitions = this.getMethodDefinitions(typeString);
+    return this.methodsCache.computeIfAbsent(
+        cacheKey,
+        entry ->
+            methodDefinitions.stream()
+                .filter(methodDef -> methodDef.getMethodName().equals(methodName))
+                .toList());
+  }
+
+  private void fillMethodDefinitions(
+      final TypeString typeString, final Map<String, Set<MethodDefinition>> methodDefinitions) {
+    this.getSelfAndAncestors(typeString)
+        .forEach(
+            typeStr ->
+                this.definitionKeeper
+                    .getMethodDefinitions(typeStr)
+                    .forEach(
+                        methodDefinition -> {
+                          final String methodName = methodDefinition.getMethodName();
+                          // TODO: If already present, then skip? Filter duplicates with the same
+                          // name, we're trying to emulate responding to specific methods.
+                          final Set<MethodDefinition> methodsForName =
+                              methodDefinitions.computeIfAbsent(methodName, key -> new HashSet<>());
+                          methodsForName.add(methodDefinition);
+                        }));
   }
 
   public List<MethodDefinition> tryToGetOneMethodDefinition(
@@ -302,6 +315,26 @@ public class TypeStringResolver {
     return this.findExemplarDefinitions(typeString).stream()
         .flatMap(exemplarDefinition -> exemplarDefinition.getSlots().stream())
         .collect(Collectors.toSet());
+  }
+
+  private Collection<TypeString> getParents(final ITypeStringDefinition definition) {
+    if (definition instanceof ExemplarDefinition exemplarDefinition) {
+      return exemplarDefinition.getParents();
+    } else if (definition instanceof ProcedureDefinition) {
+      // TODO: Is this right?
+      return Set.of(TypeString.SW_PROCEDURE);
+    } else if (definition instanceof GlobalDefinition globalDefinition) {
+      final TypeString typeString = globalDefinition.getAliasedTypeName();
+      final ITypeStringDefinition aliasedDefinition =
+          this.resolve(typeString).stream().findAny().orElse(null);
+      if (aliasedDefinition == null) {
+        return Collections.emptySet();
+      }
+
+      return this.getParents(aliasedDefinition);
+    }
+
+    throw new IllegalStateException();
   }
 
   /**
@@ -335,35 +368,37 @@ public class TypeStringResolver {
         .map(
             typeStr ->
                 // Let all parents inherit generic definitions.
-                TypeString.ofIdentifier(typeStr.getIdentifier(), typeStr.getPakkage(), thisGenDefs))
+                typeStr.withGenerics(thisGenDefs))
         .collect(Collectors.toUnmodifiableSet());
   }
 
   /**
-   * Find all parents (recursively) for a given {@link TypeString}.
+   * Find all ancestors for a given {@link TypeString}.
    *
-   * @param typeString {@link TypeString} to get parents from.
-   * @return All parents this the given type.
+   * @param typeString {@link TypeString} to get ancestors from.
+   * @return All ancestors this the given type.
    */
-  public Collection<TypeString> getAllParents(final TypeString typeString) {
-    final List<TypeString> parents = new ArrayList<>();
-    this.getAllParents(typeString, parents);
-    return parents;
+  public Collection<TypeString> getAllAncestors(final TypeString typeString) {
+    final List<TypeString> ancestors = new ArrayList<>();
+    this.getAllAncestors(typeString, ancestors);
+    return ancestors;
   }
 
-  private void getAllParents(final TypeString typeString, final List<TypeString> parents) {
+  private void getAllAncestors(final TypeString typeString, final List<TypeString> ancestors) {
+    // TODO: Does this skip one level at a time?
     final Collection<TypeString> typeStringParents = this.getParents(typeString);
-    parents.addAll(typeStringParents);
+    ancestors.addAll(typeStringParents);
 
     // Recurse.
-    // TODO: This can be multiple.
-    final ExemplarDefinition exemplarDefinition = this.getExemplarDefinition(typeString);
-    if (exemplarDefinition == null) {
-      return;
-    }
+    this.resolve(typeString).stream()
+        .filter(ExemplarDefinition.class::isInstance)
+        .map(ExemplarDefinition.class::cast)
+        .flatMap(def -> def.getParents().stream())
+        .forEach(parentTypeStr -> this.getAllAncestors(parentTypeStr, ancestors));
+  }
 
-    exemplarDefinition
-        .getParents()
-        .forEach(parentTypeStr -> this.getAllParents(parentTypeStr, parents));
+  public Collection<TypeString> getSelfAndAncestors(final TypeString typeString) {
+    return Stream.concat(Stream.of(typeString), this.getAllAncestors(typeString).stream())
+        .collect(Collectors.toUnmodifiableSet());
   }
 }

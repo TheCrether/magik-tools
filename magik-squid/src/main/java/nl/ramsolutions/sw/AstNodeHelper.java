@@ -7,9 +7,12 @@ import java.net.URI;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/** Helper for {@link AstNode}s. */
 public final class AstNodeHelper {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(AstNodeHelper.class);
+
+  private AstNodeHelper() {}
 
   /**
    * Recusrively update URI for AstNode/Tokens.
@@ -22,8 +25,8 @@ public final class AstNodeHelper {
     if (token != null) {
       try {
         final Field fieldUri = token.getClass().getDeclaredField("uri");
-        fieldUri.setAccessible(true);
-        fieldUri.set(token, newUri);
+        fieldUri.setAccessible(true); // NOSONAR
+        fieldUri.set(token, newUri); // NOSONAR
       } catch (final ReflectiveOperationException exception) {
         LOGGER.error(exception.getMessage(), exception);
       }

@@ -14,7 +14,8 @@ import nl.ramsolutions.sw.magik.ModuleDefFile;
 import nl.ramsolutions.sw.magik.Position;
 import nl.ramsolutions.sw.magik.ProductDefFile;
 import nl.ramsolutions.sw.magik.analysis.AstQuery;
-import nl.ramsolutions.sw.magik.analysis.definitions.Definition;
+import nl.ramsolutions.sw.magik.analysis.definitions.ConditionDefinition;
+import nl.ramsolutions.sw.magik.analysis.definitions.IDefinition;
 import nl.ramsolutions.sw.magik.analysis.definitions.IDefinitionKeeper;
 import nl.ramsolutions.sw.magik.analysis.definitions.MethodDefinition;
 import nl.ramsolutions.sw.magik.analysis.helpers.MethodInvocationNodeHelper;
@@ -28,13 +29,9 @@ import nl.ramsolutions.sw.magik.analysis.typing.reasoner.LocalTypeReasonerState;
 import nl.ramsolutions.sw.magik.api.MagikGrammar;
 import nl.ramsolutions.sw.magik.languageserver.MagikSettings;
 import org.eclipse.lsp4j.ServerCapabilities;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /** Definitions provider. */
 public class DefinitionsProvider {
-
-  private static final Logger LOGGER = LoggerFactory.getLogger(DefinitionsProvider.class);
 
   /**
    * Set server capabilities.
@@ -48,7 +45,7 @@ public class DefinitionsProvider {
   /**
    * Provide definitions.
    *
-   * @param productDef Product.def file.
+   * @param productDefFile Product.def file.
    * @param position Position.
    * @return Definitions.
    */
@@ -75,7 +72,7 @@ public class DefinitionsProvider {
   /**
    * Provide definitions.
    *
-   * @param moduleDef Module.def file.
+   * @param moduleDefFile Module.def file.
    * @param position Position.
    * @return Definitions.
    */
@@ -121,7 +118,6 @@ public class DefinitionsProvider {
             MagikGrammar.METHOD_DEFINITION,
             MagikGrammar.ATOM,
             MagikGrammar.CONDITION_NAME);
-    LOGGER.trace("Wanted node: {}", wantedNode);
     if (wantedNode == null) {
       return Collections.emptyList();
     } else if (wantedNode.is(MagikGrammar.METHOD_INVOCATION)) {
@@ -143,7 +139,7 @@ public class DefinitionsProvider {
     final IDefinitionKeeper definitionKeeper = magikFile.getDefinitionKeeper();
     final String conditionName = wantedNode.getTokenValue();
     return definitionKeeper.getConditionDefinitions(conditionName).stream()
-        .map(Definition::getLocation)
+        .map(ConditionDefinition::getLocation)
         .map(
             (Location location) ->
                 Location.validLocation(location, MagikSettings.INSTANCE.getPathMappings()))
@@ -180,7 +176,7 @@ public class DefinitionsProvider {
     final TypeString typeString = TypeString.ofIdentifier(identifier, pakkage);
     final TypeStringResolver resolver = magikFile.getTypeStringResolver();
     return resolver.resolve(typeString).stream()
-        .map(Definition::getLocation)
+        .map(IDefinition::getLocation)
         .map(
             (Location location) ->
                 Location.validLocation(location, MagikSettings.INSTANCE.getPathMappings()))
@@ -192,13 +188,15 @@ public class DefinitionsProvider {
       final MagikTypedFile magikFile, final AstNode wantedNode) {
     final AstNode methodInvocationNode =
         wantedNode.getFirstAncestor(MagikGrammar.METHOD_INVOCATION);
-    final MethodInvocationNodeHelper helper = new MethodInvocationNodeHelper(methodInvocationNode);
-    final String methodName = helper.getMethodName();
+    final MethodInvocationNodeHelper invocationHelper =
+        new MethodInvocationNodeHelper(methodInvocationNode);
+    final String methodName = invocationHelper.getMethodName();
 
     final AstNode previousSiblingNode = methodInvocationNode.getPreviousSibling();
     final LocalTypeReasonerState reasonerState = magikFile.getTypeReasonerState();
     final ExpressionResultString result = reasonerState.getNodeType(previousSiblingNode);
-    final TypeString typeStr = result.get(0, TypeString.UNDEFINED);
+    final TypeString resultTypeStr = result.get(0, TypeString.UNDEFINED);
+    final TypeString typeStr = resultTypeStr.resolveSelf(methodInvocationNode);
 
     final TypeStringResolver resolver = magikFile.getTypeStringResolver();
     return resolver.getMethodDefinitions(typeStr, methodName).stream()
