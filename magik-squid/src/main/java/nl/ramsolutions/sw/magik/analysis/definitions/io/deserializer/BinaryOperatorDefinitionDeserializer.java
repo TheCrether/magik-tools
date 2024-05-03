@@ -7,7 +7,7 @@ import java.io.IOException;
 import java.util.List;
 import nl.ramsolutions.sw.magik.PathMapping;
 import nl.ramsolutions.sw.magik.analysis.definitions.BinaryOperatorDefinition;
-import nl.ramsolutions.sw.magik.analysis.definitions.Definition;
+import nl.ramsolutions.sw.magik.analysis.definitions.MagikDefinition;
 import nl.ramsolutions.sw.magik.analysis.typing.TypeString;
 
 public class BinaryOperatorDefinitionDeserializer
@@ -21,7 +21,7 @@ public class BinaryOperatorDefinitionDeserializer
       throws IOException {
     JsonNode node = jp.readValueAsTree();
 
-    Definition base = getDefinition(node);
+    MagikDefinition base = getDefinition(node);
 
     String operator = getStringField(node, "operator");
 

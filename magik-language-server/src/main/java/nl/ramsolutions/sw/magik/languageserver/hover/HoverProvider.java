@@ -476,7 +476,7 @@ public class HoverProvider {
 
     // iterable
     if (methodDef.getModifiers().contains(MethodDefinition.Modifier.ITER)) {
-      builder.append("⟳ Iterable");
+      builder.append("⟳ Iterable ");
       final String iterResultString = methodDef.getLoopTypes().getTypeNames(", ");
       builder.append(this.formatTypeString(iterResultString));
 
@@ -529,7 +529,7 @@ public class HoverProvider {
     appendResultType(builder, callResultString);
 
     if (procDef.getModifiers().contains(ProcedureDefinition.Modifier.ITER)) {
-      builder.append("⟳ Iterable");
+      builder.append("⟳ Iterable ");
       final String iterResultString = procDef.getLoopTypes().getTypeNames(", ");
       builder.append(this.formatTypeString(iterResultString));
       builder.append(SECTION_END);

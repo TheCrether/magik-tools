@@ -6,18 +6,20 @@ import java.util.stream.Collectors;
 import nl.ramsolutions.sw.magik.analysis.helpers.MethodDefinitionNodeHelper;
 import nl.ramsolutions.sw.magik.analysis.helpers.ProcedureDefinitionNodeHelper;
 import nl.ramsolutions.sw.magik.api.MagikGrammar;
+import nl.ramsolutions.sw.magik.checks.DisabledByDefault;
 import nl.ramsolutions.sw.magik.checks.MagikCheck;
 import org.sonar.check.Rule;
 import org.sonar.check.RuleProperty;
 
 /** Check length of method/procedure. */
+@DisabledByDefault
 @Rule(key = MethodLineCountCheck.CHECK_KEY)
 public class MethodLineCountCheck extends MagikCheck {
 
   @SuppressWarnings("checkstyle:JavadocVariable")
   public static final String CHECK_KEY = "MethodLineCount";
 
-  private static final int DEFAULT_MAXIMUM_LENGTH = 35;
+  private static final int DEFAULT_MAXIMUM_LENGTH = 0;
   private static final String MESSAGE = "Method is longer than permitted (%s/%s).";
 
   /** Maximum length of method in lines, without whitelines and comment lines. */

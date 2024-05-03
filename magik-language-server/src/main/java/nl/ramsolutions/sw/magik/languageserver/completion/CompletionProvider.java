@@ -4,14 +4,7 @@ import com.sonar.sslr.api.AstNode;
 import edu.umd.cs.findbugs.annotations.CheckForNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.net.URI;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import nl.ramsolutions.sw.magik.MagikTypedFile;
@@ -114,7 +107,7 @@ public class CompletionProvider {
       final AstNode methodInvocationNode =
           AstQuery.getParentFromChain(
               tokenNode, MagikGrammar.IDENTIFIER, MagikGrammar.METHOD_INVOCATION);
-      if (removedPart.startsWith(".") || methodInvocationNode != null) {
+      if (removedPart.startsWith(".") || removedPart.isEmpty() || methodInvocationNode != null) {
         return this.provideMethodInvocationCompletion(newMagikFile, tokenNode, removedPart);
       }
     }
@@ -289,6 +282,7 @@ public class CompletionProvider {
     LOGGER.debug("Providing method completions for type: {}", typeStr.getFullString());
     final String methodNamePart = tokenValue.startsWith(".") ? tokenValue.substring(1) : tokenValue;
     final TypeStringResolver resolver = magikFile.getTypeStringResolver();
+    final TypeString finalTypeStr = typeStr;
     return resolver.getMethodDefinitions(typeStr).stream()
         .filter(methodDef -> methodDef.getMethodName().contains(methodNamePart))
         .map(
@@ -296,6 +290,16 @@ public class CompletionProvider {
               final String methodName = methodDef.getMethodNameWithParameters();
               final CompletionItem item = new CompletionItem(methodName);
               item.setInsertText(methodName);
+              TypeString type = methodDef.getTypeName();
+              if (!finalTypeStr.equals(TypeString.SW_OBJECT)) {
+                if (type.equals(finalTypeStr)) {
+                  item.setSortText("  " + item.getInsertText());
+                } else if (!type.equals(TypeString.SW_OBJECT)) {
+                  item.setSortText("!!" + item.getInsertText());
+                } else {
+                  item.setSortText("##" + item.getInsertText());
+                }
+              }
               item.setDetail(methodDef.getTypeName().getFullString());
               item.setDocumentation(methodDef.getDoc());
               item.setKind(CompletionItemKind.Method);

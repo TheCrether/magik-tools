@@ -6,7 +6,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
 import nl.ramsolutions.sw.magik.Location;
 import nl.ramsolutions.sw.magik.PathMapping;
-import nl.ramsolutions.sw.magik.analysis.definitions.Definition;
+import nl.ramsolutions.sw.magik.analysis.definitions.MagikDefinition;
 
 public abstract class DefinitionDeserializer<T> extends BaseDeserializer<T> {
 
@@ -14,7 +14,7 @@ public abstract class DefinitionDeserializer<T> extends BaseDeserializer<T> {
     super(mappings);
   }
 
-  public static class DeserializedDefinition extends Definition {
+  public static class DeserializedDefinition extends MagikDefinition {
 
     /**
      * Constructor.
@@ -43,12 +43,12 @@ public abstract class DefinitionDeserializer<T> extends BaseDeserializer<T> {
     }
 
     @Override
-    public Definition getWithoutNode() {
+    public MagikDefinition getWithoutNode() {
       return null;
     }
   }
 
-  public Definition getDefinition(JsonNode node) {
+  public MagikDefinition getDefinition(JsonNode node) {
     return new DeserializedDefinition(
         getLocation(node), nullableString(node, "mod_n"), nullableString(node, "doc"), null);
   }

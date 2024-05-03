@@ -7,7 +7,7 @@ import java.io.IOException;
 import java.util.List;
 import nl.ramsolutions.sw.magik.PathMapping;
 import nl.ramsolutions.sw.magik.analysis.definitions.ConditionDefinition;
-import nl.ramsolutions.sw.magik.analysis.definitions.Definition;
+import nl.ramsolutions.sw.magik.analysis.definitions.MagikDefinition;
 
 public class ConditionDefinitionDeserializer extends DefinitionDeserializer<ConditionDefinition> {
   public ConditionDefinitionDeserializer(List<PathMapping> mappings) {
@@ -19,7 +19,7 @@ public class ConditionDefinitionDeserializer extends DefinitionDeserializer<Cond
       throws IOException {
     JsonNode node = jp.readValueAsTree();
 
-    Definition base = getDefinition(node);
+    MagikDefinition base = getDefinition(node);
 
     String name = getStringField(node, "name");
     String parent = nullableString(node, "par");

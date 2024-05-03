@@ -23,14 +23,14 @@ public class MethodDefinitionDeserializer extends DefinitionDeserializer<MethodD
       throws JsonParseException, IOException {
     JsonNode node = jp.readValueAsTree();
 
-    Definition base = getDefinition(node);
+    MagikDefinition base = getDefinition(node);
 
     TypeString typeName = getTypeString(context, node, "type_n");
     String methodName = getStringField(node, "m_name");
 
     Location loc = base.getLocation();
     if (loc != null) {
-      Definition parsed = getParsedDefinition(loc, methodName, MethodDefinition.class);
+      MagikDefinition parsed = getParsedDefinition(loc, methodName, MethodDefinition.class);
       if (parsed != null) {
         loc = parsed.getLocation();
       }

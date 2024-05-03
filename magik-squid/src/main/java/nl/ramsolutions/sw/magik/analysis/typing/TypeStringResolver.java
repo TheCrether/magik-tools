@@ -294,7 +294,8 @@ public class TypeStringResolver {
 
   public List<MethodDefinition> tryToGetOneMethodDefinition(
       final TypeString typeString, final String methodName) {
-    List<MethodDefinition> definitions = this.getMethodDefinitions(typeString, methodName);
+    List<MethodDefinition> definitions =
+        new ArrayList<>(this.getMethodDefinitions(typeString, methodName));
 
     for (MethodDefinition def : definitions) {
       if (def.getTypeName().equals(typeString) && def.getMethodName().equals(methodName)) {

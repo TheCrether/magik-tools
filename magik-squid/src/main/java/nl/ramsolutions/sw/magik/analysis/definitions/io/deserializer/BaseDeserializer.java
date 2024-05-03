@@ -14,7 +14,7 @@ import javax.annotation.Nullable;
 import nl.ramsolutions.sw.magik.Location;
 import nl.ramsolutions.sw.magik.MagikFile;
 import nl.ramsolutions.sw.magik.PathMapping;
-import nl.ramsolutions.sw.magik.analysis.definitions.Definition;
+import nl.ramsolutions.sw.magik.analysis.definitions.MagikDefinition;
 import nl.ramsolutions.sw.magik.analysis.typing.TypeString;
 
 public abstract class BaseDeserializer<T> extends StdDeserializer<T> {
@@ -24,15 +24,15 @@ public abstract class BaseDeserializer<T> extends StdDeserializer<T> {
   private final List<PathMapping> mappings;
 
   private static class IndexedFile {
-    private final List<Definition> definitions;
+    private final List<MagikDefinition> definitions;
     private final long indexedAt;
 
-    private IndexedFile(List<Definition> definitions, long indexedAt) {
+    private IndexedFile(List<MagikDefinition> definitions, long indexedAt) {
       this.definitions = definitions;
       this.indexedAt = indexedAt;
     }
 
-    public List<Definition> getDefinitions() {
+    public List<MagikDefinition> getDefinitions() {
       return definitions;
     }
 
@@ -139,7 +139,7 @@ public abstract class BaseDeserializer<T> extends StdDeserializer<T> {
     }
   }
 
-  public static List<Definition> getDefinitions(Location location) {
+  public static List<MagikDefinition> getDefinitions(Location location) {
     if (location == null) {
       return new ArrayList<>();
     }
@@ -181,7 +181,8 @@ public abstract class BaseDeserializer<T> extends StdDeserializer<T> {
     return Collections.unmodifiableList(file.getDefinitions());
   }
 
-  public static <X> Definition getParsedDefinition(Location location, String name, Class<X> clazz) {
+  public static <X> MagikDefinition getParsedDefinition(
+      Location location, String name, Class<X> clazz) {
     return getDefinitions(location).stream()
         .filter(def -> def.getName().endsWith(name) && clazz.isInstance(def))
         .findFirst()

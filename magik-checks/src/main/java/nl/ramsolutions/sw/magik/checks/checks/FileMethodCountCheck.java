@@ -16,7 +16,7 @@ public class FileMethodCountCheck extends MagikCheck {
   public static final String CHECK_KEY = "FileMethodCount";
 
   private static final String MESSAGE = "File has too many methods defined (%s/%s).";
-  private static final int DEFAULT_MAX_METHOD_COUNT = 10;
+  private static final int DEFAULT_MAX_METHOD_COUNT = 0;
 
   /** Maximum number of methods in a file. */
   @RuleProperty(

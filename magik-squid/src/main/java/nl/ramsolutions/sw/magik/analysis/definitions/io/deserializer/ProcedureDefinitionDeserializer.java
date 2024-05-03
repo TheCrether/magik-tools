@@ -7,7 +7,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Set;
 import nl.ramsolutions.sw.magik.PathMapping;
-import nl.ramsolutions.sw.magik.analysis.definitions.Definition;
+import nl.ramsolutions.sw.magik.analysis.definitions.MagikDefinition;
 import nl.ramsolutions.sw.magik.analysis.definitions.ParameterDefinition;
 import nl.ramsolutions.sw.magik.analysis.definitions.ProcedureDefinition;
 import nl.ramsolutions.sw.magik.analysis.typing.ExpressionResultString;
@@ -23,7 +23,7 @@ public class ProcedureDefinitionDeserializer extends DefinitionDeserializer<Proc
       throws IOException {
     JsonNode node = jp.readValueAsTree();
 
-    Definition base = getDefinition(node);
+    MagikDefinition base = getDefinition(node);
 
     Set<ProcedureDefinition.Modifier> modifiers =
         getSet(context, node, "mods", ProcedureDefinition.Modifier.class);
