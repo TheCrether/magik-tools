@@ -18,7 +18,6 @@ import nl.ramsolutions.sw.magik.analysis.definitions.ConditionDefinition;
 import nl.ramsolutions.sw.magik.analysis.definitions.IDefinition;
 import nl.ramsolutions.sw.magik.analysis.definitions.IDefinitionKeeper;
 import nl.ramsolutions.sw.magik.analysis.definitions.MethodDefinition;
-import nl.ramsolutions.sw.magik.analysis.helpers.MethodDefinitionNodeHelper;
 import nl.ramsolutions.sw.magik.analysis.helpers.MethodInvocationNodeHelper;
 import nl.ramsolutions.sw.magik.analysis.helpers.PackageNodeHelper;
 import nl.ramsolutions.sw.magik.analysis.scope.Scope;
@@ -141,7 +140,8 @@ public class DefinitionsProvider {
     final String conditionName = wantedNode.getTokenValue();
     return definitionKeeper.getConditionDefinitions(conditionName).stream()
         .map(ConditionDefinition::getLocation)
-        .map((Location location) ->
+        .map(
+            (Location location) ->
                 Location.validLocation(location, MagikSettings.INSTANCE.getPathMappings()))
         .toList();
   }

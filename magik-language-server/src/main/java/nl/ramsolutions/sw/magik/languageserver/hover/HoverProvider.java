@@ -522,11 +522,7 @@ public class HoverProvider {
 
     // proc name
     final String joiner = procDef.getName().startsWith("[") ? "" : ".";
-    appendCodeBlock(
-        builder,
-        true,
-        false,
-        aliasName + joiner + procDef.getNameWithParameters());
+    appendCodeBlock(builder, true, false, aliasName + joiner + procDef.getNameWithParameters());
 
     // return type
     final String callResultString = procDef.getReturnTypes().getTypeNames(", ");
