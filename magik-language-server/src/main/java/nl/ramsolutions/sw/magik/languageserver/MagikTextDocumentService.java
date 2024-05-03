@@ -419,7 +419,7 @@ public class MagikTextDocumentService implements TextDocumentService {
 
     final OpenedFile openedFile = this.openedFiles.get(textDocument);
     if (!(openedFile instanceof MagikTypedFile)) {
-      return CompletableFuture.supplyAsync(() -> new SignatureHelp());
+      return CompletableFuture.supplyAsync(SignatureHelp::new);
     }
 
     final MagikTypedFile magikFile = (MagikTypedFile) openedFile;
@@ -562,7 +562,7 @@ public class MagikTextDocumentService implements TextDocumentService {
     final OpenedFile openedFile = this.openedFiles.get(textDocument);
     if (openedFile == null) {
       // Race condition?
-      return CompletableFuture.supplyAsync(() -> Collections.emptyList());
+      return CompletableFuture.supplyAsync(Collections::emptyList);
     } else if (openedFile instanceof ProductDefFile productDefFile) {
       return CompletableFuture.supplyAsync(
           () -> {
@@ -655,7 +655,7 @@ public class MagikTextDocumentService implements TextDocumentService {
 
     final OpenedFile openedFile = this.openedFiles.get(textDocument);
     if (!(openedFile instanceof MagikTypedFile)) {
-      return CompletableFuture.supplyAsync(() -> Collections.emptyList());
+      return CompletableFuture.supplyAsync(Collections::emptyList);
     }
 
     final MagikTypedFile magikFile = (MagikTypedFile) openedFile;
@@ -802,7 +802,7 @@ public class MagikTextDocumentService implements TextDocumentService {
 
     final OpenedFile openedFile = this.openedFiles.get(textDocument);
     if (!(openedFile instanceof MagikTypedFile)) {
-      return CompletableFuture.supplyAsync(() -> Collections.emptyList());
+      return CompletableFuture.supplyAsync(Collections::emptyList);
     }
 
     final MagikTypedFile magikFile = (MagikTypedFile) openedFile;
@@ -827,7 +827,7 @@ public class MagikTextDocumentService implements TextDocumentService {
 
     final OpenedFile openedFile = this.openedFiles.get(textDocument);
     if (!(openedFile instanceof MagikTypedFile)) {
-      return CompletableFuture.supplyAsync(() -> Collections.emptyList());
+      return CompletableFuture.supplyAsync(Collections::emptyList);
     }
 
     final MagikTypedFile magikFile = (MagikTypedFile) openedFile;
@@ -935,7 +935,7 @@ public class MagikTextDocumentService implements TextDocumentService {
 
     final OpenedFile openedFile = this.openedFiles.get(textDocument);
     if (!(openedFile instanceof MagikTypedFile)) {
-      return CompletableFuture.supplyAsync(() -> Collections.emptyList());
+      return CompletableFuture.supplyAsync(Collections::emptyList);
     }
 
     final MagikTypedFile magikFile = (MagikTypedFile) openedFile;
@@ -971,7 +971,7 @@ public class MagikTextDocumentService implements TextDocumentService {
 
     final OpenedFile openedFile = this.openedFiles.get(textDocument);
     if (!(openedFile instanceof MagikTypedFile)) {
-      return CompletableFuture.supplyAsync(() -> Collections.emptyList());
+      return CompletableFuture.supplyAsync(Collections::emptyList);
     }
 
     final MagikTypedFile magikFile = (MagikTypedFile) openedFile;

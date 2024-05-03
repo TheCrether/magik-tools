@@ -12,7 +12,8 @@ import nl.ramsolutions.sw.magik.analysis.typing.ExpressionResultString;
 import nl.ramsolutions.sw.magik.analysis.typing.TypeString;
 
 /** Procedure definition. */
-public class ProcedureDefinition extends TypeStringDefinition {
+public class ProcedureDefinition extends MagikDefinition
+    implements ITypeStringDefinition, ICallableDefinition {
 
   private static final String DEFAULT_NAME = "_unnamed";
 
@@ -143,11 +144,9 @@ public class ProcedureDefinition extends TypeStringDefinition {
       }
 
       final ParameterDefinition.Modifier newModifier = parameterDefinition.getModifier();
-      if (currentModifier != newModifier) {
-        if (newModifier != ParameterDefinition.Modifier.NONE) {
-          parametersBuilder.append("_" + newModifier.name().toLowerCase());
-          parametersBuilder.append(" ");
-        }
+      if (currentModifier != newModifier && newModifier != ParameterDefinition.Modifier.NONE) {
+        parametersBuilder.append("_" + newModifier.name().toLowerCase());
+        parametersBuilder.append(" ");
       }
       currentModifier = newModifier;
 
@@ -174,14 +173,17 @@ public class ProcedureDefinition extends TypeStringDefinition {
     return builder.toString();
   }
 
+  @Override
   public List<ParameterDefinition> getParameters() {
     return this.parameters;
   }
 
+  @Override
   public ExpressionResultString getReturnTypes() {
     return this.returnTypes;
   }
 
+  @Override
   public ExpressionResultString getLoopTypes() {
     return this.loopTypes;
   }
@@ -189,6 +191,16 @@ public class ProcedureDefinition extends TypeStringDefinition {
   @Override
   public String getName() {
     return Objects.requireNonNullElse(this.procedureName, ProcedureDefinition.DEFAULT_NAME);
+  }
+
+  /**
+   * Get topics.
+   *
+   * @return Topics.
+   */
+  public Set<String> getTopics() {
+    // TODO: Implement.
+    return Collections.emptySet();
   }
 
   public Set<GlobalUsage> getUsedGlobals() {

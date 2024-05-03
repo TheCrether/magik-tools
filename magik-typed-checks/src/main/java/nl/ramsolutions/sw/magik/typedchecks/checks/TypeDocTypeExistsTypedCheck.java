@@ -2,6 +2,7 @@ package nl.ramsolutions.sw.magik.typedchecks.checks;
 
 import com.sonar.sslr.api.AstNode;
 import java.util.Map;
+import java.util.Objects;
 import nl.ramsolutions.sw.magik.analysis.definitions.parsers.DefSlottedExemplarParser;
 import nl.ramsolutions.sw.magik.analysis.typing.TypeString;
 import nl.ramsolutions.sw.magik.analysis.typing.TypeStringResolver;
@@ -104,7 +105,15 @@ public class TypeDocTypeExistsTypedCheck extends MagikTypedCheck {
       return false;
     }
 
-    final TypeStringResolver resolver = this.getTypeStringResolver();
-    return resolver.getExemplarDefinition(typeStr) == null;
+    final TypeString combinedTypeStr = TypeString.combine(typeStr);
+    Objects.requireNonNull(combinedTypeStr);
+    for (final TypeString typeString : combinedTypeStr.getCombinedTypes()) {
+      final TypeStringResolver resolver = this.getTypeStringResolver();
+      if (resolver.getExemplarDefinition(typeString) == null) {
+        return true;
+      }
+    }
+
+    return false;
   }
 }

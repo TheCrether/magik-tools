@@ -6,10 +6,8 @@ import java.util.HashMap;
 import java.util.Map;
 import nl.ramsolutions.sw.magik.MagikTypedFile;
 import nl.ramsolutions.sw.magik.analysis.definitions.DefinitionKeeper;
-import nl.ramsolutions.sw.magik.analysis.definitions.TypeStringDefinition;
 import nl.ramsolutions.sw.magik.analysis.scope.ScopeEntry;
 import nl.ramsolutions.sw.magik.analysis.typing.ExpressionResultString;
-import nl.ramsolutions.sw.magik.analysis.typing.TypeString;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,9 +22,7 @@ public class LocalTypeReasonerState {
   private final MagikTypedFile magikFile;
   private final Map<AstNode, ExpressionResultString> nodeTypes = new HashMap<>();
   private final Map<AstNode, ExpressionResultString> nodeIterTypes = new HashMap<>();
-  private final Map<AstNode, TypeStringDefinition> nodeTypeDefinitions = new HashMap<>();
   private final Map<ScopeEntry, AstNode> currentScopeEntryNodes = new HashMap<>();
-  private final Map<TypeString, TypeStringDefinition> typeStringDefinitions = new HashMap<>();
 
   LocalTypeReasonerState(final MagikTypedFile magikFile) {
     this.magikFile = magikFile;
@@ -138,18 +134,5 @@ public class LocalTypeReasonerState {
    */
   void setCurrentScopeEntryNode(final ScopeEntry scopeEntry, final AstNode node) {
     this.currentScopeEntryNodes.put(scopeEntry, node);
-  }
-
-  @CheckForNull
-  public TypeStringDefinition getTypeStringDefinition(final TypeString typeString) {
-    final TypeStringDefinition def = this.typeStringDefinitions.get(typeString);
-    if (def == null) {
-      LOGGER.debug("TypeString without type: {}", typeString);
-    }
-    return def;
-  }
-
-  void setTypeStringDefinition(final TypeString typeStr, final TypeStringDefinition definition) {
-    this.typeStringDefinitions.put(typeStr, definition);
   }
 }

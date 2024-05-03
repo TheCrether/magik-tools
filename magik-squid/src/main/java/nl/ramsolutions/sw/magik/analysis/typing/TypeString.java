@@ -28,15 +28,17 @@ public final class TypeString implements Comparable<TypeString> {
   public static final String SW_PACKAGE = "sw";
 
   @SuppressWarnings("checkstyle:JavadocVariable")
-  public static final String ANONYMOUS_PACKAGE = "_anon";
+  public static final String USER_PACKAGE = "user";
+
+  @SuppressWarnings("checkstyle:JavadocVariable")
+  public static final String ANONYMOUS_PACKAGE = "_anon"; // `_anon` package for anonymous types.
 
   @SuppressWarnings("checkstyle:JavadocVariable")
   public static final TypeString UNDEFINED =
-      TypeString.ofIdentifier("_undefined", DEFAULT_PACKAGE); // TODO: Special package?
+      TypeString.ofIdentifier("_undefined", ANONYMOUS_PACKAGE);
 
   @SuppressWarnings("checkstyle:JavadocVariable")
-  public static final TypeString SELF =
-      TypeString.ofIdentifier("_self", DEFAULT_PACKAGE); // TODO: Special package?
+  public static final TypeString SELF = TypeString.ofIdentifier("_self", ANONYMOUS_PACKAGE);
 
   @SuppressWarnings("checkstyle:JavadocVariable")
   public static final TypeString SW_UNSET = TypeString.ofIdentifier("unset", SW_PACKAGE);
@@ -119,7 +121,7 @@ public final class TypeString implements Comparable<TypeString> {
   private static final String PARAMETER = "_parameter";
   private static final String COMBINED = "_combined";
 
-  @Nullable private final String string;
+  private final @Nullable String string;
   private final String currentPackage;
   private final List<TypeString> combinedTypes;
   private final List<TypeString> generics;
@@ -163,6 +165,16 @@ public final class TypeString implements Comparable<TypeString> {
     this.combinedTypes = Arrays.asList(combinations);
     this.generics = Collections.emptyList();
     this.genericType = null;
+  }
+
+  /**
+   * Get a copy of self, but with (new) generic definitions.
+   *
+   * @param genericDefinitions Generic definitions.
+   * @return Copy of self, with generic definitions.
+   */
+  public TypeString withGenerics(final TypeString[] genericDefinitions) {
+    return TypeString.ofIdentifier(this.getIdentifier(), this.getPakkage(), genericDefinitions);
   }
 
   /**
@@ -327,6 +339,10 @@ public final class TypeString implements Comparable<TypeString> {
     return !this.isCombined() && TypeString.UNDEFINED.getIdentifier().equalsIgnoreCase(this.string);
   }
 
+  public boolean isAnonymous() {
+    return TypeString.ANONYMOUS_PACKAGE.equals(this.currentPackage);
+  }
+
   /**
    * Test if this type contains an undefined type.
    *
@@ -479,14 +495,11 @@ public final class TypeString implements Comparable<TypeString> {
 
   @Override
   public int hashCode() {
-    if (this.isCombined()) {
-      return Objects.hash(this.combinedTypes);
-    }
-
     // Hash the bare type, without a package.
-    final int index = this.string.indexOf(':');
-    final String str = index == -1 ? this.string : this.string.substring(index + 1);
-    return Objects.hash(str);
+    final int index = this.string != null ? this.string.indexOf(':') : -1;
+    final String str =
+        this.string != null && index != -1 ? this.string.substring(index + 1) : this.string;
+    return Objects.hash(this.combinedTypes, str, this.generics, this.genericType);
   }
 
   @Override

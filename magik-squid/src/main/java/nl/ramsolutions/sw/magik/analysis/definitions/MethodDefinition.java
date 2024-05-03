@@ -13,7 +13,7 @@ import nl.ramsolutions.sw.magik.analysis.typing.TypeString;
 import nl.ramsolutions.sw.magik.api.MagikGrammar;
 
 /** Method definition. */
-public class MethodDefinition extends Definition {
+public class MethodDefinition extends MagikDefinition implements ICallableDefinition {
 
   /** Method definition modifier. */
   @SuppressWarnings("checkstyle:JavadocVariable")
@@ -146,15 +146,10 @@ public class MethodDefinition extends Definition {
     return this.methodName;
   }
 
-  public String getNameWithParameters() {
+  public String getMethodNameWithParameters() {
     final StringBuilder builder = new StringBuilder();
 
-    // Type name.
-    final String ownerName = this.getTypeName().getFullString();
-    builder.append(ownerName);
-
     // Determine method name with parameters.
-    final String methodName = this.getMethodName();
     final StringBuilder parametersBuilder = new StringBuilder();
     boolean firstParameter = true;
     ParameterDefinition.Modifier currentModifier = ParameterDefinition.Modifier.NONE;
@@ -166,11 +161,9 @@ public class MethodDefinition extends Definition {
       }
 
       final ParameterDefinition.Modifier newModifier = parameterDefinition.getModifier();
-      if (currentModifier != newModifier) {
-        if (newModifier != ParameterDefinition.Modifier.NONE) {
-          parametersBuilder.append("_" + newModifier.name().toLowerCase());
-          parametersBuilder.append(" ");
-        }
+      if (currentModifier != newModifier && newModifier != ParameterDefinition.Modifier.NONE) {
+        parametersBuilder.append("_" + newModifier.name().toLowerCase());
+        parametersBuilder.append(" ");
       }
       currentModifier = newModifier;
 
@@ -178,19 +171,18 @@ public class MethodDefinition extends Definition {
     }
     final String parametersStr = parametersBuilder.toString();
 
-    if (methodName.startsWith("[")) {
+    if (this.methodName.startsWith("[")) {
       builder.append("[");
       builder.append(parametersStr);
-      builder.append(methodName.substring(1)); // "]<<" or "]^<<""
+      builder.append(this.methodName.substring(1)); // "]<<" or "]^<<""
     } else {
-      builder.append(".");
-      int bracketIndex = methodName.indexOf('(');
+      final int bracketIndex = this.methodName.indexOf('(');
       if (bracketIndex != -1) {
-        builder.append(methodName.substring(0, bracketIndex + 1));
+        builder.append(this.methodName.substring(0, bracketIndex + 1));
         builder.append(parametersStr);
-        builder.append(methodName.substring(bracketIndex + 1));
+        builder.append(this.methodName.substring(bracketIndex + 1));
       } else {
-        builder.append(methodName);
+        builder.append(this.methodName);
       }
     }
 
@@ -203,11 +195,30 @@ public class MethodDefinition extends Definition {
     return builder.toString();
   }
 
+  public String getNameWithParameters() {
+    final StringBuilder builder = new StringBuilder();
+
+    // Type name.
+    final String ownerName = this.getTypeName().getFullString();
+    builder.append(ownerName);
+
+    // Method name.
+    final String methodNameWithParameters = this.getMethodNameWithParameters();
+    if (this.methodName.startsWith("[]")) {
+      builder.append(methodNameWithParameters);
+    } else {
+      builder.append(".");
+      builder.append(methodNameWithParameters);
+    }
+
+    return builder.toString();
+  }
+
   @Override
   public String getName() {
     return this.methodName.startsWith("[")
-        ? typeName.getFullString() + methodName
-        : typeName.getFullString() + "." + methodName;
+        ? this.typeName.getFullString() + this.methodName
+        : this.typeName.getFullString() + "." + this.methodName;
   }
 
   /**
@@ -219,19 +230,17 @@ public class MethodDefinition extends Definition {
     return Collections.unmodifiableSet(this.modifiers);
   }
 
-  /**
-   * Get parameters.
-   *
-   * @return Parameters.
-   */
+  @Override
   public List<ParameterDefinition> getParameters() {
     return Collections.unmodifiableList(this.parameters);
   }
 
+  @Override
   public ExpressionResultString getReturnTypes() {
     return this.returnTypes;
   }
 
+  @Override
   public ExpressionResultString getLoopTypes() {
     return this.loopTypes;
   }

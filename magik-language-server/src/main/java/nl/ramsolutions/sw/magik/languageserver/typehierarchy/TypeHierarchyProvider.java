@@ -129,7 +129,7 @@ public class TypeHierarchyProvider {
     final TypeString searchedTypeString = definition.getTypeString();
     final Comparator<TypeHierarchyItem> byName = Comparator.comparing(TypeHierarchyItem::getName);
     return this.definitionKeeper.getExemplarDefinitions().stream()
-        .filter(def -> def.getParents().contains(searchedTypeString))
+        .filter(def -> resolver.getParents(def.getTypeString()).contains(searchedTypeString))
         .map(this::toTypeHierarchyItem)
         .sorted(byName)
         .toList();
@@ -152,7 +152,7 @@ public class TypeHierarchyProvider {
     }
 
     final Comparator<TypeHierarchyItem> byName = Comparator.comparing(TypeHierarchyItem::getName);
-    return definition.getParents().stream()
+    return resolver.getParents(typeString).stream()
         .map(resolver::getExemplarDefinition)
         .filter(Objects::nonNull)
         .map(this::toTypeHierarchyItem)

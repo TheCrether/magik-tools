@@ -2,6 +2,7 @@ package nl.ramsolutions.sw.magik.typedchecks.checks;
 
 import com.sonar.sslr.api.AstNode;
 import java.util.Collection;
+import java.util.Objects;
 import nl.ramsolutions.sw.magik.analysis.definitions.MethodDefinition;
 import nl.ramsolutions.sw.magik.analysis.helpers.MethodInvocationNodeHelper;
 import nl.ramsolutions.sw.magik.analysis.typing.TypeString;
@@ -32,17 +33,21 @@ public class MethodExistsTypedCheck extends MagikTypedCheck {
     final MethodInvocationNodeHelper helper = new MethodInvocationNodeHelper(node);
     final String methodName = helper.getMethodName();
 
-    final TypeStringResolver resolver = this.getTypeStringResolver();
-    final Collection<MethodDefinition> methodDefs =
-        resolver.getMethodDefinitions(calledTypeStr, methodName);
+    final TypeString combinedTypeString2 = TypeString.combine(calledTypeStr);
+    Objects.requireNonNull(combinedTypeString2);
+    for (final TypeString typeString : combinedTypeString2.getCombinedTypes()) {
+      final TypeStringResolver resolver = this.getTypeStringResolver();
+      final Collection<MethodDefinition> methodDefs =
+          resolver.getMethodDefinitions(typeString, methodName);
 
-    // Add issue if no method is found.
-    if (methodDefs.isEmpty()) {
-      final String fullName = calledTypeStr.getFullString() + "." + methodName;
-      final String message = String.format(MESSAGE, fullName);
-      final AstNode firstIdentifierNode = node.getFirstChild(MagikGrammar.IDENTIFIER);
-      final AstNode issueNode = firstIdentifierNode != null ? firstIdentifierNode : node;
-      this.addIssue(issueNode, message);
+      // Add issue if no method is found.
+      if (methodDefs.isEmpty()) {
+        final String fullName = typeString.getFullString() + "." + methodName;
+        final String message = String.format(MESSAGE, fullName);
+        final AstNode firstIdentifierNode = node.getFirstChild(MagikGrammar.IDENTIFIER);
+        final AstNode issueNode = firstIdentifierNode != null ? firstIdentifierNode : node;
+        this.addIssue(issueNode, message);
+      }
     }
   }
 }
