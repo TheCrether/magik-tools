@@ -6,16 +6,16 @@ import java.util.Objects;
 public class PathMapping {
   private final Path from;
   private final Path to;
-  private Boolean readOnly = false;
+  private Boolean writable = false;
 
   public PathMapping(String from, String to) {
     this.from = Path.of(from);
     this.to = Path.of(to);
   }
 
-  public PathMapping(String from, String to, Boolean readOnly) {
+  public PathMapping(String from, String to, Boolean writable) {
     this(from, to);
-    this.readOnly = readOnly;
+    this.writable = writable;
   }
 
   public Path getFrom() {
@@ -26,8 +26,8 @@ public class PathMapping {
     return to;
   }
 
-  public Boolean getReadOnly() {
-    return readOnly;
+  public Boolean getWritable() {
+    return writable;
   }
 
   @Override
