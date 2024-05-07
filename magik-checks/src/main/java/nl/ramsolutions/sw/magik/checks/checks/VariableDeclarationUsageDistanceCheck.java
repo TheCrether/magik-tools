@@ -8,11 +8,13 @@ import nl.ramsolutions.sw.magik.analysis.scope.GlobalScope;
 import nl.ramsolutions.sw.magik.analysis.scope.Scope;
 import nl.ramsolutions.sw.magik.analysis.scope.ScopeEntry;
 import nl.ramsolutions.sw.magik.api.MagikGrammar;
+import nl.ramsolutions.sw.magik.checks.DisabledByDefault;
 import nl.ramsolutions.sw.magik.checks.MagikCheck;
 import org.sonar.check.Rule;
 import org.sonar.check.RuleProperty;
 
 /** Check distance between variable declaration and usage. */
+@DisabledByDefault
 @Rule(key = VariableDeclarationUsageDistanceCheck.CHECK_KEY)
 public class VariableDeclarationUsageDistanceCheck extends MagikCheck {
 
@@ -28,7 +30,7 @@ public class VariableDeclarationUsageDistanceCheck extends MagikCheck {
   @RuleProperty(
       key = "max distance",
       defaultValue = "" + DEFAULT_MAX_DISTANCE,
-      description = "Maximum distance between declaration and usage",
+      description = "Maximum distance between declaration and usage (0 to disable)",
       type = "INTEGER")
   @SuppressWarnings("checkstyle:VisibilityModifier")
   public int maxDistance = DEFAULT_MAX_DISTANCE;
@@ -91,7 +93,7 @@ public class VariableDeclarationUsageDistanceCheck extends MagikCheck {
     this.seenNodes.add(declarationNode);
 
     final int distance = this.distanceBetweenStatements(declarationNode, node);
-    if (distance > this.maxDistance) {
+    if (distance > this.maxDistance && this.maxDistance > 0) {
       final String message = String.format(MESSAGE, distance, this.maxDistance);
       this.addIssue(node, message);
     }

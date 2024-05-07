@@ -18,7 +18,7 @@ public class MethodComplexityCheck extends MagikCheck {
   @SuppressWarnings("checkstyle:JavadocVariable")
   public static final String CHECK_KEY = "MethodComplexity";
 
-  private static final int DEFAULT_MAXIMUM_COMPLEXITY = 0;
+  private static final int DEFAULT_MAXIMUM_COMPLEXITY = 10;
   private static final String MESSAGE = "Method has a complexity greater than permitted (%s/%s).";
 
   /** Maximum complexity of method by the McCabe definition. */

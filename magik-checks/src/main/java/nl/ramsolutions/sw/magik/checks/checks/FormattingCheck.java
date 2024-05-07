@@ -24,8 +24,8 @@ public class FormattingCheck extends MagikCheck {
   private static final String MESSAGE = "Improper formatting: %s.";
 
   private static final String DEFAULT_INDENT_CHARACTER = "tab";
-  private static final int DEFAULT_TAB_WIDTH = 8;
-  private static final boolean DEFAULT_WHITESPACE_AROUND_BRACKETS = false;
+  private static final int DEFAULT_TAB_WIDTH = 4;
+  private static final boolean DEFAULT_WHITESPACE_AROUND_BRACKETS = true;
 
   private static final Set<String> AUGMENTED_ASSIGNMENT_TOKENS =
       Set.of(
@@ -73,7 +73,7 @@ public class FormattingCheck extends MagikCheck {
     int lineNo = 1;
     final char indentChar = this.getIndentChar();
     final Pattern pattern =
-        indentChar == '\t'
+        indentChar == ' '
             ? Pattern.compile("^( +\t+)\\S+|( {" + this.tabWidth + "}).*", Pattern.MULTILINE)
             : Pattern.compile("^(\t).*", Pattern.MULTILINE);
     final String msg =

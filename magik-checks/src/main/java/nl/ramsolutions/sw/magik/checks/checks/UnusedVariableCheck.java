@@ -13,7 +13,7 @@ import nl.ramsolutions.sw.magik.api.MagikOperator;
 import nl.ramsolutions.sw.magik.checks.MagikCheck;
 import org.sonar.check.Rule;
 
-/** Check for unused vairables. */
+/** Check for unused variables. */
 @Rule(key = UnusedVariableCheck.CHECK_KEY)
 public class UnusedVariableCheck extends MagikCheck {
 

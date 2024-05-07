@@ -1173,6 +1173,20 @@ public class MagikTextDocumentService implements TextDocumentService {
                   completions.add(disabledItem);
                 }
 
+                if (MagikChecksConfiguration.KEY_ENABLED_CHECKS.contains(finalLine)) {
+                  completions = new ArrayList<>(completions);
+
+                  CompletionItem disabledItem = new CompletionItem("enabled");
+                  disabledItem.setInsertText("enabled");
+                  disabledItem.setDetail("Enables rules");
+                  disabledItem.setKind(CompletionItemKind.Property);
+                  disabledItem.setFilterText(finalLine);
+                  disabledItem.setInsertTextMode(InsertTextMode.AdjustIndentation);
+                  setInsertEditForProperty(disabledItem, position, finalLine);
+
+                  completions.add(disabledItem);
+                }
+
                 LOGGER_DURATION.trace(
                     "Duration: {} completionsForLintFile/properties",
                     (System.nanoTime() - start) / 1000000000.0);

@@ -61,12 +61,18 @@ public class MagikChecksConfiguration {
 
     final List<String> disableds = this.properties.getPropertyList(KEY_DISABLED_CHECKS);
     final List<String> enableds = this.properties.getPropertyList(KEY_ENABLED_CHECKS);
+    final List<Class<? extends MagikCheck>> disabledByDefault =
+        CheckList.getDisabledByDefaultChecks();
+
+    if (disableds.contains("all")) {
+      return holders;
+    }
 
     for (final Class<? extends MagikCheck> checkClass : this.checkClasses) {
       final String checkKey = MagikChecksConfiguration.checkKey(checkClass);
       final boolean checkEnabled =
           enableds.contains(checkKey)
-              || !disableds.contains(checkKey) && !disableds.contains("all");
+              || (!disableds.contains(checkKey) && !disabledByDefault.contains(checkClass));
 
       // Gather parameters from MagikCheck, value from config.
       final Set<MagikCheckHolder.Parameter> parameters =

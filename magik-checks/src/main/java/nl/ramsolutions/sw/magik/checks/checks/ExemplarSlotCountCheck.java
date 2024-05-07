@@ -23,7 +23,7 @@ public class ExemplarSlotCountCheck extends MagikCheck {
   @RuleProperty(
       key = "slot count",
       defaultValue = "" + DEFAULT_MAX_SLOT_COUNT,
-      description = "Maximum number of slots for an exemplar",
+      description = "Maximum number of slots for an exemplar (0 to disable)",
       type = "INTEGER")
   @SuppressWarnings("checkstyle:VisibilityModifier")
   public int maxSlotCount = DEFAULT_MAX_SLOT_COUNT;
@@ -38,7 +38,7 @@ public class ExemplarSlotCountCheck extends MagikCheck {
     final List<MagikDefinition> parsedDefinitions = parser.parseDefinitions();
     final ExemplarDefinition definition = (ExemplarDefinition) parsedDefinitions.get(0);
     final int slotCount = definition.getSlots().size();
-    if (slotCount > this.maxSlotCount) {
+    if (slotCount > this.maxSlotCount && this.maxSlotCount > 0) {
       final String message = String.format(MESSAGE, slotCount, this.maxSlotCount);
       this.addIssue(node, message);
     }

@@ -18,8 +18,8 @@ public class VariableNamingCheck extends MagikCheck {
   public static final String CHECK_KEY = "VariableNaming";
 
   private static final String MESSAGE = "Give the variable \"%s\" a proper descriptive name.";
-  private static final int MIN_LENGTH = 3;
   private static final String DEFAULT_WHITELIST = "x,y,z";
+  private static final int DEFAULT_MIN_LENGTH = 3;
 
   /** Whitelist (comma separated) of variable names to allow/ignore. */
   @RuleProperty(
@@ -28,6 +28,15 @@ public class VariableNamingCheck extends MagikCheck {
       type = "STRING")
   @SuppressWarnings("checkstyle:VisibilityModifier")
   public String whitelist = DEFAULT_WHITELIST;
+
+  /** Minimum length of a variable name. */
+  @RuleProperty(
+      key = "min length",
+      defaultValue = "" + DEFAULT_MIN_LENGTH,
+      description = "Minimum length of a variable name (0 to disable)",
+      type = "INTEGER")
+  @SuppressWarnings("checkstyle:VisibilityModifier")
+  public int minLength = DEFAULT_MIN_LENGTH;
 
   @Override
   protected void walkPostMagik(final AstNode node) {
@@ -64,7 +73,8 @@ public class VariableNamingCheck extends MagikCheck {
   private boolean isValidName(final String identifier) {
     final String strippedIdentifier = this.stripPrefix(identifier);
     final List<String> whitelistItems = this.getWhitelistItems();
-    return whitelistItems.contains(strippedIdentifier) || strippedIdentifier.length() >= MIN_LENGTH;
+    return whitelistItems.contains(strippedIdentifier)
+        || strippedIdentifier.length() >= minLength && minLength > 0;
   }
 
   private List<String> getWhitelistItems() {
