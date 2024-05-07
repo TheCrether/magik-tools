@@ -73,7 +73,7 @@ public class FormattingCheck extends MagikCheck {
     int lineNo = 1;
     final char indentChar = this.getIndentChar();
     final Pattern pattern =
-        indentChar == ' '
+        indentChar == '\t'
             ? Pattern.compile("^( +\t+)\\S+|( {" + this.tabWidth + "}).*", Pattern.MULTILINE)
             : Pattern.compile("^(\t).*", Pattern.MULTILINE);
     final String msg =
