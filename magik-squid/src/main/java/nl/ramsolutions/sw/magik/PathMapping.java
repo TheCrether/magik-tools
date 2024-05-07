@@ -46,10 +46,13 @@ public class PathMapping {
   public Location mapLocation(Location location) {
     String path = location.getPath().toString();
     if (path.startsWith(this.from.toString())) {
-      location =
-          new Location(
-              Path.of(path.replace(this.from.toString(), this.to.toString())).toUri(),
-              location.getRange());
+      Path newPath = Path.of(path.replace(this.from.toString(), this.to.toString()));
+      if (newPath.toFile().exists()) {
+        location =
+            new Location(
+                Path.of(path.replace(this.from.toString(), this.to.toString())).toUri(),
+                location.getRange());
+      }
     }
 
     return location;

@@ -114,6 +114,8 @@ public class MagikWorkspaceService implements WorkspaceService {
     if (collectionsDiffers(oldTypeDBPaths, MagikSettings.INSTANCE.getTypingTypeDatabasePaths())
         || collectionsDiffers(oldLibsDirs, MagikSettings.INSTANCE.getLibsDirs())
         || collectionsDiffers(oldPathMappings, MagikSettings.INSTANCE.getPathMappings())) {
+      this.definitionKeeper.clear();
+
       this.runIndexersInBackground();
     }
   }
