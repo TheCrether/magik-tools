@@ -138,7 +138,7 @@ public final class JsonDefinitionReader {
   }
 
   public void run(Path path) {
-    LOGGER.debug("Reading type database from path: {}", path);
+    LOGGER.info("Reading type database from path: {}", path);
 
     final File file = path.toFile();
     int lineNo = 1;
