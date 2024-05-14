@@ -199,7 +199,7 @@ public class MagikWorkspaceService implements WorkspaceService {
   public void readTypesDbs(final List<String> typeDbPaths) {
     final long start = System.nanoTime();
 
-    LOGGER.trace("Reading type databases from: {}", typeDbPaths);
+    LOGGER.info("Reading type databases from: {}", typeDbPaths);
 
     typeDbPaths.stream()
         .map(
