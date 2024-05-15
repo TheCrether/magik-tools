@@ -84,4 +84,8 @@ public class DiagnosticsProvider {
   public void removeIgnoredUri(final String uri) {
     this.ignoredUris.remove(URI.create(uri));
   }
+
+  public boolean isIgnoredUri(final String uri) {
+    return this.ignoredUris.contains(URI.create(uri));
+  }
 }

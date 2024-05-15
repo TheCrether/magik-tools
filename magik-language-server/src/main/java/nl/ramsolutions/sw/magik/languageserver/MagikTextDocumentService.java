@@ -1217,46 +1217,56 @@ public class MagikTextDocumentService implements TextDocumentService {
   }
 
   @JsonRequest(value = "custom/addLintIgnore")
-  public CompletableFuture<Void> addLintIgnore(JsonArray array) {
+  public CompletableFuture<Boolean> addLintIgnore(JsonArray array) {
     if (array.isEmpty()) {
       LOGGER.error("addLintIgnore, no AddLintIgnoreParams object");
-      return CompletableFuture.completedFuture(null);
+      return CompletableFuture.completedFuture(false);
     }
 
     LintIgnoreParams params = new Gson().fromJson(array.get(0), LintIgnoreParams.class);
     LOGGER.info("addLintIgnore, uri: {}", params.getUri());
 
     String uri = params.getUri();
-    this.diagnosticsProvider.addIgnoredUri(uri);
 
     OpenedFile file = this.openedFiles.get(new TextDocumentIdentifier(uri));
-    return CompletableFuture.runAsync(
-        () -> {
-          if (file instanceof MagikTypedFile typedFile) {
-            this.publishDiagnostics(typedFile);
-          }
-        });
+    if (file instanceof MagikTypedFile typedFile) {
+      this.diagnosticsProvider.addIgnoredUri(uri);
+      this.publishDiagnostics(typedFile);
+    }
+    return CompletableFuture.completedFuture(this.diagnosticsProvider.isIgnoredUri(uri));
   }
 
   @JsonRequest(value = "custom/removeLintIgnore")
-  public CompletableFuture<Void> removeLintIgnore(JsonArray array) {
+  public CompletableFuture<Boolean> removeLintIgnore(JsonArray array) {
     if (array.isEmpty()) {
       LOGGER.error("removeLintIgnore, no LintIgnoreParams object");
-      return CompletableFuture.completedFuture(null);
+      return CompletableFuture.completedFuture(false);
     }
 
     LintIgnoreParams params = new Gson().fromJson(array.get(0), LintIgnoreParams.class);
     LOGGER.info("removeLintIgnore, uri: {}", params.getUri());
 
-    String uri = params.getUri();
-    this.diagnosticsProvider.removeIgnoredUri(uri);
-
+    final String uri = params.getUri();
     OpenedFile file = this.openedFiles.get(new TextDocumentIdentifier(uri));
-    return CompletableFuture.runAsync(
-        () -> {
-          if (file instanceof MagikTypedFile typedFile) {
-            this.publishDiagnostics(typedFile);
-          }
-        });
+    if (file instanceof MagikTypedFile typedFile) {
+      this.diagnosticsProvider.removeIgnoredUri(uri);
+      this.publishDiagnostics(typedFile);
+    }
+
+    return CompletableFuture.completedFuture(this.diagnosticsProvider.isIgnoredUri(uri));
+  }
+
+  @JsonRequest(value = "custom/isLintIgnored")
+  public CompletableFuture<Boolean> isLintIgnored(JsonArray array) {
+    if (array.isEmpty()) {
+      LOGGER.error("isLintIgnored, no LintIgnoreParams object");
+      return CompletableFuture.completedFuture(false);
+    }
+
+    LintIgnoreParams params = new Gson().fromJson(array.get(0), LintIgnoreParams.class);
+    LOGGER.info("isLintIgnored, uri: {}", params.getUri());
+    final String uri = params.getUri();
+
+    return CompletableFuture.completedFuture(this.diagnosticsProvider.isIgnoredUri(uri));
   }
 }
