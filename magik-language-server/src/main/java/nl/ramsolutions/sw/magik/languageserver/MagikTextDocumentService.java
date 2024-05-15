@@ -1224,7 +1224,7 @@ public class MagikTextDocumentService implements TextDocumentService {
     }
 
     LintIgnoreParams params = new Gson().fromJson(array.get(0), LintIgnoreParams.class);
-    LOGGER.info("addLintIgnore, uri: {}", params.getUri());
+    LOGGER.trace("addLintIgnore, uri: {}", params.getUri());
 
     String uri = params.getUri();
 
@@ -1244,7 +1244,7 @@ public class MagikTextDocumentService implements TextDocumentService {
     }
 
     LintIgnoreParams params = new Gson().fromJson(array.get(0), LintIgnoreParams.class);
-    LOGGER.info("removeLintIgnore, uri: {}", params.getUri());
+    LOGGER.trace("removeLintIgnore, uri: {}", params.getUri());
 
     final String uri = params.getUri();
     OpenedFile file = this.openedFiles.get(new TextDocumentIdentifier(uri));
@@ -1264,7 +1264,7 @@ public class MagikTextDocumentService implements TextDocumentService {
     }
 
     LintIgnoreParams params = new Gson().fromJson(array.get(0), LintIgnoreParams.class);
-    LOGGER.info("isLintIgnored, uri: {}", params.getUri());
+    LOGGER.trace("isLintIgnored, uri: {}", params.getUri());
     final String uri = params.getUri();
 
     return CompletableFuture.completedFuture(this.diagnosticsProvider.isIgnoredUri(uri));
