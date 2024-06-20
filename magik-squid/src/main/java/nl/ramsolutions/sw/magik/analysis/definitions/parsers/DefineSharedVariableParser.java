@@ -146,6 +146,7 @@ public class DefineSharedVariableParser {
 
     // get
     final Set<MethodDefinition.Modifier> getModifiers = new HashSet<>();
+    getModifiers.add(MethodDefinition.Modifier.SHARED_VARIABLE);
     if (!flavor.equals(FLAVOR_READONLY) && !flavor.equals(FLAVOR_PUBLIC)) {
       getModifiers.add(MethodDefinition.Modifier.PRIVATE);
     }
@@ -169,6 +170,7 @@ public class DefineSharedVariableParser {
     // set
     final String setName = variableName + MagikOperator.CHEVRON.getValue();
     final Set<MethodDefinition.Modifier> setModifiers = new HashSet<>();
+    setModifiers.add(MethodDefinition.Modifier.SHARED_VARIABLE);
     if (!flavor.equals(FLAVOR_PUBLIC)) {
       setModifiers.add(MethodDefinition.Modifier.PRIVATE);
     }

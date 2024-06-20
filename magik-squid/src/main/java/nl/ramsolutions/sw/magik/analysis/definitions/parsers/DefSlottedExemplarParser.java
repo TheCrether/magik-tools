@@ -201,6 +201,7 @@ public class DefSlottedExemplarParser extends BaseDefParser {
       // get
       final String getName = slotName;
       final Set<MethodDefinition.Modifier> getModifiers = new HashSet<>();
+      getModifiers.add(MethodDefinition.Modifier.SLOT);
       if (!flavor.equals(FLAVOR_PUBLIC)) {
         getModifiers.add(MethodDefinition.Modifier.PRIVATE);
       }
@@ -223,6 +224,7 @@ public class DefSlottedExemplarParser extends BaseDefParser {
     } else if (flag.equals(FLAG_WRITE) || flag.equals(FLAG_WRITABLE)) {
       // get
       final Set<MethodDefinition.Modifier> getModifiers = new HashSet<>();
+      getModifiers.add(MethodDefinition.Modifier.SLOT);
       if (!flavor.equals(FLAVOR_PUBLIC) && !flavor.equals(FLAVOR_READ_ONLY)) {
         getModifiers.add(MethodDefinition.Modifier.PRIVATE);
       }
@@ -246,6 +248,7 @@ public class DefSlottedExemplarParser extends BaseDefParser {
       // set
       final String setName = slotName + MagikOperator.CHEVRON.getValue();
       final Set<MethodDefinition.Modifier> setModifiers = new HashSet<>();
+      setModifiers.add(MethodDefinition.Modifier.SLOT);
       if (!flavor.equals(FLAVOR_PUBLIC)) {
         setModifiers.add(MethodDefinition.Modifier.PRIVATE);
       }

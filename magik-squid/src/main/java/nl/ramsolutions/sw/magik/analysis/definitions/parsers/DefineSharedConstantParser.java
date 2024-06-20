@@ -129,6 +129,7 @@ public class DefineSharedConstantParser {
     final String constantName = constantNameSymbol.substring(1);
 
     final Set<MethodDefinition.Modifier> modifiers = new HashSet<>();
+    modifiers.add(MethodDefinition.Modifier.SHARED_CONSTANT);
     final String isPrivate = argument2Node.getTokenValue();
     if (isPrivate.equals(FLAVOR_PRIVATE) || isPrivate.equals(TRUE)) {
       modifiers.add(MethodDefinition.Modifier.PRIVATE);

@@ -5,11 +5,7 @@ import java.util.List;
 import java.util.Objects;
 import nl.ramsolutions.sw.magik.MagikTypedFile;
 import nl.ramsolutions.sw.magik.Range;
-import nl.ramsolutions.sw.magik.analysis.definitions.BinaryOperatorDefinition;
-import nl.ramsolutions.sw.magik.analysis.definitions.ExemplarDefinition;
-import nl.ramsolutions.sw.magik.analysis.definitions.GlobalDefinition;
-import nl.ramsolutions.sw.magik.analysis.definitions.MagikDefinition;
-import nl.ramsolutions.sw.magik.analysis.definitions.PackageDefinition;
+import nl.ramsolutions.sw.magik.analysis.definitions.*;
 import nl.ramsolutions.sw.magik.languageserver.Lsp4jConversion;
 import org.eclipse.lsp4j.DocumentSymbol;
 import org.eclipse.lsp4j.ServerCapabilities;
@@ -71,6 +67,18 @@ public class DocumentSymbolProvider {
       return SymbolKind.Variable;
     } else if (definition instanceof ExemplarDefinition) {
       return SymbolKind.Class;
+    } else if (definition instanceof ProcedureDefinition) {
+      return SymbolKind.Event;
+    } else if (definition instanceof MethodDefinition methodDef) {
+      if (methodDef.getModifiers().contains(MethodDefinition.Modifier.SLOT)) {
+        return SymbolKind.Property;
+      }
+      if (methodDef.getModifiers().contains(MethodDefinition.Modifier.SHARED_CONSTANT)) {
+        return SymbolKind.Constant;
+      }
+      if (methodDef.getModifiers().contains(MethodDefinition.Modifier.SHARED_VARIABLE)) {
+        return SymbolKind.EnumMember;
+      }
     }
     return SymbolKind.Method;
   }

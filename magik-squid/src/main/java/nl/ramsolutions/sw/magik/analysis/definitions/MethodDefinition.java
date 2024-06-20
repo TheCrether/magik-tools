@@ -21,6 +21,9 @@ public class MethodDefinition extends MagikDefinition implements ICallableDefini
     PRIVATE,
     ABSTRACT,
     ITER,
+    SLOT,
+    SHARED_VARIABLE,
+    SHARED_CONSTANT
   }
 
   private final Set<Modifier> modifiers;
