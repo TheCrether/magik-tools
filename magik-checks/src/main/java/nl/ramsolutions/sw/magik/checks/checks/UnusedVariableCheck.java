@@ -90,7 +90,7 @@ public class UnusedVariableCheck extends MagikCheck {
       }
 
       final ScopeEntry siblingEntry = scope.getScopeEntry(sibling);
-      if (siblingEntry != null && !siblingEntry.getUsages().isEmpty()) {
+      if (siblingEntry != null && sibling.getTokenValue().equals(identifierNode.getTokenValue()) && !siblingEntry.getUsages().isEmpty()) {
         return true;
       }
 
