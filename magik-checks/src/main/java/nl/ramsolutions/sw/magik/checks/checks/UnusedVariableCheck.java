@@ -1,9 +1,11 @@
 package nl.ramsolutions.sw.magik.checks.checks;
 
 import com.sonar.sslr.api.AstNode;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+
 import nl.ramsolutions.sw.magik.analysis.AstQuery;
 import nl.ramsolutions.sw.magik.analysis.scope.GlobalScope;
 import nl.ramsolutions.sw.magik.analysis.scope.Scope;
@@ -13,7 +15,9 @@ import nl.ramsolutions.sw.magik.api.MagikOperator;
 import nl.ramsolutions.sw.magik.checks.MagikCheck;
 import org.sonar.check.Rule;
 
-/** Check for unused variables. */
+/**
+ * Check for unused variables.
+ */
 @Rule(key = UnusedVariableCheck.CHECK_KEY)
 public class UnusedVariableCheck extends MagikCheck {
 
@@ -43,22 +47,23 @@ public class UnusedVariableCheck extends MagikCheck {
     }
 
     return variableDefinitionNode.getTokens().stream()
-        .anyMatch(
-            token ->
-                token.getValue().equals(MagikOperator.CHEVRON.getValue())
-                    || token.getValue().equals(MagikOperator.BOOT_CHEVRON.getValue()));
+      .anyMatch(
+        token ->
+          token.getValue().equals(MagikOperator.CHEVRON.getValue())
+            || token.getValue().equals(MagikOperator.BOOT_CHEVRON.getValue()));
   }
 
   private boolean isPartOfMultiVariableDefinition(final AstNode identifierNode) {
     // Either part of a VARIABLE_DEFINITION_MULTI or FOR_VARIABLES.
     final AstNode variableDefMultiNode =
-        AstQuery.getParentFromChain(
-            identifierNode,
-            MagikGrammar.IDENTIFIERS_WITH_GATHER,
-            MagikGrammar.VARIABLE_DEFINITION_MULTI);
+      AstQuery.getParentFromChain(
+        identifierNode,
+        MagikGrammar.IDENTIFIERS_WITH_GATHER,
+        MagikGrammar.VARIABLE_DEFINITION_MULTI
+      );
     final AstNode forVariablesNode =
-        AstQuery.getParentFromChain(
-            identifierNode, MagikGrammar.IDENTIFIERS_WITH_GATHER, MagikGrammar.FOR_VARIABLES);
+      AstQuery.getParentFromChain(
+        identifierNode, MagikGrammar.IDENTIFIERS_WITH_GATHER, MagikGrammar.FOR_VARIABLES);
     return variableDefMultiNode != null || forVariablesNode != null;
   }
 
@@ -75,7 +80,7 @@ public class UnusedVariableCheck extends MagikCheck {
 
     final AstNode assignablesNode = expressionNode.getParent();
     return assignablesNode != null
-        && assignablesNode.is(MagikGrammar.MULTIPLE_ASSIGNMENT_ASSIGNABLES);
+      && assignablesNode.is(MagikGrammar.MULTIPLE_ASSIGNMENT_ASSIGNABLES);
   }
 
   private boolean anyNextSiblingUsed(final AstNode identifierNode) {
@@ -111,8 +116,9 @@ public class UnusedVariableCheck extends MagikCheck {
     // - but this one is not
     for (final ScopeEntry entry : List.copyOf(scopeEntries)) {
       final AstNode entryNode = entry.getDefinitionNode();
-      if (this.isPartOfMultiVariableDefinition(entryNode) && this.anyNextSiblingUsed(entryNode)
-          || this.isPartOfMultiAssignment(entryNode)) {
+//      if (this.isPartOfMultiVariableDefinition(entryNode) && this.anyNextSiblingUsed(entryNode)
+//          || this.isPartOfMultiAssignment(entryNode)) {
+      if (this.isPartOfMultiVariableDefinition(entryNode) || this.isPartOfMultiAssignment(entryNode)) {
         scopeEntries.remove(entry);
       }
     }
@@ -139,7 +145,7 @@ public class UnusedVariableCheck extends MagikCheck {
 
         // But not globals/dynamics which are assigned to directly
         if ((scopeEntry.isType(ScopeEntry.Type.GLOBAL, ScopeEntry.Type.DYNAMIC))
-            && this.isAssignedToDirectly(scopeEntryNode)) {
+          && this.isAssignedToDirectly(scopeEntryNode)) {
           continue;
         }
 
