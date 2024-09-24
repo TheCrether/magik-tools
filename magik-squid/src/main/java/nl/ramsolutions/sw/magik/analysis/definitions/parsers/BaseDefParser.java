@@ -5,7 +5,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
+import nl.ramsolutions.sw.magik.MagikFile;
 import nl.ramsolutions.sw.magik.analysis.AstQuery;
 import nl.ramsolutions.sw.magik.analysis.definitions.MagikDefinition;
 import nl.ramsolutions.sw.magik.analysis.helpers.ExpressionNodeHelper;
@@ -25,6 +25,9 @@ abstract class BaseDefParser {
   static final String FLAVOR_READONLY = ":readonly";
   static final String FLAVOR_READ_ONLY = ":read_only";
 
+  /** Source of the definition. */
+  protected final MagikFile magikFile;
+
   /** Node to operate on. */
   protected final AstNode node;
 
@@ -33,11 +36,12 @@ abstract class BaseDefParser {
    *
    * @param node Definition node.
    */
-  protected BaseDefParser(final AstNode node) {
+  protected BaseDefParser(final MagikFile magikFile, final AstNode node) {
     if (node.isNot(MagikGrammar.PROCEDURE_INVOCATION)) {
       throw new IllegalArgumentException();
     }
 
+    this.magikFile = magikFile;
     this.node = node;
   }
 
@@ -71,9 +75,10 @@ abstract class BaseDefParser {
       for (final AstNode parentNode : multiParentNode.getChildren(MagikGrammar.EXPRESSION)) {
         final ExpressionNodeHelper parentExpressionHelper = new ExpressionNodeHelper(parentNode);
         final String parentStr = parentExpressionHelper.getConstant();
-        Objects.requireNonNull(parentStr);
-        final TypeString parent = this.getFullParent(parentStr);
-        parents.add(parent);
+        if (parentStr != null) {
+          final TypeString parent = this.getFullParent(parentStr);
+          parents.add(parent);
+        }
       }
     }
     return parents;

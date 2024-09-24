@@ -38,6 +38,7 @@ public class ProcedureDefinitionDeserializer extends DefinitionDeserializer<Proc
 
     return new ProcedureDefinition(
         base.getLocation(),
+        base.getTimestamp(),
         base.getModuleName(),
         base.getDoc(),
         base.getNode(),

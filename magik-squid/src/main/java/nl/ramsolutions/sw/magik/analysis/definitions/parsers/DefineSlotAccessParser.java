@@ -3,13 +3,14 @@ package nl.ramsolutions.sw.magik.analysis.definitions.parsers;
 import com.sonar.sslr.api.AstNode;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.net.URI;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import nl.ramsolutions.sw.definitions.ModuleDefinitionScanner;
 import nl.ramsolutions.sw.magik.Location;
+import nl.ramsolutions.sw.magik.MagikFile;
 import nl.ramsolutions.sw.magik.analysis.definitions.MagikDefinition;
 import nl.ramsolutions.sw.magik.analysis.definitions.MethodDefinition;
 import nl.ramsolutions.sw.magik.analysis.definitions.ParameterDefinition;
@@ -21,6 +22,7 @@ import nl.ramsolutions.sw.magik.analysis.typing.TypeString;
 import nl.ramsolutions.sw.magik.api.MagikGrammar;
 import nl.ramsolutions.sw.magik.api.MagikOperator;
 import nl.ramsolutions.sw.magik.parser.MagikCommentExtractor;
+import nl.ramsolutions.sw.moduledef.ModuleDefFile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,6 +41,7 @@ public class DefineSlotAccessParser {
   private static final String FLAVOR_PUBLIC = ":public";
   private static final String FLAVOR_READ_ONLY = ":read_only";
 
+  private final MagikFile magikFile;
   private final AstNode node;
 
   /**
@@ -46,11 +49,12 @@ public class DefineSlotAccessParser {
    *
    * @param node {@code define_slot_access()} node.
    */
-  public DefineSlotAccessParser(final AstNode node) {
+  public DefineSlotAccessParser(final MagikFile magikFile, final AstNode node) {
     if (node.isNot(MagikGrammar.METHOD_INVOCATION)) {
       throw new IllegalArgumentException();
     }
 
+    this.magikFile = magikFile;
     this.node = node;
   }
 
@@ -199,9 +203,12 @@ public class DefineSlotAccessParser {
       return Collections.emptyList();
     }
 
+    // Figure timestamp.
+    final Instant timestamp = this.magikFile.getTimestamp();
+
     // Figure module name.
     final URI uri = this.node.getToken().getURI();
-    final String moduleName = ModuleDefinitionScanner.getModuleName(uri);
+    final String moduleName = ModuleDefFile.getModuleNameForUri(uri);
 
     // Figure statement node.
     final AstNode statementNode = node.getFirstAncestor(MagikGrammar.STATEMENT);
@@ -231,11 +238,13 @@ public class DefineSlotAccessParser {
     final TypeString exemplarName = TypeString.ofIdentifier(identifier, pakkage);
     final List<MethodDefinition> methodDefinitions =
         this.generateSlotMethods(
-            moduleName, statementNode, exemplarName, slotName, flag, flavor, doc);
+            timestamp, moduleName, statementNode, exemplarName, slotName, flag, flavor, doc);
     return List.copyOf(methodDefinitions);
   }
 
+  @SuppressWarnings({"checkstyle:ParameterNumber", "java:S107"})
   private List<MethodDefinition> generateSlotMethods(
+      final @Nullable Instant timestamp,
       final @Nullable String moduleName,
       final AstNode definitionNode,
       final TypeString exemplarName,
@@ -261,6 +270,7 @@ public class DefineSlotAccessParser {
       final MethodDefinition getMethod =
           new MethodDefinition(
               location,
+              timestamp,
               moduleName,
               doc,
               definitionNode,
@@ -270,8 +280,8 @@ public class DefineSlotAccessParser {
               getParameters,
               null,
               Collections.emptySet(),
-              ExpressionResultString.UNDEFINED,
-              ExpressionResultString.UNDEFINED);
+              new ExpressionResultString(TypeString.UNDEFINED),
+              ExpressionResultString.EMPTY);
       methodDefinitions.add(getMethod);
     } else if (flag.equals(FLAG_WRITE) || flag.equals(FLAG_WRITABLE)) {
       // get
@@ -284,6 +294,7 @@ public class DefineSlotAccessParser {
       final MethodDefinition getMethod =
           new MethodDefinition(
               location,
+              timestamp,
               moduleName,
               doc,
               definitionNode,
@@ -293,8 +304,8 @@ public class DefineSlotAccessParser {
               getParameters,
               null,
               Collections.emptySet(),
-              ExpressionResultString.UNDEFINED,
-              ExpressionResultString.UNDEFINED);
+              new ExpressionResultString(TypeString.UNDEFINED),
+              ExpressionResultString.EMPTY);
       methodDefinitions.add(getMethod);
 
       // set
@@ -308,6 +319,7 @@ public class DefineSlotAccessParser {
       final ParameterDefinition assignmentParam =
           new ParameterDefinition(
               location,
+              timestamp,
               moduleName,
               null,
               definitionNode,
@@ -317,6 +329,7 @@ public class DefineSlotAccessParser {
       final MethodDefinition setMethod =
           new MethodDefinition(
               location,
+              timestamp,
               moduleName,
               doc,
               definitionNode,
@@ -326,8 +339,8 @@ public class DefineSlotAccessParser {
               setParameters,
               assignmentParam,
               Collections.emptySet(),
-              ExpressionResultString.UNDEFINED,
-              ExpressionResultString.UNDEFINED);
+              new ExpressionResultString(TypeString.ofParameterRef("val")),
+              ExpressionResultString.EMPTY);
       methodDefinitions.add(setMethod);
 
       // boot
@@ -335,6 +348,7 @@ public class DefineSlotAccessParser {
       final MethodDefinition bootMethod =
           new MethodDefinition(
               location,
+              timestamp,
               moduleName,
               doc,
               definitionNode,
@@ -344,8 +358,8 @@ public class DefineSlotAccessParser {
               setParameters,
               assignmentParam,
               Collections.emptySet(),
-              ExpressionResultString.UNDEFINED,
-              ExpressionResultString.UNDEFINED);
+              new ExpressionResultString(TypeString.UNDEFINED),
+              ExpressionResultString.EMPTY);
       methodDefinitions.add(bootMethod);
     }
     return methodDefinitions;

@@ -598,30 +598,12 @@ public final class TypeString implements Comparable<TypeString> {
 
                   return Stream.of(typeStr);
                 })
+            .distinct()
             .collect(Collectors.toUnmodifiableSet());
     if (combinedTypes.size() == 1) {
       return combinedTypes.stream().findFirst().orElseThrow();
     }
 
     return TypeString.ofCombination(combinedTypes.toArray(TypeString[]::new));
-  }
-
-  public TypeString resolveSelf(AstNode node) {
-    TypeString toReturn = this;
-    if (isSelf()) {
-      final AstNode definitionNode =
-          node.getFirstAncestor(MagikGrammar.METHOD_DEFINITION, MagikGrammar.PROCEDURE_DEFINITION);
-      if (definitionNode == null) {
-        return toReturn;
-      }
-
-      if (definitionNode.is(MagikGrammar.METHOD_DEFINITION)) {
-        final MethodDefinitionNodeHelper helper = new MethodDefinitionNodeHelper(definitionNode);
-        toReturn = helper.getTypeString();
-      } else {
-        toReturn = TypeString.SW_PROCEDURE;
-      }
-    }
-    return toReturn;
   }
 }

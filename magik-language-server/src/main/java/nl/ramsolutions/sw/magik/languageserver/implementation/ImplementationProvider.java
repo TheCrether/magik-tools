@@ -3,6 +3,8 @@ package nl.ramsolutions.sw.magik.languageserver.implementation;
 import com.sonar.sslr.api.AstNode;
 import java.util.Collections;
 import java.util.List;
+
+import nl.ramsolutions.sw.MagikToolsProperties;
 import nl.ramsolutions.sw.magik.Location;
 import nl.ramsolutions.sw.magik.MagikTypedFile;
 import nl.ramsolutions.sw.magik.Position;
@@ -13,11 +15,17 @@ import nl.ramsolutions.sw.magik.analysis.helpers.MethodDefinitionNodeHelper;
 import nl.ramsolutions.sw.magik.analysis.typing.TypeString;
 import nl.ramsolutions.sw.magik.analysis.typing.TypeStringResolver;
 import nl.ramsolutions.sw.magik.api.MagikGrammar;
-import nl.ramsolutions.sw.magik.languageserver.MagikSettings;
+import nl.ramsolutions.sw.magik.languageserver.MagikLanguageServerSettings;
 import org.eclipse.lsp4j.ServerCapabilities;
 
 /** Implementation provider. */
 public class ImplementationProvider {
+
+  private final MagikToolsProperties properties;
+
+  public ImplementationProvider(MagikToolsProperties properties) {
+    this.properties = properties;
+  }
 
   /**
    * Set server capabilities.
@@ -65,6 +73,9 @@ public class ImplementationProvider {
       return Collections.emptyList();
     }
 
+
+    final MagikLanguageServerSettings settings = new MagikLanguageServerSettings(this.properties);
+
     final IDefinitionKeeper definitionKeeper = magikFile.getDefinitionKeeper();
     return definitionKeeper.getMethodDefinitions().stream()
         .filter(methodDef -> !typeStr.equals(methodDef.getTypeName()))
@@ -72,7 +83,7 @@ public class ImplementationProvider {
         .map(MethodDefinition::getLocation)
         .map(
             (Location location) ->
-                Location.validLocation(location, MagikSettings.INSTANCE.getPathMappings()))
+                Location.validLocation(location, settings.getPathMappings()))
         .toList();
   }
 }

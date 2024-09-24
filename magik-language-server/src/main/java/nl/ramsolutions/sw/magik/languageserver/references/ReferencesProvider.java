@@ -10,15 +10,12 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-import nl.ramsolutions.sw.definitions.ModuleDefinition;
-import nl.ramsolutions.sw.definitions.ProductDefinition;
-import nl.ramsolutions.sw.definitions.api.SwModuleDefinitionGrammar;
-import nl.ramsolutions.sw.definitions.api.SwProductDefinitionGrammar;
+import java.util.stream.Stream;
+
+import nl.ramsolutions.sw.MagikToolsProperties;
 import nl.ramsolutions.sw.magik.Location;
 import nl.ramsolutions.sw.magik.MagikTypedFile;
-import nl.ramsolutions.sw.magik.ModuleDefFile;
 import nl.ramsolutions.sw.magik.Position;
-import nl.ramsolutions.sw.magik.ProductDefFile;
 import nl.ramsolutions.sw.magik.analysis.AstQuery;
 import nl.ramsolutions.sw.magik.analysis.definitions.ConditionUsage;
 import nl.ramsolutions.sw.magik.analysis.definitions.ExemplarDefinition;
@@ -33,7 +30,13 @@ import nl.ramsolutions.sw.magik.analysis.scope.ScopeEntry;
 import nl.ramsolutions.sw.magik.analysis.typing.TypeString;
 import nl.ramsolutions.sw.magik.analysis.typing.TypeStringResolver;
 import nl.ramsolutions.sw.magik.api.MagikGrammar;
-import nl.ramsolutions.sw.magik.languageserver.MagikSettings;
+import nl.ramsolutions.sw.magik.languageserver.MagikLanguageServerSettings;
+import nl.ramsolutions.sw.moduledef.ModuleDefFile;
+import nl.ramsolutions.sw.moduledef.ModuleUsage;
+import nl.ramsolutions.sw.moduledef.api.SwModuleDefinitionGrammar;
+import nl.ramsolutions.sw.productdef.ProductDefFile;
+import nl.ramsolutions.sw.productdef.ProductUsage;
+import nl.ramsolutions.sw.productdef.api.SwProductDefinitionGrammar;
 import org.eclipse.lsp4j.ServerCapabilities;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,6 +45,12 @@ import org.slf4j.LoggerFactory;
 public class ReferencesProvider {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ReferencesProvider.class);
+
+  private final MagikToolsProperties properties;
+
+  public ReferencesProvider(MagikToolsProperties properties) {
+    this.properties = properties;
+  }
 
   /**
    * Set server capabilities.
@@ -93,16 +102,14 @@ public class ReferencesProvider {
   public List<Location> provideReferences(
       final ModuleDefFile moduleDefFile, final Position position) {
     final AstNode node = moduleDefFile.getTopNode();
-    final AstNode hoveredTokenNode = AstQuery.nodeAt(node, position);
-    if (hoveredTokenNode == null) {
+    final AstNode tokenNode = AstQuery.nodeAt(node, position);
+    if (tokenNode == null) {
       return Collections.emptyList();
     }
 
     final AstNode moduleNameNode =
         AstQuery.getParentFromChain(
-            hoveredTokenNode,
-            SwModuleDefinitionGrammar.IDENTIFIER,
-            SwModuleDefinitionGrammar.MODULE_NAME);
+            tokenNode, SwModuleDefinitionGrammar.IDENTIFIER, SwModuleDefinitionGrammar.MODULE_NAME);
     if (moduleNameNode == null) {
       return Collections.emptyList();
     }
@@ -208,6 +215,8 @@ public class ReferencesProvider {
             .collect(Collectors.toSet());
     final Predicate<MethodUsage> filterPredicate = searchedMethodUsages::contains;
 
+    final MagikLanguageServerSettings settings = new MagikLanguageServerSettings(this.properties);
+
     // Find references.
     return definitionKeeper.getMethodDefinitions().stream()
         .flatMap(def -> def.getUsedMethods().stream())
@@ -215,7 +224,7 @@ public class ReferencesProvider {
         .map(MethodUsage::getLocation)
         .map(
             (Location location) ->
-                Location.validLocation(location, MagikSettings.INSTANCE.getPathMappings()))
+                Location.validLocation(location, settings.getPathMappings()))
         .toList();
   }
 
@@ -230,10 +239,9 @@ public class ReferencesProvider {
     }
 
     // TODO: We need to resolve the referenced types, as the indexed globals might not have the
-    // right
-    //       (unresolved) package. I.e., We might need to match only on identifier, as the
-    // usedGlobal might have a
-    //       different package? This is because the ref might be stored with the current package.
+    // right (unresolved) package. I.e., We might need to match only on identifier, as the
+    // usedGlobal might have a different package? This is because the ref might be stored with the
+    // current package.
     final TypeString exemplarTypeString = exemplarDefinition.getTypeString();
     final Set<TypeString> searchedTypes = Set.of(exemplarTypeString);
     final Collection<GlobalUsage> wantedGlobalUsages =
@@ -241,49 +249,58 @@ public class ReferencesProvider {
             .map(wantedTypeRef -> new GlobalUsage(wantedTypeRef, null))
             .collect(Collectors.toSet());
     final Predicate<GlobalUsage> filterPredicate = wantedGlobalUsages::contains;
+    final MagikLanguageServerSettings settings = new MagikLanguageServerSettings(this.properties);
 
     // Find references.
     // TODO: Also parameters, return types of methods/procedures.
     // TODO: Also slots of methods.
-    // TODO: Also search in all procedures.
-    return definitionKeeper.getMethodDefinitions().stream()
-        .flatMap(def -> def.getUsedGlobals().stream())
+    return Stream.of(
+            definitionKeeper.getMethodDefinitions().stream()
+                .flatMap(def -> def.getUsedGlobals().stream()),
+            definitionKeeper.getProcedureDefinitions().stream()
+                .flatMap(def -> def.getUsedGlobals().stream()))
+        .flatMap(stream -> stream)
         .filter(filterPredicate::test)
         .map(GlobalUsage::getLocation)
         .map(
             (Location location) ->
-                Location.validLocation(location, MagikSettings.INSTANCE.getPathMappings()))
+                Location.validLocation(location, settings.getPathMappings()))
         .toList();
   }
 
   private List<Location> referencesToCondition(
       final IDefinitionKeeper definitionKeeper, final String conditionName) {
     LOGGER.debug("Finding references to condition: {}", conditionName);
+    final MagikLanguageServerSettings settings = new MagikLanguageServerSettings(this.properties);
     return definitionKeeper.getMethodDefinitions().stream()
         .flatMap(def -> def.getUsedConditions().stream())
         .filter(conditionUsage -> conditionUsage.getConditionName().equals(conditionName))
         .map(ConditionUsage::getLocation)
         .map(
             (Location location) ->
-                Location.validLocation(location, MagikSettings.INSTANCE.getPathMappings()))
+                Location.validLocation(location, settings.getPathMappings()))
         .toList();
   }
 
   private List<Location> referencesToProductName(
       final IDefinitionKeeper definitionKeeper, final String productName) {
     LOGGER.debug("Finding references to product: {}", productName);
+    final ProductUsage searchedProductUsage = new ProductUsage(productName, null);
     return definitionKeeper.getProductDefinitions().stream()
-        .filter(productDef -> productDef.getRequireds().contains(productName))
-        .map(ProductDefinition::getLocation)
+        .flatMap(def -> def.getUsages().stream())
+        .filter(productUsage -> productUsage.equals(searchedProductUsage))
+        .map(ProductUsage::getLocation)
         .toList();
   }
 
   private List<Location> referencesToModuleName(
       final IDefinitionKeeper definitionKeeper, final String moduleName) {
     LOGGER.debug("Finding references to product: {}", moduleName);
+    final ModuleUsage searchedModuleUsage = new ModuleUsage(moduleName, null);
     return definitionKeeper.getModuleDefinitions().stream()
-        .filter(moduleDef -> moduleDef.getRequireds().contains(moduleName))
-        .map(ModuleDefinition::getLocation)
+        .flatMap(def -> def.getUsages().stream())
+        .filter(moduleUsage -> moduleUsage.equals(searchedModuleUsage))
+        .map(ModuleUsage::getLocation)
         .toList();
   }
 }

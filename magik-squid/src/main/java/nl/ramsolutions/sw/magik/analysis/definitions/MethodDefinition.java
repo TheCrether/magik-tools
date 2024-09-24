@@ -3,6 +3,7 @@ package nl.ramsolutions.sw.magik.analysis.definitions;
 import com.sonar.sslr.api.AstNode;
 import edu.umd.cs.findbugs.annotations.CheckForNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -57,6 +58,7 @@ public class MethodDefinition extends MagikDefinition implements ICallableDefini
   @SuppressWarnings({"checkstyle:ParameterNumber", "java:S107"})
   public MethodDefinition(
       final @Nullable Location location,
+      final @Nullable Instant timestamp,
       final @Nullable String moduleName,
       final @Nullable String doc,
       final @Nullable AstNode node,
@@ -68,7 +70,7 @@ public class MethodDefinition extends MagikDefinition implements ICallableDefini
       final Set<String> topics,
       final ExpressionResultString returnTypes,
       final ExpressionResultString loopTypes) {
-    super(location, moduleName, doc, node);
+    super(location, timestamp, moduleName, doc, node);
     this.typeName = typeName;
     this.methodName = methodName;
     this.modifiers = Set.copyOf(modifiers);
@@ -101,6 +103,7 @@ public class MethodDefinition extends MagikDefinition implements ICallableDefini
   @SuppressWarnings({"checkstyle:ParameterNumber", "java:S107"})
   public MethodDefinition(
       final @Nullable Location location,
+      final @Nullable Instant timestamp,
       final @Nullable String moduleName,
       final @Nullable String doc,
       final @Nullable AstNode node,
@@ -116,7 +119,7 @@ public class MethodDefinition extends MagikDefinition implements ICallableDefini
       final Set<MethodUsage> usedMethods,
       final Set<SlotUsage> usedSlots,
       final Set<ConditionUsage> usedConditions) {
-    super(location, moduleName, doc, node);
+    super(location, timestamp, moduleName, doc, node);
     this.typeName = typeName;
     this.methodName = methodName;
     this.modifiers = Set.copyOf(modifiers);
@@ -296,14 +299,10 @@ public class MethodDefinition extends MagikDefinition implements ICallableDefini
   }
 
   @Override
-  public String getPackage() {
-    return this.typeName.getPakkage();
-  }
-
-  @Override
   public MethodDefinition getWithoutNode() {
     return new MethodDefinition(
         this.getLocation(),
+        this.getTimestamp(),
         this.getModuleName(),
         this.getDoc(),
         null,
@@ -335,6 +334,7 @@ public class MethodDefinition extends MagikDefinition implements ICallableDefini
   public int hashCode() {
     return Objects.hash(
         this.getLocation(),
+        this.getTimestamp(),
         this.getModuleName(),
         this.getDoc(),
         this.modifiers,

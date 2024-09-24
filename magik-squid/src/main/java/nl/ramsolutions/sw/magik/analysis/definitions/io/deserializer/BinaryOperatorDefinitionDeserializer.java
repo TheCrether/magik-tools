@@ -23,14 +23,15 @@ public class BinaryOperatorDefinitionDeserializer
 
     MagikDefinition base = getDefinition(node);
 
-    String operator = getStringField(node, "operator");
+    String operator = getStringField(node, "op");
 
     TypeString lhsTypeName = getTypeString(context, node, "lhs_type_n");
     TypeString rhsTypeName = getTypeString(context, node, "rhs_type_n");
-    TypeString resultTypeName = getTypeString(context, node, "result_type_n");
+    TypeString resultTypeName = getTypeString(context, node, "res_type_n");
 
     return new BinaryOperatorDefinition(
         base.getLocation(),
+        base.getTimestamp(),
         base.getModuleName(),
         base.getDoc(),
         base.getNode(),

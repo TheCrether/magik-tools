@@ -10,12 +10,13 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;
 import nl.ramsolutions.sw.IgnoreHandler;
-import nl.ramsolutions.sw.magik.FileEvent;
+import nl.ramsolutions.sw.MagikToolsProperties;
 import nl.ramsolutions.sw.magik.PathMapping;
-import nl.ramsolutions.sw.magik.analysis.MagikAnalysisConfiguration;
 import nl.ramsolutions.sw.magik.analysis.definitions.IDefinitionKeeper;
 import nl.ramsolutions.sw.magik.analysis.definitions.io.JsonDefinitionReader;
+import nl.ramsolutions.sw.magik.analysis.definitions.io.deserializer.BaseDeserializer;
 import nl.ramsolutions.sw.magik.analysis.indexer.MagikIndexer;
+import nl.ramsolutions.sw.magik.analysis.indexer.ModuleIndexer;
 import nl.ramsolutions.sw.magik.analysis.indexer.ProductIndexer;
 import nl.ramsolutions.sw.magik.analysis.typing.ClassInfoDefinitionReader;
 import nl.ramsolutions.sw.magik.languageserver.munit.MUnitTestItem;
@@ -25,7 +26,6 @@ import org.eclipse.lsp4j.*;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.lsp4j.jsonrpc.services.JsonRequest;
 import org.eclipse.lsp4j.services.LanguageClient;
-import org.eclipse.lsp4j.services.TextDocumentService;
 import org.eclipse.lsp4j.services.WorkspaceService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,10 +38,11 @@ public class MagikWorkspaceService implements WorkspaceService {
       LoggerFactory.getLogger(MagikWorkspaceService.class.getName() + "Duration");
 
   private final MagikLanguageServer languageServer;
-  private final MagikAnalysisConfiguration analysisConfiguration;
+  private final MagikToolsProperties languageServerProperties;
   private final IDefinitionKeeper definitionKeeper;
   private final IgnoreHandler ignoreHandler;
   private final ProductIndexer productIndexer;
+  private final ModuleIndexer moduleIndexer;
   private final MagikIndexer magikIndexer;
   private final SymbolProvider symbolProvider;
   private final MUnitTestItemProvider testItemProvider;
@@ -51,22 +52,25 @@ public class MagikWorkspaceService implements WorkspaceService {
    *
    * @param languageServer Owner language server.
    * @param definitionKeeper {@link IDefinitionKeeper} used for definition storage.
-   * @throws IOException
+   * @throws IOException If an error occurs.
    */
   public MagikWorkspaceService(
       final MagikLanguageServer languageServer,
-      final MagikAnalysisConfiguration analysisConfiguration,
+      final MagikToolsProperties languageServerProperties,
       final IDefinitionKeeper definitionKeeper) {
     this.languageServer = languageServer;
-    this.analysisConfiguration = analysisConfiguration;
+    this.languageServerProperties = languageServerProperties;
     this.definitionKeeper = definitionKeeper;
 
     this.ignoreHandler = new IgnoreHandler();
     this.productIndexer = new ProductIndexer(this.definitionKeeper, this.ignoreHandler);
+    this.moduleIndexer = new ModuleIndexer(this.definitionKeeper, this.ignoreHandler);
     this.magikIndexer =
-        new MagikIndexer(this.definitionKeeper, this.analysisConfiguration, this.ignoreHandler);
-    this.symbolProvider = new SymbolProvider(this.definitionKeeper);
-    this.testItemProvider = new MUnitTestItemProvider(this.definitionKeeper);
+        new MagikIndexer(this.definitionKeeper, this.languageServerProperties, this.ignoreHandler);
+    this.symbolProvider = new SymbolProvider(this.definitionKeeper, this.languageServerProperties);
+    this.testItemProvider = new MUnitTestItemProvider(this.definitionKeeper, this.languageServerProperties);
+
+    BaseDeserializer.setProperties(this.languageServerProperties);
   }
 
   /**
@@ -83,37 +87,25 @@ public class MagikWorkspaceService implements WorkspaceService {
   public void didChangeConfiguration(final DidChangeConfigurationParams params) {
     LOGGER.trace("didChangeConfiguration");
 
-    final MagikSettings oldSettings = MagikSettings.INSTANCE;
-    final List<String> oldTypeDBPaths = oldSettings.getTypingTypeDatabasePaths();
-    final List<String> oldLibsDirs = oldSettings.getLibsDirs();
-    final List<PathMapping> oldPathMappings = oldSettings.getPathMappings();
+    final MagikLanguageServerSettings oldLspSettings =
+      new MagikLanguageServerSettings(this.languageServerProperties);
+    final List<String> oldTypeDBPaths = oldLspSettings.getTypingTypeDatabasePaths();
+    final List<String> oldProductDirs = oldLspSettings.getProductDirs();
+    final List<PathMapping> oldPathMappings = oldLspSettings.getPathMappings();
 
     final JsonObject settings = (JsonObject) params.getSettings();
+    final Properties props = JsonObjectPropertiesConverter.convert(settings);
+    LOGGER.debug("New properties: {}", props);
+    this.languageServerProperties.reset();
+    this.languageServerProperties.putAll(props);
+//    BaseDeserializer.setProperties(this.languageServerProperties); // TODO check if this is not needed because object reference?
 
-    LOGGER.debug("New settings: {}", settings);
-    MagikSettings.INSTANCE.setSettings(settings);
-
-    // Update magik analysis settings.
-    final boolean magikIndexerIndexGlobalUsages =
-        Objects.requireNonNullElse(MagikSettings.INSTANCE.getTypingIndexGlobalUsages(), false);
-    this.analysisConfiguration.setMagikIndexerIndexGlobalUsages(magikIndexerIndexGlobalUsages);
-
-    final boolean magikIndexerIndexMethodUsages =
-        Objects.requireNonNullElse(MagikSettings.INSTANCE.getTypingIndexMethodUsages(), false);
-    this.analysisConfiguration.setMagikIndexerIndexMethodUsages(magikIndexerIndexMethodUsages);
-
-    final boolean magikIndexerIndexSlotUsages =
-        Objects.requireNonNullElse(MagikSettings.INSTANCE.getTypingIndexSlotUsages(), false);
-    this.analysisConfiguration.setMagikIndexerIndexSlotUsages(magikIndexerIndexSlotUsages);
-
-    final boolean magikIndexerIndexConditionUsages =
-        Objects.requireNonNullElse(MagikSettings.INSTANCE.getTypingIndexConditionUsages(), false);
-    this.analysisConfiguration.setMagikIndexerIndexConditionUsages(
-        magikIndexerIndexConditionUsages);
-
-    if (collectionsDiffers(oldTypeDBPaths, MagikSettings.INSTANCE.getTypingTypeDatabasePaths())
-        || collectionsDiffers(oldLibsDirs, MagikSettings.INSTANCE.getLibsDirs())
-        || collectionsDiffers(oldPathMappings, MagikSettings.INSTANCE.getPathMappings())) {
+    // TODO change how typing db gets accessed
+    final MagikLanguageServerSettings lspSettings =
+        new MagikLanguageServerSettings(this.languageServerProperties);
+    if (collectionsDiffers(oldTypeDBPaths, lspSettings.getTypingTypeDatabasePaths())
+        || collectionsDiffers(oldProductDirs, lspSettings.getProductDirs())
+        || collectionsDiffers(oldPathMappings, lspSettings.getPathMappings())) {
       this.definitionKeeper.clear();
 
       this.runIndexersInBackground();
@@ -130,61 +122,19 @@ public class MagikWorkspaceService implements WorkspaceService {
     return sizeBefore != collection1.size();
   }
 
-  private void runIgnoreFilesIndexer() {
-    for (final WorkspaceFolder workspaceFolder : this.languageServer.getWorkspaceFolders()) {
-      try {
-        LOGGER.trace("Running IgnoreHandler from: {}", workspaceFolder.getUri());
-        final String uriStr = workspaceFolder.getUri();
-        final URI uri = URI.create(uriStr);
-        final FileEvent fileEvent = new FileEvent(uri, FileEvent.FileChangeType.CREATED);
-        this.ignoreHandler.handleFileEvent(fileEvent);
-      } catch (final IOException exception) {
-        LOGGER.error(exception.getMessage(), exception);
-      }
-    }
-  }
+  private void readProductsClassInfos(final List<String> productDirs) {
+    LOGGER.trace("Reading docs from product dirs: {}", productDirs);
 
-  private void runProductIndexer() {
-    for (final WorkspaceFolder workspaceFolder : this.languageServer.getWorkspaceFolders()) {
-      try {
-        LOGGER.debug("Running ProductIndexer from: {}", workspaceFolder.getUri());
-        final String uriStr = workspaceFolder.getUri();
-        final URI uri = URI.create(uriStr);
-        final FileEvent fileEvent = new FileEvent(uri, FileEvent.FileChangeType.CREATED);
-        this.productIndexer.handleFileEvent(fileEvent);
-      } catch (final IOException exception) {
-        LOGGER.error(exception.getMessage(), exception);
-      }
-    }
-  }
-
-  private void runMagikIndexer() {
-    for (final WorkspaceFolder workspaceFolder : this.languageServer.getWorkspaceFolders()) {
-      try {
-        LOGGER.debug("Running MagikIndexer from: {}", workspaceFolder.getUri());
-        final String uriStr = workspaceFolder.getUri();
-        final URI uri = URI.create(uriStr);
-        final FileEvent fileEvent = new FileEvent(uri, FileEvent.FileChangeType.CREATED);
-        this.magikIndexer.handleFileEvent(fileEvent);
-      } catch (final IOException exception) {
-        LOGGER.error(exception.getMessage(), exception);
-      }
-    }
-  }
-
-  private void readLibsClassInfos(final List<String> libsDirs) {
-    LOGGER.trace("Reading libs docs from: {}", libsDirs);
-
-    libsDirs.forEach(
+    productDirs.forEach(
         pathStr -> {
           final Path path = Path.of(pathStr);
           if (!Files.exists(path)) {
-            LOGGER.warn("Path to libs dir does not exist: {}", pathStr);
+            LOGGER.warn("Path to product dir does not exist: {}", pathStr);
             return;
           }
 
           try {
-            ClassInfoDefinitionReader.readLibsDirectory(path, this.definitionKeeper);
+            ClassInfoDefinitionReader.readProductDirectory(path, this.definitionKeeper);
           } catch (final IOException exception) {
             LOGGER.error(exception.getMessage(), exception);
           }
@@ -201,14 +151,15 @@ public class MagikWorkspaceService implements WorkspaceService {
 
     LOGGER.info("Reading type databases from: {}", typeDbPaths);
 
+    final MagikLanguageServerSettings lspSettings =
+        new MagikLanguageServerSettings(this.languageServerProperties);
+    final String smallworldGis =
+        Objects.requireNonNull(lspSettings.getSmallworldGis(), "smallworldGis not defined");
+
     typeDbPaths.stream()
         .map(
             pathStr -> {
-              Path path =
-                  JsonDefinitionReader.parseTypeDBPath(
-                      Objects.requireNonNull(
-                          MagikSettings.INSTANCE.getSmallworldGis(), "smallworldGis not defined"),
-                      pathStr);
+              Path path = JsonDefinitionReader.parseTypeDBPath(smallworldGis, pathStr);
               if (path == null) {
                 LOGGER.warn("Path to types database does not exist: {}", pathStr);
                 return null;
@@ -233,7 +184,7 @@ public class MagikWorkspaceService implements WorkspaceService {
             path -> {
               try {
                 JsonDefinitionReader.readTypes(
-                    path, this.definitionKeeper, MagikSettings.INSTANCE.getPathMappings());
+                    path, this.definitionKeeper, lspSettings.getPathMappings());
               } catch (final IOException exception) {
                 LOGGER.error(exception.getMessage(), exception);
               }
@@ -264,8 +215,8 @@ public class MagikWorkspaceService implements WorkspaceService {
               final nl.ramsolutions.sw.magik.FileEvent magikFileEvent =
                   new nl.ramsolutions.sw.magik.FileEvent(uri, magikFileChangeType);
               try {
-                this.ignoreHandler.handleFileEvent(magikFileEvent);
                 this.productIndexer.handleFileEvent(magikFileEvent);
+                this.moduleIndexer.handleFileEvent(magikFileEvent);
                 this.magikIndexer.handleFileEvent(magikFileEvent);
               } catch (final IOException exception) {
                 LOGGER.error(exception.getMessage(), exception);
@@ -334,34 +285,26 @@ public class MagikWorkspaceService implements WorkspaceService {
     final long start = System.nanoTime();
     LOGGER.trace("Run indexers");
 
-    // Read types db.
-    final List<String> typesDbPaths = MagikSettings.INSTANCE.getTypingTypeDatabasePaths();
+    // Read types dbs.
+    final MagikLanguageServerSettings settings =
+        new MagikLanguageServerSettings(this.languageServerProperties);
+    final List<String> typesDbPaths = settings.getTypingTypeDatabasePaths();
     this.readTypesDbs(typesDbPaths);
 
-    // Read class_infos from libs/ dirs.
-    final List<String> libsDirs = MagikSettings.INSTANCE.getLibsDirs();
-    this.readLibsClassInfos(libsDirs);
+    // Read class_infos from product dirs.
+    final List<String> productDirs = settings.getProductDirs();
+    this.readProductsClassInfos(productDirs);
 
-    // Index .magik-tools-ignore files.
-    this.runIgnoreFilesIndexer();
-
-    // Run product/module indexer.
-    this.runProductIndexer();
-
-    // Run magik indexer.
-    this.runMagikIndexer();
-
-    // reindex all open files (not only ones that are in the workspace folders)
-    TextDocumentService textDocumentService = this.languageServer.getTextDocumentService();
-    if (textDocumentService instanceof MagikTextDocumentService) {
-      MagikTextDocumentService magikTextDocumentService =
-          (MagikTextDocumentService) textDocumentService;
-      magikTextDocumentService.reopenAllFiles();
+    // TODO check if this merge actually updates everything
+    // Update workspace folders.
+    for (final MagikWorkspaceFolder workspaceFolder : this.languageServer.getWorkspaceFolders()) {
+      try {
+        workspaceFolder.onInit();
+      } catch (final IOException exception) {
+        LOGGER.error(
+            "Caught error when initializing workspacefolder: " + workspaceFolder, exception);
+      }
     }
-
-    LOGGER_DURATION.trace("Duration: {} runIndexers", (System.nanoTime() - start) / 1000000000.0);
-
-    this.languageServer.getLanguageClient().sendIndexed(); // tell vs code that the indexing is done
   }
 
   @SuppressWarnings("IllegalCatch")
@@ -376,7 +319,7 @@ public class MagikWorkspaceService implements WorkspaceService {
 
     CompletableFuture.runAsync(
         () -> {
-          LOGGER.trace("Start indexing workspace in background");
+          LOGGER.trace("Start indexing workspace");
           final ProgressParams progressParams = new ProgressParams();
           progressParams.setToken(token);
 
@@ -399,8 +342,15 @@ public class MagikWorkspaceService implements WorkspaceService {
         });
   }
 
+  /** Handle shutdown. */
   public void shutdown() {
-    // TODO: Dump type database, and read it again when starting?
-    //       Requires timestamping of definitions/files!
+    for (final MagikWorkspaceFolder workspaceFolder : this.languageServer.getWorkspaceFolders()) {
+      try {
+        workspaceFolder.onShutdown();
+      } catch (final IOException exception) {
+        LOGGER.error(
+            "Caught error when shutting down workspacefolder: " + workspaceFolder, exception);
+      }
+    }
   }
 }

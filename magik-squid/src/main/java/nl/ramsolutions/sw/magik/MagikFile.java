@@ -1,10 +1,14 @@
 package nl.ramsolutions.sw.magik;
 
 import com.sonar.sslr.api.AstNode;
+import edu.umd.cs.findbugs.annotations.CheckForNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Instant;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -13,11 +17,14 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 import nl.ramsolutions.sw.FileCharsetDeterminer;
+import nl.ramsolutions.sw.IDefinition;
+import nl.ramsolutions.sw.MagikToolsProperties;
 import nl.ramsolutions.sw.OpenedFile;
-import nl.ramsolutions.sw.magik.analysis.MagikAnalysisConfiguration;
-import nl.ramsolutions.sw.magik.analysis.definitions.DefinitionReader;
 import nl.ramsolutions.sw.magik.analysis.definitions.MagikDefinition;
+import nl.ramsolutions.sw.magik.analysis.definitions.MagikDefinitionReader;
+import nl.ramsolutions.sw.magik.analysis.definitions.MagikFileDefinition;
 import nl.ramsolutions.sw.magik.analysis.scope.GlobalScope;
 import nl.ramsolutions.sw.magik.analysis.scope.Scope;
 import nl.ramsolutions.sw.magik.analysis.scope.ScopeBuilderVisitor;
@@ -28,10 +35,11 @@ import nl.ramsolutions.sw.magik.parser.MagikParser;
 /** Magik file. */
 public class MagikFile extends OpenedFile {
 
-  private static final URI DEFAULT_URI = URI.create("memory://source.magik");
+  public static final URI DEFAULT_URI = URI.create("memory://source.magik");
   public static final Location DEFAULT_LOCATION = new Location(DEFAULT_URI, Range.DEFAULT_RANGE);
 
-  private final MagikAnalysisConfiguration configuration;
+  private final @Nullable Instant timestamp;
+  private final MagikToolsProperties properties;
   private AstNode astNode;
   private GlobalScope globalScope;
   private List<MagikDefinition> definitions;
@@ -47,46 +55,47 @@ public class MagikFile extends OpenedFile {
    * @param source Source.
    */
   public MagikFile(final URI uri, final String source) {
-    this(MagikAnalysisConfiguration.DEFAULT_CONFIGURATION, uri, source);
+    this(MagikToolsProperties.DEFAULT_PROPERTIES, uri, source);
   }
 
   /**
    * Constructor.
    *
+   * @param properties Properties.
    * @param uri URI.
    * @param source Source.
    */
-  public MagikFile(
-      final MagikAnalysisConfiguration configuration, final URI uri, final String source) {
+  public MagikFile(final MagikToolsProperties properties, final URI uri, final String source) {
     super(uri, source);
-    this.configuration = configuration;
+    this.timestamp = null;
+    this.properties = properties;
   }
 
   /**
    * Constructor. Read file at path.
    *
+   * @param properties Properties.
    * @param path File to read.
    * @throws IOException -
    */
-  public MagikFile(final Path path) throws IOException {
-    this(MagikAnalysisConfiguration.DEFAULT_CONFIGURATION, path);
-  }
-
-  /**
-   * Constructor. Read file at path.
-   *
-   * @param path File to read.
-   * @throws IOException -
-   */
-  public MagikFile(final MagikAnalysisConfiguration configuration, final Path path)
-      throws IOException {
+  public MagikFile(final MagikToolsProperties properties, final Path path) throws IOException {
     super(path.toUri(), Files.readString(path, FileCharsetDeterminer.determineCharset(path)));
-    this.configuration = configuration;
+    this.timestamp = Files.getLastModifiedTime(path).toInstant();
+    this.properties = properties;
   }
 
   @Override
   public String getLanguageId() {
     return "magik";
+  }
+
+  @CheckForNull
+  public Instant getTimestamp() {
+    return this.timestamp;
+  }
+
+  public MagikToolsProperties getProperties() {
+    return this.properties;
   }
 
   /**
@@ -132,13 +141,47 @@ public class MagikFile extends OpenedFile {
   }
 
   /**
+   * Get the {@link MagikFileDefinition} for this file.
+   *
+   * @return {@link MagikFileDefinition} for this file.
+   */
+  @CheckForNull
+  public MagikFileDefinition getMagikFileDefinition() {
+    final URI uri = this.getUri();
+    if (!uri.getScheme().equals("file")) {
+      return null;
+    }
+
+    final Location location = new Location(uri);
+    return new MagikFileDefinition(location, this.timestamp);
+  }
+
+  /**
+   * Get the {@link IDefinition}s for this file, including the {@link MagikFileDefinition} for this
+   * file.
+   *
+   * @return {@link IDefinition}s for this file.
+   */
+  public Collection<IDefinition> getDefinitions() {
+    final MagikFileDefinition magikFileDefinition = this.getMagikFileDefinition();
+    if (magikFileDefinition == null) {
+      return this.getMagikDefinitions().stream().map(IDefinition.class::cast).toList();
+    }
+
+    return Stream.concat(
+            Stream.of(magikFileDefinition),
+            this.getMagikDefinitions().stream().map(IDefinition.class::cast))
+        .toList();
+  }
+
+  /**
    * Get {@link MagikDefinition}s in this file.
    *
    * @return {@link MagikDefinition}s in this file.
    */
-  public synchronized List<MagikDefinition> getDefinitions() {
+  public synchronized List<MagikDefinition> getMagikDefinitions() {
     if (this.definitions == null) {
-      final DefinitionReader definitionReader = new DefinitionReader(this.configuration);
+      final MagikDefinitionReader definitionReader = new MagikDefinitionReader(this);
       final AstNode topNode = this.getTopNode();
       definitionReader.walkAst(topNode);
       this.definitions = definitionReader.getDefinitions();

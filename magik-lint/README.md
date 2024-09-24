@@ -6,10 +6,16 @@ A command line linter to use in your workflow. Mostly built after [Pylint](https
 
 Magik-lint takes the following command line options:
 
-- `--rcfile`: Path to configuration file
+- `--apply-fixes`: Automatically apply fixes, when possible.
+- `--column-offset`: Column offset, in case your editor uses a different column numbering scheme.
+- `--debug`: Enable debug logging.
+- `--help`: Show help.
+- `--max-infractions`: Maximum number of issues to report.
 - `--msg-template`: Template for output, defaults to: `${path}:${line}:${column}: ${msg} (${symbol})`
+- `--rcfile`: Path to configuration file
 - `--show-checks`: Show a list of all checks and whether it is disabled
-- A file or directory to check.
+- `--version`: Show version and quit.
+- A file or directory to check (can be multiple).
   - If a file is given, only this file is checked.
   - If a directory is given, all files in this directory and any sub-directories, are checked.
 
@@ -83,7 +89,3 @@ The exit code from Magik-lint is determined by the infractions of checks. The se
 | Minor | 4 |
 
 When using Git, checking flags in the return code allows you to allow minor infractions being committed, but prevent a commit of a major infraction, using Git hooks.
-
-## Template rules
-
-XXX TODO

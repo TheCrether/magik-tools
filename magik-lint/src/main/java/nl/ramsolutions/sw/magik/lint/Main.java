@@ -8,10 +8,15 @@ import java.io.PrintWriter;
 import java.io.Writer;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.logging.LogManager;
 import nl.ramsolutions.sw.ConfigurationLocator;
+import nl.ramsolutions.sw.IgnoreHandler;
+import nl.ramsolutions.sw.MagikToolsProperties;
+import nl.ramsolutions.sw.magik.MagikFileScanner;
 import nl.ramsolutions.sw.magik.lint.output.MessageFormatReporter;
 import nl.ramsolutions.sw.magik.lint.output.NullReporter;
 import nl.ramsolutions.sw.magik.lint.output.Reporter;
@@ -122,15 +127,27 @@ public final class Main {
    * @param configuration Configuration.
    * @return Reporter.
    */
-  private static Reporter createReporter(final MagikLintConfiguration configuration) {
-    final String configReporterFormat = configuration.getReporterFormat();
+  private static Reporter createReporter(final MagikToolsProperties properties) {
+    final String configReporterFormat = properties.getPropertyString(MagikLint.KEY_MSG_TEMPLATE);
     final String format =
         configReporterFormat != null ? configReporterFormat : MessageFormatReporter.DEFAULT_FORMAT;
-
-    final Long columnOffset = configuration.getColumnOffset();
-
+    final long columnOffset = properties.getPropertyLong(MagikLint.KEY_COLUMN_OFFSET, 0L);
     final PrintStream outStream = Main.getOutStream();
     return new MessageFormatReporter(outStream, format, columnOffset);
+  }
+
+  private static Collection<Path> getFilesFromArgs(final String[] args) throws IOException {
+    final Collection<Path> paths = new ArrayList<>();
+
+    final IgnoreHandler ignoreHandler = new IgnoreHandler();
+    final MagikFileScanner scanner = new MagikFileScanner(ignoreHandler);
+    for (final String arg : args) {
+      final Path path = Path.of(arg);
+      final List<Path> argPaths = scanner.getFiles(path).toList();
+      paths.addAll(argPaths);
+    }
+
+    return paths;
   }
 
   /**
@@ -146,7 +163,7 @@ public final class Main {
     final CommandLine commandLine;
     try {
       commandLine = Main.parseCommandline(args);
-    } catch (UnrecognizedOptionException exception) {
+    } catch (final UnrecognizedOptionException exception) {
       final PrintStream errStream = Main.getErrStream();
       errStream.println("Unrecognized option: " + exception.getMessage());
 
@@ -166,7 +183,7 @@ public final class Main {
     }
 
     // Read configuration.
-    final MagikLintConfiguration config;
+    final MagikToolsProperties properties;
     if (commandLine.hasOption(OPTION_RCFILE)) {
       final File rcfile = (File) commandLine.getParsedOptionValue(OPTION_RCFILE);
       final Path path = rcfile.toPath();
@@ -176,20 +193,21 @@ public final class Main {
 
         System.exit(1);
       }
-      config = new MagikLintConfiguration(path);
+      properties = new MagikToolsProperties(path);
     } else {
       final Path currentWorkingPath = Path.of("");
       final Path path = ConfigurationLocator.locateConfiguration(currentWorkingPath);
-      config = path != null ? new MagikLintConfiguration(path) : new MagikLintConfiguration();
+      properties =
+          path != null ? new MagikToolsProperties(path) : MagikToolsProperties.DEFAULT_PROPERTIES;
     }
 
     // Copy configuration from command line.
-    Main.copyOptionsToConfig(commandLine, config);
+    Main.copyOptionsToConfig(commandLine, properties);
 
     // Show checks.
     if (commandLine.hasOption(OPTION_SHOW_CHECKS)) {
       final Reporter reporter = new NullReporter();
-      final MagikLint lint = new MagikLint(config, reporter);
+      final MagikLint lint = new MagikLint(properties, reporter);
       final PrintStream outStream = Main.getOutStream();
       final Writer writer = new PrintWriter(outStream);
       lint.showEnabledChecks(writer);
@@ -208,17 +226,17 @@ public final class Main {
 
     // Apply fixes.
     final String[] leftOverArgs = commandLine.getArgs();
-    final Collection<Path> paths = MagikFileScanner.getFilesFromArgs(leftOverArgs);
+    final Collection<Path> paths = Main.getFilesFromArgs(leftOverArgs);
     if (commandLine.hasOption(OPTION_APPLY_FIXES)) {
-      final MagikFixer fixer = new MagikFixer(config);
+      final MagikFixer fixer = new MagikFixer(properties);
       fixer.run(paths);
 
       System.exit(0);
     }
 
     // Actual linting.
-    final Reporter reporter = Main.createReporter(config);
-    final MagikLint lint = new MagikLint(config, reporter);
+    final Reporter reporter = Main.createReporter(properties);
+    final MagikLint lint = new MagikLint(properties, reporter);
     lint.run(paths);
 
     final int exitCode =
@@ -229,22 +247,27 @@ public final class Main {
   }
 
   private static void copyOptionsToConfig(
-      final CommandLine commandLine, final MagikLintConfiguration config) {
+      final CommandLine commandLine, final MagikToolsProperties properties) {
     if (commandLine.hasOption(OPTION_MAX_INFRACTIONS)) {
       final String value = commandLine.getOptionValue(OPTION_MAX_INFRACTIONS);
       final Long maxInfractions = Long.parseLong(value);
-      config.setMaxInfractions(maxInfractions);
+      properties.setProperty(MagikLint.KEY_MAX_INFRACTIONS, maxInfractions);
     }
 
     if (commandLine.hasOption(OPTION_COLUMN_OFFSET)) {
       final String value = commandLine.getOptionValue(OPTION_COLUMN_OFFSET);
       final Long maxInfractions = Long.parseLong(value);
-      config.setColumnOffset(maxInfractions);
+      properties.setProperty(MagikLint.KEY_COLUMN_OFFSET, maxInfractions);
     }
 
     if (commandLine.hasOption(OPTION_MSG_TEMPLATE)) {
       final String value = commandLine.getOptionValue(OPTION_MSG_TEMPLATE);
-      config.setReporterFormat(value);
+      properties.setProperty(MagikLint.KEY_MSG_TEMPLATE, value);
+    }
+
+    if (commandLine.hasOption(OPTION_RCFILE)) {
+      final String value = commandLine.getOptionValue(OPTION_RCFILE);
+      properties.setProperty(MagikLint.KEY_OVERRIDE_CONFIG, value);
     }
   }
 }

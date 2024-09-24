@@ -25,6 +25,12 @@ public class PackageDefinitionDeserializer extends DefinitionDeserializer<Packag
     List<String> uses = getList(context, node, "uses", String.class);
 
     return new PackageDefinition(
-        base.getLocation(), base.getModuleName(), base.getDoc(), base.getNode(), name, uses);
+        base.getLocation(),
+        base.getTimestamp(),
+        base.getModuleName(),
+        base.getDoc(),
+        base.getNode(),
+        name,
+        uses);
   }
 }

@@ -10,6 +10,7 @@ import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -71,6 +72,10 @@ public final class ClassInfoDefinitionReader {
     this.definitionKeeper = definitionKeeper;
   }
 
+  private Instant getTimestamp() throws IOException {
+    return Files.getLastModifiedTime(this.path).toInstant();
+  }
+
   @SuppressWarnings("checkstyle:MagicNumber")
   private void run() throws IOException {
     final String[] parts = this.path.getFileName().toString().split("\\.");
@@ -123,6 +128,18 @@ public final class ClassInfoDefinitionReader {
             this.readSlottedClass(moduleName, line, reader);
             break;
 
+          case "indexed_class":
+            this.readIndexedClass(moduleName, line, reader);
+            break;
+
+          case "enumerated_class":
+            this.readEnumeratedClass(moduleName, line, reader);
+            break;
+
+          case "delete_class":
+            this.readDeleteClass(moduleName, line, reader);
+            break;
+
           case "mixin":
             this.readMixin(moduleName, line, reader);
             break;
@@ -132,7 +149,10 @@ public final class ClassInfoDefinitionReader {
             throw new UnsupportedOperationException("Unknown token: " + token0);
         }
 
-        reader.readLine(); // NOSONAR: Skip last part of line.
+        if (!token0.equals("delete_class")) {
+          reader.readLine(); // NOSONAR: Skip last part of line.
+        }
+
         line = reader.readLine();
       }
     }
@@ -188,8 +208,10 @@ public final class ClassInfoDefinitionReader {
     }
     final String doc = docBuilder.toString();
 
+    final Instant timestamp = this.getTimestamp();
     final GlobalDefinition definition =
-        new GlobalDefinition(location, moduleName, doc, null, typeString, TypeString.UNDEFINED);
+        new GlobalDefinition(
+            location, timestamp, moduleName, doc, null, typeString, TypeString.UNDEFINED);
     this.definitionKeeper.add(definition);
   }
 
@@ -206,7 +228,7 @@ public final class ClassInfoDefinitionReader {
 
       final ParameterDefinition paramDef =
           new ParameterDefinition(
-              null, moduleName, null, null, next, paramModifier, TypeString.UNDEFINED);
+              null, null, moduleName, null, null, next, paramModifier, TypeString.UNDEFINED);
       paramDefs.add(paramDef);
     }
     return paramDefs;
@@ -263,8 +285,10 @@ public final class ClassInfoDefinitionReader {
     }
     final String doc = docBuilder.toString();
 
+    final Instant timestamp = this.getTimestamp();
     final ConditionDefinition definition =
-        new ConditionDefinition(location, moduleName, doc, null, name, parent, dataNames);
+        new ConditionDefinition(
+            location, timestamp, moduleName, doc, null, name, parent, dataNames);
     this.definitionKeeper.add(definition);
   }
 
@@ -272,7 +296,7 @@ public final class ClassInfoDefinitionReader {
       throws IOException {
     // 1 : "method" <class name> <method name> <parameters>
     // 2 : n ["private"/"classconst"/"classvar"/"iter"]*
-    //       ["basic"/"restricted"/"internal"/pragma]* source_file
+    // ["basic"/"restricted"/"internal"/pragma]* source_file
     // 3+: <n lines of comments>
     // Line 1
     final String methodName;
@@ -339,6 +363,7 @@ public final class ClassInfoDefinitionReader {
     final MethodDefinition definition =
         new MethodDefinition(
             location,
+            this.getTimestamp(),
             moduleName,
             doc,
             null,
@@ -355,8 +380,8 @@ public final class ClassInfoDefinitionReader {
 
   private void readSlottedClass(
       final String moduleName, final String line, final BufferedReader reader) throws IOException {
-    // 1 : "slotted_class" <class name> <slots>    <-- This also includes slots of inherited
-    // exemplars!
+    // 1 : "slotted_class" <class name> <slots> <-- This also includes inherited
+    // slots!
     // 2 : <base classes>
     // 3 : n pragma source_file
     // 4+: <n lines of comments>
@@ -377,7 +402,7 @@ public final class ClassInfoDefinitionReader {
               .map(
                   slotName ->
                       new SlotDefinition(
-                          null, moduleName, null, null, slotName, TypeString.UNDEFINED))
+                          null, null, moduleName, null, null, slotName, TypeString.UNDEFINED))
               .toList();
     }
 
@@ -420,6 +445,7 @@ public final class ClassInfoDefinitionReader {
     final ExemplarDefinition definition =
         new ExemplarDefinition(
             location,
+            this.getTimestamp(),
             moduleName,
             doc,
             null,
@@ -429,6 +455,147 @@ public final class ClassInfoDefinitionReader {
             parents,
             Collections.emptySet());
     this.definitionKeeper.add(definition);
+  }
+
+  private void readIndexedClass(
+      final String moduleName, final String line, final BufferedReader reader) throws IOException {
+    // 1 : "indexed_class" <class name>
+    // 2 : <base classes>
+    // 3 : n pragma source_file
+    // 4+: <n lines of comments>
+    // Line 1
+    final TypeString typeString;
+    try (Scanner scanner = new Scanner(line)) {
+      scanner.next(); // "indexed_class"
+
+      final String identifier = scanner.next();
+      typeString = TypeString.ofIdentifier(identifier, TypeString.DEFAULT_PACKAGE);
+    }
+
+    // Line 2
+    final String line2 = reader.readLine();
+    final List<TypeString> parents =
+        Arrays.stream(line2.split(" ")).map(TypeStringParser::parseTypeString).toList();
+
+    // Line 3
+    final String line3 = reader.readLine();
+    final List<String> pragmas;
+    final int commentLineCount;
+    final Location location;
+    try (Scanner scanner = new Scanner(line3)) {
+      commentLineCount = scanner.nextInt();
+
+      // Pragmas.
+      pragmas = new ArrayList<>();
+      while (scanner.hasNext(NEXT_NOT_SLASH_PATTERN)) {
+        final String pragma = scanner.next();
+        pragmas.add(pragma);
+      }
+
+      // Source file.
+      final String sourceFile = scanner.nextLine().trim();
+      final URI uri = URI.create(FILE_URI_PREFIX + "/" + sourceFile);
+      location = new Location(uri);
+    }
+
+    // Line 4+
+    final StringBuilder commentBuilder = new StringBuilder();
+    for (int i = 0; i < commentLineCount; ++i) {
+      final String commentLine = reader.readLine();
+      commentBuilder.append(commentLine);
+      commentBuilder.append('\n');
+    }
+    final String doc = commentBuilder.toString();
+
+    // TODO: What if type is already defined?
+    final ExemplarDefinition definition =
+        new ExemplarDefinition(
+            location,
+            this.getTimestamp(),
+            moduleName,
+            doc,
+            null,
+            ExemplarDefinition.Sort.UNDEFINED,
+            typeString,
+            Collections.emptyList(),
+            parents,
+            Collections.emptySet());
+    this.definitionKeeper.add(definition);
+  }
+
+  @SuppressWarnings("java:S4144")
+  private void readEnumeratedClass(
+      final String moduleName, final String line, final BufferedReader reader) throws IOException {
+    // 1 : "enumerated_class" <class name>
+    // 2 : <base classes>
+    // 3 : n pragma source_file
+    // 4+: <n lines of comments>
+    // Line 1
+    final TypeString typeString;
+    try (Scanner scanner = new Scanner(line)) {
+      scanner.next(); // "enumerated_class"
+
+      final String identifier = scanner.next();
+      typeString = TypeString.ofIdentifier(identifier, TypeString.DEFAULT_PACKAGE);
+    }
+
+    // Line 2
+    final String line2 = reader.readLine();
+    final List<TypeString> parents =
+        Arrays.stream(line2.split(" ")).map(TypeStringParser::parseTypeString).toList();
+
+    // Line 3
+    final String line3 = reader.readLine();
+    final List<String> pragmas;
+    final int commentLineCount;
+    final Location location;
+    try (Scanner scanner = new Scanner(line3)) {
+      commentLineCount = scanner.nextInt();
+
+      // Pragmas.
+      pragmas = new ArrayList<>();
+      while (scanner.hasNext(NEXT_NOT_SLASH_PATTERN)) {
+        final String pragma = scanner.next();
+        pragmas.add(pragma);
+      }
+
+      // Source file.
+      final String sourceFile = scanner.nextLine().trim();
+      final URI uri = URI.create(FILE_URI_PREFIX + "/" + sourceFile);
+      location = new Location(uri);
+    }
+
+    // Line 4+
+    final StringBuilder commentBuilder = new StringBuilder();
+    for (int i = 0; i < commentLineCount; ++i) {
+      final String commentLine = reader.readLine();
+      commentBuilder.append(commentLine);
+      commentBuilder.append('\n');
+    }
+    final String doc = commentBuilder.toString();
+
+    // TODO: What if type is already defined?
+    final ExemplarDefinition definition =
+        new ExemplarDefinition(
+            location,
+            this.getTimestamp(),
+            moduleName,
+            doc,
+            null,
+            ExemplarDefinition.Sort.UNDEFINED,
+            typeString,
+            Collections.emptyList(),
+            parents,
+            Collections.emptySet());
+    this.definitionKeeper.add(definition);
+  }
+
+  @SuppressWarnings("java:S1172")
+  private void readDeleteClass(
+      final String moduleName, final String line, final BufferedReader reader) {
+    // 1 : "delete_class" <class name>
+    // Line 1.
+    // Ignore this.
   }
 
   private void readMixin(final String moduleName, final String line, final BufferedReader reader)
@@ -481,6 +648,7 @@ public final class ClassInfoDefinitionReader {
     final ExemplarDefinition definition =
         new ExemplarDefinition(
             location,
+            this.getTimestamp(),
             moduleName,
             doc,
             null,
@@ -508,12 +676,13 @@ public final class ClassInfoDefinitionReader {
   /**
    * Read libs directory.
    *
-   * @param libsPath Path to libs directory.
+   * @param productPath Path to libs directory.
    * @param definitionKeeper {@link IDefinitionKeeper} to fill.
    * @throws IOException -
    */
-  public static void readLibsDirectory(
-      final Path libsPath, final IDefinitionKeeper definitionKeeper) throws IOException {
+  public static void readProductDirectory(
+      final Path productPath, final IDefinitionKeeper definitionKeeper) throws IOException {
+    final Path libsPath = productPath.resolve("libs");
     try (Stream<Path> paths = Files.list(libsPath)) {
       paths
           .filter(Files::isRegularFile)

@@ -94,19 +94,34 @@ public class ScopeBuilderVisitor extends MagikVisitor {
     }
   }
 
-  private void walkPreBodyWhen(final AstNode node, final AstNode parentNode) {
-    this.currentScope = new BodyScope(currentScope, node);
+  private void walkPreBodyWhen(final AstNode node, final AstNode whenNode) {
+    final BodyScope bodyScope = new BodyScope(currentScope, node);
+    this.currentScope = bodyScope;
 
-    // add _with items to scope
-    final AstNode tryNode = parentNode.getParent();
+    // Don't add identifierNode to scope index,
+    // as this identifier can have multiple scopes (multiple _when).
+    // Instead, we add then when node, to get the first when-scope later.
+    this.scopeIndex.put(whenNode, this.currentScope);
+
+    // Add _with items to scope.
+    final AstNode tryNode = whenNode.getParent();
     final AstNode tryVariableNode = tryNode.getFirstChild(MagikGrammar.TRY_VARIABLE);
     if (tryVariableNode != null) {
       final AstNode identifierNode = tryVariableNode.getFirstChild(MagikGrammar.IDENTIFIER);
       final String identifier = identifierNode.getTokenValue();
-      this.currentScope.addDeclaration(ScopeEntry.Type.LOCAL, identifier, identifierNode, null);
 
-      // Don't add identifierNode to scope index,
-      // as this identifier can have multiple scopes (multiple _when).
+      // Find previous when body.
+      final List<AstNode> whenNodes = tryNode.getChildren(MagikGrammar.WHEN);
+      final AstNode firstWhenNode = whenNodes.get(0);
+      if (firstWhenNode == whenNode) {
+        this.currentScope.addDeclaration(ScopeEntry.Type.LOCAL, identifier, identifierNode, null);
+      } else {
+        final Scope firstWhenScope = this.scopeIndex.get(firstWhenNode);
+        Objects.requireNonNull(firstWhenScope);
+        final ScopeEntry tryVariableScopeEntry = firstWhenScope.getScopeEntry(identifier);
+        Objects.requireNonNull(tryVariableScopeEntry);
+        bodyScope.addTryVariableAlias(tryVariableScopeEntry);
+      }
     }
   }
 
@@ -127,6 +142,7 @@ public class ScopeBuilderVisitor extends MagikVisitor {
             });
   }
 
+  @SuppressWarnings("java:S3776")
   @Override
   protected void walkPreVariableDefinitionStatement(final AstNode node) {
     final String type =
@@ -136,7 +152,7 @@ public class ScopeBuilderVisitor extends MagikVisitor {
             .substring(1);
     final ScopeEntry.Type scopeEntryType = ScopeEntry.Type.valueOf(type);
 
-    Stream.concat(
+    Stream.of(
             // Definitions from VARIABLE_DEFINITION_MULTI.
             node.getChildren(MagikGrammar.VARIABLE_DEFINITION_MULTI).stream()
                 .map(
@@ -148,6 +164,7 @@ public class ScopeBuilderVisitor extends MagikVisitor {
             // Defintions from VARIABLE_DEFINITION.
             node.getChildren(MagikGrammar.VARIABLE_DEFINITION).stream()
                 .map(varDefNode -> varDefNode.getFirstChild(MagikGrammar.IDENTIFIER)))
+        .flatMap(stream -> stream)
         // Work it!
         .filter(
             identifierNode -> {
@@ -162,16 +179,23 @@ public class ScopeBuilderVisitor extends MagikVisitor {
               // Figure parent entry.
               ScopeEntry parentEntry = null;
               if (scopeEntryType == ScopeEntry.Type.IMPORT) {
-                final AstNode procScopeNode =
+                AstNode procScopeNode =
                     identifierNode.getFirstAncestor(
                         MagikGrammar.METHOD_DEFINITION, MagikGrammar.PROCEDURE_DEFINITION);
-                if (procScopeNode != null) {
+                while (procScopeNode != null) {
                   final AstNode parentScopeNode = procScopeNode.getFirstAncestor(MagikGrammar.BODY);
                   final Scope parentScope =
                       parentScopeNode != null
                           ? this.scopeIndex.get(parentScopeNode)
                           : this.globalScope;
                   parentEntry = parentScope.getScopeEntry(identifier);
+                  if (parentEntry != null) {
+                    break;
+                  }
+
+                  procScopeNode =
+                      procScopeNode.getFirstAncestor(
+                          MagikGrammar.METHOD_DEFINITION, MagikGrammar.PROCEDURE_DEFINITION);
                 }
               }
 
@@ -179,7 +203,7 @@ public class ScopeBuilderVisitor extends MagikVisitor {
                   && !parentEntry.isType(ScopeEntry.Type.LOCAL)
                   && !parentEntry.isType(ScopeEntry.Type.CONSTANT)
                   && !parentEntry.isType(ScopeEntry.Type.PARAMETER)) {
-                // But only if parent entry is _local/_constant/parameter/iterator
+                // But only if parent entry is _local/_constant/parameter.
                 parentEntry = null;
               }
 

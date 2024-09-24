@@ -2,9 +2,10 @@ package nl.ramsolutions.sw.magik.analysis.definitions.parsers;
 
 import com.sonar.sslr.api.AstNode;
 import java.net.URI;
+import java.time.Instant;
 import java.util.List;
-import nl.ramsolutions.sw.definitions.ModuleDefinitionScanner;
 import nl.ramsolutions.sw.magik.Location;
+import nl.ramsolutions.sw.magik.MagikFile;
 import nl.ramsolutions.sw.magik.analysis.definitions.BinaryOperatorDefinition;
 import nl.ramsolutions.sw.magik.analysis.definitions.MagikDefinition;
 import nl.ramsolutions.sw.magik.analysis.helpers.ArgumentsNodeHelper;
@@ -14,6 +15,7 @@ import nl.ramsolutions.sw.magik.analysis.typing.TypeString;
 import nl.ramsolutions.sw.magik.api.MagikGrammar;
 import nl.ramsolutions.sw.magik.parser.MagikCommentExtractor;
 import nl.ramsolutions.sw.magik.parser.TypeDocParser;
+import nl.ramsolutions.sw.moduledef.ModuleDefFile;
 
 /** {@code define_binary_operator_case()} parser. */
 public class DefineBinaryOperatorCaseParser {
@@ -21,6 +23,7 @@ public class DefineBinaryOperatorCaseParser {
   private static final String DEFINE_BINARY_OPERATOR_CASE = "define_binary_operator_case";
   private static final String SW_DEFINE_BINARY_OPERATOR_CASE = "sw:define_binary_operator_case";
 
+  private final MagikFile magikFile;
   private final AstNode node;
 
   /**
@@ -28,11 +31,12 @@ public class DefineBinaryOperatorCaseParser {
    *
    * @param node {@code define_binary_operator_case()} node.
    */
-  public DefineBinaryOperatorCaseParser(final AstNode node) {
+  public DefineBinaryOperatorCaseParser(final MagikFile magikFile, final AstNode node) {
     if (node.isNot(MagikGrammar.PROCEDURE_INVOCATION)) {
       throw new IllegalArgumentException();
     }
 
+    this.magikFile = magikFile;
     this.node = node;
   }
 
@@ -111,8 +115,11 @@ public class DefineBinaryOperatorCaseParser {
     final URI uri = this.node.getToken().getURI();
     final Location location = new Location(uri, this.node);
 
+    // Figure timestamp.
+    final Instant timestamp = this.magikFile.getTimestamp();
+
     // Figure module name.
-    final String moduleName = ModuleDefinitionScanner.getModuleName(uri);
+    final String moduleName = ModuleDefFile.getModuleNameForUri(uri);
 
     // Figure statement node.
     final AstNode statementNode = node.getFirstAncestor(MagikGrammar.STATEMENT);
@@ -138,7 +145,7 @@ public class DefineBinaryOperatorCaseParser {
     final TypeString rhs = TypeString.ofIdentifier(rhsName, currentPakkage);
     final BinaryOperatorDefinition operatorDefinition =
         new BinaryOperatorDefinition(
-            location, moduleName, doc, statementNode, operator, lhs, rhs, returnType);
+            location, timestamp, moduleName, doc, statementNode, operator, lhs, rhs, returnType);
     return List.of(operatorDefinition);
   }
 

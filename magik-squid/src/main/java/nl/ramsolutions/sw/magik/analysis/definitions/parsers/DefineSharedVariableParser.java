@@ -3,13 +3,14 @@ package nl.ramsolutions.sw.magik.analysis.definitions.parsers;
 import com.sonar.sslr.api.AstNode;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.net.URI;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import nl.ramsolutions.sw.definitions.ModuleDefinitionScanner;
 import nl.ramsolutions.sw.magik.Location;
+import nl.ramsolutions.sw.magik.MagikFile;
 import nl.ramsolutions.sw.magik.analysis.definitions.MagikDefinition;
 import nl.ramsolutions.sw.magik.analysis.definitions.MethodDefinition;
 import nl.ramsolutions.sw.magik.analysis.definitions.ParameterDefinition;
@@ -22,6 +23,7 @@ import nl.ramsolutions.sw.magik.api.MagikGrammar;
 import nl.ramsolutions.sw.magik.api.MagikOperator;
 import nl.ramsolutions.sw.magik.parser.MagikCommentExtractor;
 import nl.ramsolutions.sw.magik.parser.TypeDocParser;
+import nl.ramsolutions.sw.moduledef.ModuleDefFile;
 
 /** {@code define_shared_variable()} parser. */
 public class DefineSharedVariableParser {
@@ -30,6 +32,7 @@ public class DefineSharedVariableParser {
   private static final String FLAVOR_PUBLIC = ":public";
   private static final String FLAVOR_READONLY = ":readonly";
 
+  private final MagikFile magikFile;
   private final AstNode node;
 
   /**
@@ -37,11 +40,12 @@ public class DefineSharedVariableParser {
    *
    * @param node {@code define_shared_variable()} node.
    */
-  public DefineSharedVariableParser(final AstNode node) {
+  public DefineSharedVariableParser(final MagikFile magikFile, final AstNode node) {
     if (node.isNot(MagikGrammar.METHOD_INVOCATION)) {
       throw new IllegalArgumentException();
     }
 
+    this.magikFile = magikFile;
     this.node = node;
   }
 
@@ -104,8 +108,11 @@ public class DefineSharedVariableParser {
     final URI uri = this.node.getToken().getURI();
     final Location location = new Location(uri, this.node);
 
+    // Figure timestamp.
+    final Instant timestamp = this.magikFile.getTimestamp();
+
     // Figure module name.
-    final String moduleName = ModuleDefinitionScanner.getModuleName(uri);
+    final String moduleName = ModuleDefFile.getModuleNameForUri(uri);
 
     // Figure statement node.
     final AstNode statementNode = node.getFirstAncestor(MagikGrammar.STATEMENT);
@@ -128,13 +135,22 @@ public class DefineSharedVariableParser {
     final TypeString exemplarName = TypeString.ofIdentifier(identifier, pakkage);
     final List<MethodDefinition> methodDefinitions =
         this.generateVariableMethods(
-            location, moduleName, statementNode, exemplarName, variableName, flavor, doc, typeRef);
+            location,
+            timestamp,
+            moduleName,
+            statementNode,
+            exemplarName,
+            variableName,
+            flavor,
+            doc,
+            typeRef);
     return List.copyOf(methodDefinitions);
   }
 
   @SuppressWarnings({"checkstyle:ParameterNumber", "java:S107"})
   private List<MethodDefinition> generateVariableMethods(
       final @Nullable Location location,
+      final @Nullable Instant timestamp,
       final @Nullable String moduleName,
       final AstNode definitionNode,
       final TypeString exemplarName,
@@ -154,6 +170,7 @@ public class DefineSharedVariableParser {
     final MethodDefinition getMethod =
         new MethodDefinition(
             location,
+            timestamp,
             moduleName,
             doc,
             definitionNode,
@@ -178,6 +195,7 @@ public class DefineSharedVariableParser {
     final ParameterDefinition assignmentParam =
         new ParameterDefinition(
             location,
+            timestamp,
             moduleName,
             null,
             definitionNode,
@@ -187,6 +205,7 @@ public class DefineSharedVariableParser {
     final MethodDefinition setMethod =
         new MethodDefinition(
             location,
+            timestamp,
             moduleName,
             doc,
             definitionNode,
@@ -205,6 +224,7 @@ public class DefineSharedVariableParser {
     final MethodDefinition bootMethod =
         new MethodDefinition(
             location,
+            timestamp,
             moduleName,
             doc,
             definitionNode,

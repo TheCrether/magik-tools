@@ -6,6 +6,8 @@ import java.net.URI;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+
+import nl.ramsolutions.sw.MagikToolsProperties;
 import nl.ramsolutions.sw.magik.Location;
 import nl.ramsolutions.sw.magik.MagikTypedFile;
 import nl.ramsolutions.sw.magik.Position;
@@ -28,7 +30,7 @@ class ReferencesProviderTest {
       final String code, final Position position, final IDefinitionKeeper definitionKeeper) {
     final URI uri = EMPTY_LOCATION.getUri();
     final MagikTypedFile magikFile = new MagikTypedFile(uri, code, definitionKeeper);
-    final ReferencesProvider provider = new ReferencesProvider();
+    final ReferencesProvider provider = new ReferencesProvider(new MagikToolsProperties());
     return provider.provideReferences(magikFile, position);
   }
 
@@ -38,6 +40,7 @@ class ReferencesProviderTest {
     definitionKeeper.add(
         new MethodDefinition(
             EMPTY_LOCATION,
+            null,
             null,
             null,
             null,
@@ -74,6 +77,7 @@ class ReferencesProviderTest {
             null,
             null,
             null,
+            null,
             TypeString.SW_INTEGER,
             "refering",
             Collections.emptySet(),
@@ -107,6 +111,7 @@ class ReferencesProviderTest {
             null,
             null,
             null,
+            null,
             TypeString.SW_INTEGER,
             "refering",
             Collections.emptySet(),
@@ -137,6 +142,7 @@ class ReferencesProviderTest {
     definitionKeeper.add(
         new MethodDefinition(
             EMPTY_LOCATION,
+            null,
             null,
             null,
             null,

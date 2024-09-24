@@ -6,6 +6,8 @@ import java.net.URI;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+
+import nl.ramsolutions.sw.MagikToolsProperties;
 import nl.ramsolutions.sw.magik.Location;
 import nl.ramsolutions.sw.magik.MagikTypedFile;
 import nl.ramsolutions.sw.magik.Position;
@@ -36,6 +38,7 @@ class ImplementationProviderTest {
             null,
             null,
             null,
+            null,
             ExemplarDefinition.Sort.SLOTTED,
             aRef,
             Collections.emptyList(),
@@ -44,6 +47,7 @@ class ImplementationProviderTest {
     definitionKeeper.add(
         new MethodDefinition(
             new Location(DEFAULT_URI, new Range(new Position(0, 0), new Position(0, 10))),
+            null,
             null,
             null,
             null,
@@ -62,6 +66,7 @@ class ImplementationProviderTest {
             null,
             null,
             null,
+            null,
             ExemplarDefinition.Sort.SLOTTED,
             bRef,
             Collections.emptyList(),
@@ -70,6 +75,7 @@ class ImplementationProviderTest {
     definitionKeeper.add(
         new MethodDefinition(
             new Location(DEFAULT_URI, new Range(new Position(50, 0), new Position(50, 10))),
+            null,
             null,
             null,
             null,
@@ -89,7 +95,7 @@ class ImplementationProviderTest {
     final MagikTypedFile magikFile = new MagikTypedFile(DEFAULT_URI, code, definitionKeeper);
     final Position position = new Position(1, 26); // On `abstract()`.
 
-    final ImplementationProvider provider = new ImplementationProvider();
+    final ImplementationProvider provider = new ImplementationProvider(new MagikToolsProperties());
     final List<Location> implementations = provider.provideImplementations(magikFile, position);
     assertThat(implementations)
         .containsOnly(

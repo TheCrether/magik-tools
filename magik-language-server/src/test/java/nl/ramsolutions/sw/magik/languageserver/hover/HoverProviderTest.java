@@ -4,6 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.net.URI;
 import java.util.Collections;
+
+import nl.ramsolutions.sw.MagikToolsProperties;
 import nl.ramsolutions.sw.magik.MagikTypedFile;
 import nl.ramsolutions.sw.magik.analysis.definitions.BinaryOperatorDefinition;
 import nl.ramsolutions.sw.magik.analysis.definitions.DefinitionKeeper;
@@ -27,7 +29,7 @@ class HoverProviderTest {
   private Hover provideHover(
       final String code, final Position position, final IDefinitionKeeper definitionKeeper) {
     final MagikTypedFile magikFile = new MagikTypedFile(DEFAULT_URI, code, definitionKeeper);
-    final HoverProvider provider = new HoverProvider();
+    final HoverProvider provider = new HoverProvider(new MagikToolsProperties());
     return provider.provideHover(magikFile, position);
   }
 
@@ -37,6 +39,7 @@ class HoverProviderTest {
     final IDefinitionKeeper definitionKeeper = new DefinitionKeeper();
     definitionKeeper.add(
         new MethodDefinition(
+            null,
             null,
             null,
             "method_doc",
@@ -73,6 +76,7 @@ class HoverProviderTest {
         new ExemplarDefinition(
             null,
             null,
+            null,
             "type_doc",
             null,
             ExemplarDefinition.Sort.SLOTTED,
@@ -101,6 +105,7 @@ class HoverProviderTest {
     final IDefinitionKeeper definitionKeeper = new DefinitionKeeper();
     definitionKeeper.add(
         new MethodDefinition(
+            null,
             null,
             null,
             "method_doc",
@@ -208,6 +213,7 @@ class HoverProviderTest {
     final IDefinitionKeeper definitionKeeper = new DefinitionKeeper();
     definitionKeeper.add(
         new BinaryOperatorDefinition(
+            null,
             null,
             null,
             null,

@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.sonar.sslr.api.AstNode;
 import com.sonar.sslr.api.Token;
-import java.io.IOException;
 import java.util.List;
 import nl.ramsolutions.sw.magik.parser.MagikCommentExtractor;
 import nl.ramsolutions.sw.magik.parser.MagikParser;
@@ -20,7 +19,7 @@ class MagikCommentExtractorTest {
   }
 
   @Test
-  void testComments() throws IOException {
+  void testComments() {
     final String code =
         """
         # first comment
@@ -49,7 +48,7 @@ class MagikCommentExtractorTest {
   }
 
   @Test
-  void testMethodDoc() throws IOException {
+  void testMethodDoc() {
     final String code =
         """
         _method object.test
@@ -68,7 +67,7 @@ class MagikCommentExtractorTest {
   }
 
   @Test
-  void testMethodDocExtras() throws IOException {
+  void testMethodDocExtras() {
     final String code =
         """
         _method object.test
@@ -88,7 +87,7 @@ class MagikCommentExtractorTest {
   }
 
   @Test
-  void testMethodDocPragma() throws IOException {
+  void testMethodDocPragma() {
     final String code =
         """
         _pragma(a=b)
@@ -110,7 +109,7 @@ class MagikCommentExtractorTest {
   }
 
   @Test
-  void testMethodDocChildProc() throws IOException {
+  void testMethodDocChildProc() {
     final String code =
         """
         _method object.test
@@ -133,7 +132,7 @@ class MagikCommentExtractorTest {
   }
 
   @Test
-  void testDocStatement() throws IOException {
+  void testDocStatement() {
     final String code =
         """
         _pragma(a=b)
@@ -149,5 +148,34 @@ class MagikCommentExtractorTest {
         docTokenComments.stream().map(token -> token.getValue()).toList();
 
     assertThat(docComments).containsExactly("## Line 1", "## Line 2");
+  }
+
+  @Test
+  void testAllLineComments() {
+    final String code =
+        """
+        #_method a.b
+        #write(10)
+        #_endmethod
+        """;
+    final AstNode node = this.parseMagik(code);
+    final List<Token> tokens = MagikCommentExtractor.extractLineComments(node).toList();
+
+    assertThat(tokens).hasSize(3);
+
+    final Token token0 = tokens.get(0);
+    assertThat(token0.getLine()).isEqualTo(1);
+    assertThat(token0.getColumn()).isZero();
+    assertThat(token0.getValue()).isEqualTo("#_method a.b");
+
+    final Token token1 = tokens.get(1);
+    assertThat(token1.getLine()).isEqualTo(2);
+    assertThat(token1.getColumn()).isZero();
+    assertThat(token1.getValue()).isEqualTo("#write(10)");
+
+    final Token token2 = tokens.get(2);
+    assertThat(token2.getLine()).isEqualTo(3);
+    assertThat(token2.getColumn()).isZero();
+    assertThat(token2.getValue()).isEqualTo("#_endmethod");
   }
 }

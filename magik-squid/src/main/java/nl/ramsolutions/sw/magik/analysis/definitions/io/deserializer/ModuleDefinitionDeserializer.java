@@ -5,9 +5,10 @@ import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.io.IOException;
 import java.util.List;
-import nl.ramsolutions.sw.definitions.ModuleDefinition;
 import nl.ramsolutions.sw.magik.Location;
 import nl.ramsolutions.sw.magik.PathMapping;
+import nl.ramsolutions.sw.moduledef.ModuleDefinition;
+import nl.ramsolutions.sw.moduledef.ModuleUsage;
 
 public class ModuleDefinitionDeserializer extends BaseDeserializer<ModuleDefinition> {
   public ModuleDefinitionDeserializer(List<PathMapping> mappings) {
@@ -22,10 +23,12 @@ public class ModuleDefinitionDeserializer extends BaseDeserializer<ModuleDefinit
     String name = getStringField(node, "name");
     String baseVersion = getStringField(node, "base_ver");
     String currentVersion = nullableString(node, "cur_ver");
-    List<String> requireds = getList(context, node, "req", String.class);
+    String product = nullableString(node, "prod");
+    List<ModuleUsage> usages = getList(context, node, "usgs", ModuleUsage.class);
 
     Location location = getLocation(node);
 
-    return new ModuleDefinition(location, name, baseVersion, currentVersion, null, requireds);
+    return new ModuleDefinition(
+        location, getTimestamp(location), name, product, baseVersion, currentVersion, null, usages);
   }
 }

@@ -34,6 +34,15 @@ public class ExemplarDefinitionDeserializer extends BaseDeserializer<ExemplarDef
     Location location = getLocation(node);
 
     return new ExemplarDefinition(
-        location, moduleName, doc, null, sort, typeName, slots, parents, topics);
+        location,
+        getTimestamp(location),
+        moduleName,
+        doc,
+        null,
+        sort,
+        typeName,
+        slots,
+        parents,
+        topics);
   }
 }

@@ -3,7 +3,7 @@
 	"description": "Magik Language Server",
 	"author": "Steven Looman",
 	"license": "GPL-3.0-only",
-	"version": "0.10.0-SNAPSHOT",
+	"version": "0.11.0-SNAPSHOT",
 	"repository": {
 		"type": "git",
 		"url": "https://github.com/StevenLooman/magik-tools"
@@ -24,7 +24,6 @@
 		"vscode": "^1.59.0"
 	},
 	"activationEvents": [
-		"onLanguage:magik",
 		"onCommand:magik.startSession",
 		"onDebug",
 		"onDebugInitialConfigurations",
@@ -43,6 +42,16 @@
 					".magik"
 				],
 				"configuration": "./magik-language-configuration.json"
+			},
+			{
+				"id": "load_list.txt",
+				"aliases": [
+					"Smallworld Load List"
+				],
+				"filenames": [
+					"load_list.txt"
+				],
+				"configuration": "./load-list-language-configuration.json"
 			},
 			{
 				"id": "product.def",
@@ -151,16 +160,6 @@
 		],
 		"commands": [
 			{
-				"command": "magik.transmitFile",
-				"title": "Transmit a file to the active Smallworld Sessions",
-				"category": "Magik"
-			},
-			{
-				"command": "magik.transmitCurrentRegion",
-				"title": "Transmit current region to the active Smallworld Session",
-				"category": "Magik"
-			},
-			{
 				"command": "magik.custom.reIndex",
 				"title": "Reindex files",
 				"category": "Magik"
@@ -176,6 +175,21 @@
 				"command": "magik.transmitCurrentRegion",
 				"key": "f4 enter",
 				"when": "editorTextFocus && editorLangId == magik"
+			},
+			{
+				"command": "magik.transmitLoadList",
+				"key": "f4 b",
+				"when": "editorTextFocus && editorLangId == load_list.txt"
+			},
+			{
+				"command": "magik.transmitProductDef",
+				"key": "f4 b",
+				"when": "editorTextFocus && editorLangId == product.def"
+			},
+			{
+				"command": "magik.transmitModuleDef",
+				"key": "f4 b",
+				"when": "editorTextFocus && editorLangId == module.def"
 			}
 		],
 		"taskDefinitions": [
@@ -192,6 +206,10 @@
 					"args": {
 						"type": "array",
 						"description": "Additional runalias arguments"
+					},
+					"env": {
+						"type": "object",
+						"description": "Environment variables"
 					}
 				}
 			}
@@ -205,20 +223,40 @@
 					"type": "string"
 				},
 				"magik.smallworldGis": {
-					"description": "Path to Smallworld Core.",
+					"description": "Path to Smallworld Core -- only used by the VS Code extension.",
 					"type": "string"
 				},
-				"magik.libsDirs": {
-					"description": "Paths to libs dirs of Smallworld products",
+				"magik.productDirs": {
+					"description": "Paths to (compiled, containing a `libs/` directory) products.",
 					"type": "array"
 				},
 				"magik.aliases": {
-					"description": "Path to gis_aliases file.",
+					"description": "Path to gis_aliases file -- only used by the VS Code extension.",
 					"type": "string"
 				},
 				"magik.environment": {
-					"description": "Path to environment file.",
+					"description": "Path to environment file -- only used by the VS Code extension.",
 					"type": "string"
+				},
+				"magik.formatting.indentChar": {
+					"description": "Indent character, 'tab' or 'space' -- only used by the VS Code extension.",
+					"type": "string"
+				},
+				"magik.formatting.indentWidth": {
+					"description": "Indent width (tab size or number of spaces) -- only used by the VS Code extension.",
+					"type": "number"
+				},
+				"magik.formatting.insertFinalNewline": {
+					"description": "Insert final newline -- only used by the VS Code extension.",
+					"type": "boolean"
+				},
+				"magik.formatting.trimTrailingWhitespace": {
+					"description": "Trim trailing whitespace -- only used by the VS Code extension.",
+					"type": "boolean"
+				},
+				"magik.formatting.trimFinalNewlines": {
+					"description": "Trim final newlines -- only used by the VS Code extension.",
+					"type": "boolean"
 				},
 				"magik.lint.overrideConfigFile": {
 					"description": "Override path to magiklintrc.properties.",
@@ -228,8 +266,8 @@
 					"description": "Paths to type databases.",
 					"type": "array"
 				},
-				"magik.typing.showAtomInlayHints": {
-					"description": "Show atom type inlay hints.",
+				"magik.typing.showTypingInlayHints": {
+					"description": "Show typing inlay hints.",
 					"type": "boolean",
 					"default": false
 				},
@@ -262,6 +300,11 @@
 					"description": "Enable indexing of usages of conditions by methods.",
 					"type": "boolean",
 					"default": true
+				},
+				"magik.typing.cacheIndexedDefinitions": {
+					"description": "Store and load the indexed definitions in the workspace folders, in file types.jsonl.",
+					"type": "boolean",
+					"default": true
 				}
 			}
 		}
@@ -270,7 +313,7 @@
 		"vscode:prepublish": "npm run compile",
 		"compile": "tsc -b",
 		"watch": "tsc -b -w",
-		"postinstall": "cd client && npm install && cd ..",
+		"postinstall": "cd client && npm install && cd .. && cd server && rm -rf ./* && cp ../../../magik-language-server/target/magik-language-server-*.jar . && cp ../../../magik-debug-adapter/target/magik-debug-adapter-*.jar . && cd ..",
 		"package": "vsce package"
 	},
 	"devDependencies": {
