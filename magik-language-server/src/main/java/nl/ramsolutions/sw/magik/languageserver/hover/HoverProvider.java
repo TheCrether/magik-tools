@@ -3,7 +3,6 @@ package nl.ramsolutions.sw.magik.languageserver.hover;
 import com.sonar.sslr.api.AstNode;
 import java.util.*;
 import java.util.stream.Collectors;
-
 import nl.ramsolutions.sw.MagikToolsProperties;
 import nl.ramsolutions.sw.magik.MagikTypedFile;
 import nl.ramsolutions.sw.magik.Range;

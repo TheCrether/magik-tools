@@ -5,7 +5,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.net.URI;
 import java.util.Collections;
 import java.util.List;
-
 import nl.ramsolutions.sw.MagikToolsProperties;
 import nl.ramsolutions.sw.magik.MagikTypedFile;
 import nl.ramsolutions.sw.magik.analysis.definitions.DefinitionKeeper;
@@ -26,7 +25,8 @@ class TypeHierarchyProviderTest {
   private List<TypeHierarchyItem> getPrepareTypeHierarchy(
       final String code, final Position position, final IDefinitionKeeper definitionKeeper) {
     final MagikTypedFile magikFile = new MagikTypedFile(TEST_URI, code, definitionKeeper);
-    final TypeHierarchyProvider provider = new TypeHierarchyProvider(definitionKeeper, new MagikToolsProperties());
+    final TypeHierarchyProvider provider =
+        new TypeHierarchyProvider(definitionKeeper, new MagikToolsProperties());
     return provider.prepareTypeHierarchy(magikFile, position);
   }
 
@@ -122,7 +122,8 @@ class TypeHierarchyProviderTest {
     final TypeHierarchyItem item =
         new TypeHierarchyItem(
             "user:exemplar", SymbolKind.Class, TEST_URI.toString(), new Range(), new Range());
-    final TypeHierarchyProvider provider = new TypeHierarchyProvider(definitionKeeper, new MagikToolsProperties());
+    final TypeHierarchyProvider provider =
+        new TypeHierarchyProvider(definitionKeeper, new MagikToolsProperties());
     final List<TypeHierarchyItem> subTypes = provider.typeHierarchySubtypes(item);
     assertThat(subTypes).isNotNull().hasSize(1);
     final TypeHierarchyItem subType = subTypes.get(0);
@@ -152,7 +153,8 @@ class TypeHierarchyProviderTest {
         new TypeHierarchyItem(
             "user:exemplar", SymbolKind.Class, TEST_URI.toString(), new Range(), new Range());
 
-    final TypeHierarchyProvider provider = new TypeHierarchyProvider(definitionKeeper, new MagikToolsProperties());
+    final TypeHierarchyProvider provider =
+        new TypeHierarchyProvider(definitionKeeper, new MagikToolsProperties());
     final List<TypeHierarchyItem> superTypes = provider.typeHierarchySupertypes(item);
     assertThat(superTypes).isNotNull().hasSize(1);
     final TypeHierarchyItem superType = superTypes.get(0);

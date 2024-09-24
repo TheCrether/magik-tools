@@ -2,9 +2,7 @@ package nl.ramsolutions.sw.magik.languageserver.diagnostics;
 
 import java.io.IOException;
 import java.net.URI;
-import java.nio.file.Path;
 import java.util.*;
-
 import nl.ramsolutions.sw.MagikToolsProperties;
 import nl.ramsolutions.sw.magik.MagikTypedFile;
 import nl.ramsolutions.sw.magik.languageserver.MagikLanguageServerSettings;

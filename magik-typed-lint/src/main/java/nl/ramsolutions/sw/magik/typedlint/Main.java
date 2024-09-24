@@ -19,6 +19,7 @@ import nl.ramsolutions.sw.IgnoreHandler;
 import nl.ramsolutions.sw.MagikToolsProperties;
 import nl.ramsolutions.sw.magik.FileEvent;
 import nl.ramsolutions.sw.magik.MagikFileScanner;
+import nl.ramsolutions.sw.magik.PathMapping;
 import nl.ramsolutions.sw.magik.analysis.definitions.DefinitionKeeper;
 import nl.ramsolutions.sw.magik.analysis.definitions.IDefinitionKeeper;
 import nl.ramsolutions.sw.magik.analysis.definitions.io.JsonDefinitionReader;
@@ -171,11 +172,15 @@ public final class Main {
   }
 
   private static void readTypeDatabases(
-      final String[] typeDatabasePaths, final IDefinitionKeeper definitionKeeper)
+      final String[] typeDatabasePaths,
+      final IDefinitionKeeper definitionKeeper,
+      final MagikToolsProperties properties)
       throws IOException {
+    List<PathMapping> mappings =
+        properties.getPropertyList("magik.pathMapping", null, PathMapping.class);
     for (final String typeDatabasePath : typeDatabasePaths) {
       final Path path = Path.of(typeDatabasePath);
-      JsonDefinitionReader.readTypes(path, definitionKeeper);
+      JsonDefinitionReader.readTypes(path, definitionKeeper, mappings);
     }
   }
 
@@ -272,7 +277,7 @@ public final class Main {
     // Read type database(s).
     if (commandLine.hasOption(OPTION_TYPE_DATABASE)) {
       final String[] typeDatabasePaths = commandLine.getOptionValues(OPTION_TYPE_DATABASE);
-      Main.readTypeDatabases(typeDatabasePaths, definitionKeeper);
+      Main.readTypeDatabases(typeDatabasePaths, definitionKeeper, properties);
     }
 
     // Pre-index directory/directories.

@@ -11,7 +11,6 @@ import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
 import nl.ramsolutions.sw.MagikToolsProperties;
 import nl.ramsolutions.sw.magik.Location;
 import nl.ramsolutions.sw.magik.MagikTypedFile;
@@ -222,9 +221,7 @@ public class ReferencesProvider {
         .flatMap(def -> def.getUsedMethods().stream())
         .filter(filterPredicate::test)
         .map(MethodUsage::getLocation)
-        .map(
-            (Location location) ->
-                Location.validLocation(location, settings.getPathMappings()))
+        .map((Location location) -> Location.validLocation(location, settings.getPathMappings()))
         .toList();
   }
 
@@ -262,9 +259,7 @@ public class ReferencesProvider {
         .flatMap(stream -> stream)
         .filter(filterPredicate::test)
         .map(GlobalUsage::getLocation)
-        .map(
-            (Location location) ->
-                Location.validLocation(location, settings.getPathMappings()))
+        .map((Location location) -> Location.validLocation(location, settings.getPathMappings()))
         .toList();
   }
 
@@ -276,9 +271,7 @@ public class ReferencesProvider {
         .flatMap(def -> def.getUsedConditions().stream())
         .filter(conditionUsage -> conditionUsage.getConditionName().equals(conditionName))
         .map(ConditionUsage::getLocation)
-        .map(
-            (Location location) ->
-                Location.validLocation(location, settings.getPathMappings()))
+        .map((Location location) -> Location.validLocation(location, settings.getPathMappings()))
         .toList();
   }
 

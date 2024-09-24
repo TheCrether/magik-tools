@@ -149,9 +149,7 @@ public class DefinitionsProvider {
     final MagikLanguageServerSettings settings = new MagikLanguageServerSettings(this.properties);
     return definitionKeeper.getConditionDefinitions(conditionName).stream()
         .map(ConditionDefinition::getLocation)
-        .map(
-            (Location location) ->
-                Location.validLocation(location, settings.getPathMappings()))
+        .map((Location location) -> Location.validLocation(location, settings.getPathMappings()))
         .toList();
   }
 
@@ -176,8 +174,7 @@ public class DefinitionsProvider {
       final AstNode definitionNode = scopeEntry.getDefinitionNode();
       final Location definitionLocation =
           Location.validLocation(
-              new Location(magikFile.getUri(), definitionNode),
-              settings.getPathMappings());
+              new Location(magikFile.getUri(), definitionNode), settings.getPathMappings());
       return List.of(definitionLocation);
     }
 
@@ -188,9 +185,7 @@ public class DefinitionsProvider {
     final TypeStringResolver resolver = magikFile.getTypeStringResolver();
     return resolver.resolve(typeString).stream()
         .map(IDefinition::getLocation)
-        .map(
-            (Location location) ->
-                Location.validLocation(location, settings.getPathMappings()))
+        .map((Location location) -> Location.validLocation(location, settings.getPathMappings()))
         .toList();
   }
 
@@ -214,9 +209,7 @@ public class DefinitionsProvider {
     final TypeStringResolver resolver = magikFile.getTypeStringResolver();
     return resolver.getMethodDefinitions(typeStr, methodName).stream()
         .map(MethodDefinition::getLocation)
-        .map(
-            (Location location) ->
-                Location.validLocation(location, settings.getPathMappings()))
+        .map((Location location) -> Location.validLocation(location, settings.getPathMappings()))
         .toList();
   }
 

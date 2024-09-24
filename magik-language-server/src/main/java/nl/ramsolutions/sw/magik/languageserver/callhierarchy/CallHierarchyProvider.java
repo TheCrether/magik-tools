@@ -55,7 +55,8 @@ public class CallHierarchyProvider {
   private final IDefinitionKeeper definitionKeeper;
   private final MagikToolsProperties properties;
 
-  public CallHierarchyProvider(final IDefinitionKeeper definitionKeeper, MagikToolsProperties properties) {
+  public CallHierarchyProvider(
+      final IDefinitionKeeper definitionKeeper, MagikToolsProperties properties) {
     this.definitionKeeper = definitionKeeper;
     this.properties = properties;
   }
@@ -259,7 +260,8 @@ public class CallHierarchyProvider {
       AstNode methodInvocationNode, MethodDefinition calledMethodDef) {
     final Location calledMethodLocation = calledMethodDef.getLocation();
     final MagikLanguageServerSettings settings = new MagikLanguageServerSettings(this.properties);
-    final Location validCalledMethodLocation = Location.validLocation(calledMethodLocation, settings.getPathMappings());
+    final Location validCalledMethodLocation =
+        Location.validLocation(calledMethodLocation, settings.getPathMappings());
     final Range calledMethodRange = validCalledMethodLocation.getRange();
     final CallHierarchyItem toItem =
         new CallHierarchyItem(

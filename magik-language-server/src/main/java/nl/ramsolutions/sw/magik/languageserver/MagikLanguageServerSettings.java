@@ -1,7 +1,5 @@
 package nl.ramsolutions.sw.magik.languageserver;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import edu.umd.cs.findbugs.annotations.CheckForNull;
 import java.nio.file.Path;
 import java.util.*;
@@ -104,7 +102,8 @@ public final class MagikLanguageServerSettings {
       return MagikLanguageServerSettings.pathMappings;
     }
 
-    List<PathMapping> mappings = this.properties.getPropertyList(PATH_MAPPING, null, PathMapping.class);
+    List<PathMapping> mappings =
+        this.properties.getPropertyList(PATH_MAPPING, null, PathMapping.class);
 
     MagikLanguageServerSettings.pathMappings = mappings;
     MagikLanguageServerSettings.pathMappingsStr = unparsedMappingsStr;

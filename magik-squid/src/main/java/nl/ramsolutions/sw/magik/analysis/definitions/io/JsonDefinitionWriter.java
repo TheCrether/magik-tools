@@ -185,8 +185,7 @@ public final class JsonDefinitionWriter {
             definition -> {
               final Gson gson = this.buildGson();
               final JsonObject instruction = (JsonObject) gson.toJsonTree(definition);
-              instruction.addProperty(
-                  Instruction.FIELD_NAME, Instruction.MAGIK_FILE.getValue());
+              instruction.addProperty(Instruction.FIELD_NAME, Instruction.MAGIK_FILE.getValue());
               this.writeInstruction(writer, instruction);
             });
   }

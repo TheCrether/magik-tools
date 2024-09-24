@@ -250,6 +250,38 @@ public class MagikToolsProperties {
     return Long.valueOf(value);
   }
 
+  /**
+   * Get property as {@link Long}, or default value.
+   *
+   * @param key Key of property.
+   * @param defaultValue Default value, if property does not exist.
+   * @return Value of property.
+   */
+  public Long getPropertyLong(final String key, final long defaultValue) {
+    final String value = this.getPropertyString(key);
+    if (value == null) {
+      return defaultValue;
+    }
+
+    return Long.valueOf(value);
+  }
+
+  /**
+   * Get property as {@link Path}.
+   *
+   * @param key Key of property.
+   * @return Value of property, as path.
+   */
+  @CheckForNull
+  public Path getPropertyPath(final String key) {
+    final String value = this.getPropertyString(key);
+    if (value == null) {
+      return null;
+    }
+
+    return Path.of(value);
+  }
+
   public boolean hasProperty(final String key) {
     return this.getPropertyString(key) != null;
   }

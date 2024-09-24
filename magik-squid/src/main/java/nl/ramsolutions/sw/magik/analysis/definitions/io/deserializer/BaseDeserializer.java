@@ -3,14 +3,6 @@ package nl.ramsolutions.sw.magik.analysis.definitions.io.deserializer;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
-import nl.ramsolutions.sw.MagikToolsProperties;
-import nl.ramsolutions.sw.magik.Location;
-import nl.ramsolutions.sw.magik.MagikFile;
-import nl.ramsolutions.sw.magik.PathMapping;
-import nl.ramsolutions.sw.magik.analysis.definitions.MagikDefinition;
-import nl.ramsolutions.sw.magik.analysis.typing.TypeString;
-
-import javax.annotation.Nullable;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -19,6 +11,13 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
+import javax.annotation.Nullable;
+import nl.ramsolutions.sw.MagikToolsProperties;
+import nl.ramsolutions.sw.magik.Location;
+import nl.ramsolutions.sw.magik.MagikFile;
+import nl.ramsolutions.sw.magik.PathMapping;
+import nl.ramsolutions.sw.magik.analysis.definitions.MagikDefinition;
+import nl.ramsolutions.sw.magik.analysis.typing.TypeString;
 
 public abstract class BaseDeserializer<T> extends StdDeserializer<T> {
   private static final HashMap<Path, IndexedFile> parsedFiles = new HashMap<>();
@@ -31,8 +30,7 @@ public abstract class BaseDeserializer<T> extends StdDeserializer<T> {
     BaseDeserializer.properties = properties;
   }
 
-  private record IndexedFile(List<MagikDefinition> definitions, long indexedAt) {
-  }
+  private record IndexedFile(List<MagikDefinition> definitions, long indexedAt) {}
 
   public BaseDeserializer(List<PathMapping> mappings) {
     super((Class<?>) null);
@@ -63,31 +61,31 @@ public abstract class BaseDeserializer<T> extends StdDeserializer<T> {
   }
 
   public static <X> List<X> getList(
-    DeserializationContext context, JsonNode node, String field, Class<X> clazz) {
+      DeserializationContext context, JsonNode node, String field, Class<X> clazz) {
     return getStream(node, field)
-      .map(
-        e -> {
-          try {
-            return context.readTreeAsValue(e, clazz);
-          } catch (IOException ex) {
-            throw new RuntimeException(ex);
-          }
-        })
-      .toList();
+        .map(
+            e -> {
+              try {
+                return context.readTreeAsValue(e, clazz);
+              } catch (IOException ex) {
+                throw new RuntimeException(ex);
+              }
+            })
+        .toList();
   }
 
   public static <X> Set<X> getSet(
-    DeserializationContext context, JsonNode node, String field, Class<X> clazz) {
+      DeserializationContext context, JsonNode node, String field, Class<X> clazz) {
     return getStream(node, field)
-      .map(
-        e -> {
-          try {
-            return context.readTreeAsValue(e, clazz);
-          } catch (IOException ex) {
-            throw new RuntimeException(ex);
-          }
-        })
-      .collect(Collectors.toSet());
+        .map(
+            e -> {
+              try {
+                return context.readTreeAsValue(e, clazz);
+              } catch (IOException ex) {
+                throw new RuntimeException(ex);
+              }
+            })
+        .collect(Collectors.toSet());
   }
 
   @Nullable
@@ -119,12 +117,12 @@ public abstract class BaseDeserializer<T> extends StdDeserializer<T> {
   }
 
   public static TypeString getTypeString(
-    DeserializationContext context, JsonNode node, String field) {
+      DeserializationContext context, JsonNode node, String field) {
     return get(context, node, field, TypeString.class);
   }
 
   public static <X> X get(
-    DeserializationContext context, JsonNode node, String field, Class<X> clazz) {
+      DeserializationContext context, JsonNode node, String field, Class<X> clazz) {
     try {
       return context.readTreeAsValue(node.get(field), clazz);
     } catch (IOException e) {
@@ -175,11 +173,11 @@ public abstract class BaseDeserializer<T> extends StdDeserializer<T> {
   }
 
   public static <X> MagikDefinition getParsedDefinition(
-    Location location, String name, Class<X> clazz) {
+      Location location, String name, Class<X> clazz) {
     return getDefinitions(location).stream()
-      .filter(def -> def.getName().endsWith(name) && clazz.isInstance(def))
-      .findFirst()
-      .orElse(null);
+        .filter(def -> def.getName().endsWith(name) && clazz.isInstance(def))
+        .findFirst()
+        .orElse(null);
   }
 
   public static void clearParsedFiles() {

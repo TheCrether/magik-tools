@@ -116,10 +116,12 @@ public class MagikWorkspaceFolder {
   private void readExistingTypesDatabase() throws IOException {
     final Path workspacePath = this.getWorkspacePath();
     final Path typesDbPath = workspacePath.resolve(TYPES_DB_FILENAME);
-    final MagikLanguageServerSettings settings = new MagikLanguageServerSettings(this.languageServerProperties);
+    final MagikLanguageServerSettings settings =
+        new MagikLanguageServerSettings(this.languageServerProperties);
     if (Files.exists(typesDbPath)) {
       LOGGER.debug("Reading types database for workspace: {}, path: {}", this, typesDbPath);
-      JsonDefinitionReader.readTypes(typesDbPath, this.definitionKeeper, settings.getPathMappings());
+      JsonDefinitionReader.readTypes(
+          typesDbPath, this.definitionKeeper, settings.getPathMappings());
     }
   }
 

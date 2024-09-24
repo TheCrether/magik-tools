@@ -5,7 +5,6 @@ import edu.umd.cs.findbugs.annotations.CheckForNull;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
-
 import nl.ramsolutions.sw.MagikToolsProperties;
 import nl.ramsolutions.sw.magik.Location;
 import nl.ramsolutions.sw.magik.MagikTypedFile;
@@ -41,7 +40,8 @@ public class TypeHierarchyProvider {
    *
    * @param definitionKeeper {@link IDefinitionKeeper}.
    */
-  public TypeHierarchyProvider(final IDefinitionKeeper definitionKeeper, MagikToolsProperties properties) {
+  public TypeHierarchyProvider(
+      final IDefinitionKeeper definitionKeeper, MagikToolsProperties properties) {
     this.definitionKeeper = definitionKeeper;
     this.properties = properties;
   }
@@ -168,8 +168,7 @@ public class TypeHierarchyProvider {
     final TypeString typeStr = definition.getTypeString();
     final Location typeLocation = definition.getLocation();
     final MagikLanguageServerSettings settings = new MagikLanguageServerSettings(this.properties);
-    final Location location =
-        Location.validLocation(typeLocation, settings.getPathMappings());
+    final Location location = Location.validLocation(typeLocation, settings.getPathMappings());
     final Range range = location.getRange();
     Objects.requireNonNull(range);
     return new TypeHierarchyItem(

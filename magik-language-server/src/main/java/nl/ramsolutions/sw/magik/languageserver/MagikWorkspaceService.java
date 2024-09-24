@@ -68,7 +68,8 @@ public class MagikWorkspaceService implements WorkspaceService {
     this.magikIndexer =
         new MagikIndexer(this.definitionKeeper, this.languageServerProperties, this.ignoreHandler);
     this.symbolProvider = new SymbolProvider(this.definitionKeeper, this.languageServerProperties);
-    this.testItemProvider = new MUnitTestItemProvider(this.definitionKeeper, this.languageServerProperties);
+    this.testItemProvider =
+        new MUnitTestItemProvider(this.definitionKeeper, this.languageServerProperties);
 
     BaseDeserializer.setProperties(this.languageServerProperties);
   }
@@ -88,7 +89,7 @@ public class MagikWorkspaceService implements WorkspaceService {
     LOGGER.trace("didChangeConfiguration");
 
     final MagikLanguageServerSettings oldLspSettings =
-      new MagikLanguageServerSettings(this.languageServerProperties);
+        new MagikLanguageServerSettings(this.languageServerProperties);
     final List<String> oldTypeDBPaths = oldLspSettings.getTypingTypeDatabasePaths();
     final List<String> oldProductDirs = oldLspSettings.getProductDirs();
     final List<PathMapping> oldPathMappings = oldLspSettings.getPathMappings();
@@ -98,7 +99,8 @@ public class MagikWorkspaceService implements WorkspaceService {
     LOGGER.debug("New properties: {}", props);
     this.languageServerProperties.reset();
     this.languageServerProperties.putAll(props);
-//    BaseDeserializer.setProperties(this.languageServerProperties); // TODO check if this is not needed because object reference?
+    //    BaseDeserializer.setProperties(this.languageServerProperties); // TODO check if this is
+    // not needed because object reference?
 
     // TODO change how typing db gets accessed
     final MagikLanguageServerSettings lspSettings =

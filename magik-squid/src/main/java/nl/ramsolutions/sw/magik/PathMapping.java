@@ -1,10 +1,9 @@
 package nl.ramsolutions.sw.magik;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.nio.file.Path;
 import java.util.Objects;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class PathMapping {
   private static final Logger LOGGER = LoggerFactory.getLogger(PathMapping.class);

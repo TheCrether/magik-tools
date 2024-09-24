@@ -1,6 +1,5 @@
 package nl.ramsolutions.sw.magik.analysis.typing;
 
-import com.sonar.sslr.api.AstNode;
 import edu.umd.cs.findbugs.annotations.CheckForNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Arrays;
@@ -10,8 +9,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import nl.ramsolutions.sw.magik.analysis.helpers.MethodDefinitionNodeHelper;
-import nl.ramsolutions.sw.magik.api.MagikGrammar;
 import nl.ramsolutions.sw.magik.api.TypeStringGrammar;
 
 /**

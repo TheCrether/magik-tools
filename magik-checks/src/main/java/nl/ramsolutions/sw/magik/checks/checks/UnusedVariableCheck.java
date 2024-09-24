@@ -125,15 +125,15 @@ public class UnusedVariableCheck extends MagikCheck {
 
     // Report all unused scope entries
     scopeEntries.stream()
-      .filter(entry -> entry.getUsages().isEmpty())
-      .map(ScopeEntry::getDefinitionNode)
-      .distinct()
-      .forEach(
-        entryNode -> {
-          final String name = entryNode.getTokenValue();
-          final String message = String.format(MESSAGE, name);
-          this.addIssue(entryNode, message);
-        });
+        .filter(entry -> entry.getUsages().isEmpty())
+        .map(ScopeEntry::getDefinitionNode)
+        .distinct()
+        .forEach(
+            entryNode -> {
+              final String name = entryNode.getTokenValue();
+              final String message = String.format(MESSAGE, name);
+              this.addIssue(entryNode, message);
+            });
   }
 
   private List<ScopeEntry> getCheckableScopeEntries() {

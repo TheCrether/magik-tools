@@ -6,7 +6,6 @@ import java.util.List;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
-
 import nl.ramsolutions.sw.MagikToolsProperties;
 import nl.ramsolutions.sw.magik.Location;
 import nl.ramsolutions.sw.magik.analysis.definitions.ConditionDefinition;
@@ -127,8 +126,7 @@ public class SymbolProvider {
     for (final ExemplarDefinition definition : this.definitionKeeper.getExemplarDefinitions()) {
       if (predicate.test(definition)) {
         final Location typeLocation = definition.getLocation();
-        final Location location =
-            Location.validLocation(typeLocation, settings.getPathMappings());
+        final Location location = Location.validLocation(typeLocation, settings.getPathMappings());
         final WorkspaceSymbol symbol =
             new WorkspaceSymbol(
                 "Exemplar: " + definition.getTypeString().getFullString(),

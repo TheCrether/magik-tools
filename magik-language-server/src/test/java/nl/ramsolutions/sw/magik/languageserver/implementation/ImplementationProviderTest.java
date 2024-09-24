@@ -6,7 +6,6 @@ import java.net.URI;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
-
 import nl.ramsolutions.sw.MagikToolsProperties;
 import nl.ramsolutions.sw.magik.Location;
 import nl.ramsolutions.sw.magik.MagikTypedFile;

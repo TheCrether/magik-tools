@@ -9,7 +9,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Stream;
-
 import nl.ramsolutions.sw.MagikToolsProperties;
 import nl.ramsolutions.sw.magik.Location;
 import nl.ramsolutions.sw.magik.analysis.definitions.ExemplarDefinition;
@@ -40,7 +39,8 @@ public class MUnitTestItemProvider {
   private final IDefinitionKeeper definitionKeeper;
   private final MagikToolsProperties properties;
 
-  public MUnitTestItemProvider(final IDefinitionKeeper definitionKeeper, MagikToolsProperties properties) {
+  public MUnitTestItemProvider(
+      final IDefinitionKeeper definitionKeeper, MagikToolsProperties properties) {
     this.definitionKeeper = definitionKeeper;
     this.properties = properties;
   }

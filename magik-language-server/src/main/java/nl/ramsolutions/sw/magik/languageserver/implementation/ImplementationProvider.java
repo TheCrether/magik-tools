@@ -3,7 +3,6 @@ package nl.ramsolutions.sw.magik.languageserver.implementation;
 import com.sonar.sslr.api.AstNode;
 import java.util.Collections;
 import java.util.List;
-
 import nl.ramsolutions.sw.MagikToolsProperties;
 import nl.ramsolutions.sw.magik.Location;
 import nl.ramsolutions.sw.magik.MagikTypedFile;
@@ -73,7 +72,6 @@ public class ImplementationProvider {
       return Collections.emptyList();
     }
 
-
     final MagikLanguageServerSettings settings = new MagikLanguageServerSettings(this.properties);
 
     final IDefinitionKeeper definitionKeeper = magikFile.getDefinitionKeeper();
@@ -81,9 +79,7 @@ public class ImplementationProvider {
         .filter(methodDef -> !typeStr.equals(methodDef.getTypeName()))
         .filter(methodDef -> resolver.isKindOf(methodDef.getTypeName(), typeStr))
         .map(MethodDefinition::getLocation)
-        .map(
-            (Location location) ->
-                Location.validLocation(location, settings.getPathMappings()))
+        .map((Location location) -> Location.validLocation(location, settings.getPathMappings()))
         .toList();
   }
 }

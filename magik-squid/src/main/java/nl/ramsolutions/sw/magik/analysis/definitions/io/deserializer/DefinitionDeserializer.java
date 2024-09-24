@@ -3,7 +3,6 @@ package nl.ramsolutions.sw.magik.analysis.definitions.io.deserializer;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.sonar.sslr.api.AstNode;
 import edu.umd.cs.findbugs.annotations.Nullable;
-
 import java.time.Instant;
 import java.util.List;
 import nl.ramsolutions.sw.magik.Location;
@@ -49,6 +48,10 @@ public abstract class DefinitionDeserializer<T> extends BaseDeserializer<T> {
   public MagikDefinition getDefinition(JsonNode node) {
     Location location = getLocation(node);
     return new DeserializedDefinition(
-        location, getTimestamp(location), nullableString(node, "mod_n"), nullableString(node, "doc"), null);
+        location,
+        getTimestamp(location),
+        nullableString(node, "mod_n"),
+        nullableString(node, "doc"),
+        null);
   }
 }

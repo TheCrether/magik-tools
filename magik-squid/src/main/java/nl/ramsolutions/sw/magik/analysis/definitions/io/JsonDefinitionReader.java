@@ -243,7 +243,8 @@ public final class JsonDefinitionReader {
   }
 
   private void handleMagikFile(final JsonNode node) throws IOException {
-    final MagikFileDefinition definition = objectMapper.reader().readValue(node, MagikFileDefinition.class);
+    final MagikFileDefinition definition =
+        objectMapper.reader().readValue(node, MagikFileDefinition.class);
     this.definitionKeeper.add(definition);
   }
 
