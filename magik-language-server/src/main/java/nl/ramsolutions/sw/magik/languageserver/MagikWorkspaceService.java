@@ -287,6 +287,16 @@ public class MagikWorkspaceService implements WorkspaceService {
     final long start = System.nanoTime();
     LOGGER.trace("Run indexers");
 
+    // run indexing for workspace folders first without any other information for faster hover/completion etc on start
+    for (final MagikWorkspaceFolder workspaceFolder : this.languageServer.getWorkspaceFolders()) {
+      try {
+        workspaceFolder.onInit();
+      } catch (final IOException exception) {
+        LOGGER.error(
+          "Caught error when initializing workspacefolder: " + workspaceFolder, exception);
+      }
+    }
+
     // Read types dbs.
     final MagikLanguageServerSettings settings =
         new MagikLanguageServerSettings(this.languageServerProperties);
@@ -297,7 +307,6 @@ public class MagikWorkspaceService implements WorkspaceService {
     final List<String> productDirs = settings.getProductDirs();
     this.readProductsClassInfos(productDirs);
 
-    // TODO check if this merge actually updates everything
     // Update workspace folders.
     for (final MagikWorkspaceFolder workspaceFolder : this.languageServer.getWorkspaceFolders()) {
       try {

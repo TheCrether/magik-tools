@@ -296,6 +296,26 @@ public class TypeDocParser {
                 this::getName, slotNode -> slotNode.getFirstChild(TypeDocGrammar.NAME)));
   }
 
+  /**
+   * Get documentations of the parameters
+   *
+   * @return a map for the documentation for every parameter
+   */
+  public Map<String, String> getDocumentationForParameters() {
+    return this.getParameterNameNodes().entrySet().stream()
+        .collect(
+            Collectors.toMap(
+                Map.Entry::getValue,
+                entry ->
+                    entry.getKey().getParent().getChildren(TypeDocGrammar.DESCRIPTION).stream()
+                        .flatMap(
+                            node ->
+                                node.getChildren().stream()
+                                    .filter(token -> token.isNot(TypeDocGrammar.DOC_START))
+                                    .map(AstNode::getTokenValue))
+                        .collect(Collectors.joining(" "))));
+  }
+
   private boolean noEmptyName(final AstNode node) {
     return !this.getName(node).isBlank();
   }

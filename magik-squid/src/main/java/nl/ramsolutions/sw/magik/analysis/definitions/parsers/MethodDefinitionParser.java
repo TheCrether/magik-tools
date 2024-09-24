@@ -96,9 +96,10 @@ public class MethodDefinitionParser {
     // Figure parameters.
     final TypeDocParser typeDocParser = new TypeDocParser(this.node);
     final Map<String, TypeString> parameterTypes = typeDocParser.getParameterTypes();
+    final Map<String, String> documentation = typeDocParser.getDocumentationForParameters();
     final AstNode parametersNode = this.node.getFirstChild(MagikGrammar.PARAMETERS);
     final List<ParameterDefinition> parameters =
-        this.createParameterDefinitions(timestamp, moduleName, parametersNode, parameterTypes);
+        this.createParameterDefinitions(timestamp, moduleName, parametersNode, parameterTypes, documentation);
     final AstNode assignmentParameterNode = node.getFirstChild(MagikGrammar.ASSIGNMENT_PARAMETER);
     final ParameterDefinition assignmentParamter =
         this.createAssignmentParameterDefinition(
@@ -181,7 +182,8 @@ public class MethodDefinitionParser {
       final @Nullable Instant timestamp,
       final @Nullable String moduleName,
       final @Nullable AstNode parametersNode,
-      final Map<String, TypeString> parameterTypes) {
+      final Map<String, TypeString> parameterTypes,
+      final Map<String, String> documentation) {
     if (parametersNode == null) {
       return Collections.emptyList();
     }
@@ -205,9 +207,10 @@ public class MethodDefinitionParser {
       }
 
       final TypeString typeRef = parameterTypes.getOrDefault(identifier, TypeString.UNDEFINED);
+      final String doc = documentation.getOrDefault(identifier, "");
       final ParameterDefinition parameterDefinition =
           new ParameterDefinition(
-              location, timestamp, moduleName, null, parameterNode, identifier, modifier, typeRef);
+              location, timestamp, moduleName, doc, parameterNode, identifier, modifier, typeRef);
       parameterDefinitions.add(parameterDefinition);
     }
 

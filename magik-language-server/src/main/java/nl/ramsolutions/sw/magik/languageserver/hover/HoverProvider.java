@@ -41,6 +41,7 @@ public class HoverProvider {
   private static final String SECTION_END = "\n\n";
   private static final String BR =
       "  \n"; // will be interpreted as <br /> according to markdown spec
+  private static final String SEPARATOR = SECTION_END + "---" + SECTION_END;
 
   private final MagikToolsProperties properties;
 
@@ -492,6 +493,8 @@ public class HoverProvider {
       builder.append(SECTION_END);
     }
 
+    builder.append(SEPARATOR);
+
     // parameters
     if (!methodDef.getParameters().isEmpty()) {
       builder.append("### Parameters:");
@@ -512,6 +515,8 @@ public class HoverProvider {
 
     // Method doc.
     appendDoc(builder, methodDef);
+
+    builder.append(SEPARATOR);
 
     // Method module.
     appendModuleName(builder, methodDef);
@@ -593,10 +598,9 @@ public class HoverProvider {
     final List<TypeString> generics = exemplarDef.getTypeString().getGenerics();
     if (!generics.isEmpty()) {
       builder.append("### Generic definitions\n");
-      generics.stream()
-          .forEach(
-              genericTypeStr ->
-                  builder.append("* ").append(this.formatTypeString(genericTypeStr)).append("\n"));
+      generics.forEach(
+          genericTypeStr ->
+              builder.append("* ").append(this.formatTypeString(genericTypeStr)).append("\n"));
       builder.append(SECTION_END);
     }
 
@@ -612,7 +616,8 @@ public class HoverProvider {
       final ProductDefFile productDefFile, final AstNode node, final StringBuilder builder) {
     final IDefinitionKeeper definitionKeeper = productDefFile.getDefinitionKeeper();
     final String productName = node.getTokenValue().toLowerCase();
-    definitionKeeper.getProductDefinitions(productName).stream()
+    definitionKeeper
+        .getProductDefinitions(productName)
         .forEach(productDef -> this.buildProductDefDoc(productDef, builder));
   }
 
@@ -652,7 +657,8 @@ public class HoverProvider {
       final ModuleDefFile moduleDefFile, final AstNode node, final StringBuilder builder) {
     final IDefinitionKeeper definitionKeeper = moduleDefFile.getDefinitionKeeper();
     final String moduleName = node.getTokenValue().toLowerCase();
-    definitionKeeper.getModuleDefinitions(moduleName).stream()
+    definitionKeeper
+        .getModuleDefinitions(moduleName)
         .forEach(moduleDef -> this.buildModuleDefDoc(moduleDef, builder));
   }
 
@@ -718,7 +724,8 @@ public class HoverProvider {
       final String typeDocMd =
           typeDoc
               .lines()
-              .map(line -> line.trim().length() > 0 ? "*" + line.trim() + "*" : "")
+              //              .map(line -> line.trim().length() > 0 ? "*" + line.trim() + "*" : "")
+//              .map(String::trim)
               .collect(Collectors.joining(BR));
       builder.append(typeDocMd).append(SECTION_END);
     }
