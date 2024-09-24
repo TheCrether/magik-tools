@@ -90,7 +90,7 @@ public class MagikWorkspaceService implements WorkspaceService {
     final MagikLanguageServerSettings oldLspSettings =
       new MagikLanguageServerSettings(this.languageServerProperties);
     final List<String> oldTypeDBPaths = oldLspSettings.getTypingTypeDatabasePaths();
-    final List<String> oldLibsDirs = oldLspSettings.getLibsDirs();
+    final List<String> oldProductDirs = oldLspSettings.getProductDirs();
     final List<PathMapping> oldPathMappings = oldLspSettings.getPathMappings();
 
     final JsonObject settings = (JsonObject) params.getSettings();
@@ -104,7 +104,7 @@ public class MagikWorkspaceService implements WorkspaceService {
     final MagikLanguageServerSettings lspSettings =
         new MagikLanguageServerSettings(this.languageServerProperties);
     if (collectionsDiffers(oldTypeDBPaths, lspSettings.getTypingTypeDatabasePaths())
-        || collectionsDiffers(oldLibsDirs, lspSettings.getLibsDirs())
+        || collectionsDiffers(oldProductDirs, lspSettings.getProductDirs())
         || collectionsDiffers(oldPathMappings, lspSettings.getPathMappings())) {
       this.definitionKeeper.clear();
 

@@ -113,15 +113,6 @@ public final class MagikLanguageServerSettings {
   }
 
   /**
-   * Get magik.libsDirs, defaults to an empty list if not defined
-   *
-   * @return the library directories or an empty list
-   */
-  public List<String> getLibsDirs() {
-    return this.properties.getPropertyList(PRODUCT_DIRS);
-  }
-
-  /**
    * Get magik.lint.overrideConfigFile.
    *
    * @return magik.lint.overrideConfigFile
