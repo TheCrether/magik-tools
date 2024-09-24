@@ -131,7 +131,12 @@ public class UnusedVariableCheck extends MagikCheck {
         .forEach(
             entryNode -> {
               final String name = entryNode.getTokenValue();
-              final String message = String.format(MESSAGE, name);
+              String message = String.format(MESSAGE, name);
+
+              if (entryNode.getParent().is(MagikGrammar.PARAMETER)) {
+                message = String.format(PARAM_MESSAGE, name);
+              }
+
               this.addIssue(entryNode, message);
             });
   }

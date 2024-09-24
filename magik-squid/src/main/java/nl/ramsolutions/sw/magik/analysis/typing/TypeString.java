@@ -270,7 +270,7 @@ public final class TypeString implements Comparable<TypeString> {
   /**
    * Get full string.
    *
-   * @return
+   * @return get the full string for the type
    */
   public String getFullString() {
     if (this.isCombined()) {

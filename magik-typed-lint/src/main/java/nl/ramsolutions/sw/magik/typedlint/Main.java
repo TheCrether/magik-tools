@@ -144,7 +144,7 @@ public final class Main {
   /**
    * Create the reporter.
    *
-   * @param configuration Configuration.
+   * @param properties Configuration.
    * @return Reporter.
    */
   private static Reporter createReporter(final MagikToolsProperties properties) {

@@ -35,6 +35,7 @@ public class PathMapping {
     return to;
   }
 
+  @SuppressWarnings("unused")
   public Boolean getWritable() {
     return writable;
   }

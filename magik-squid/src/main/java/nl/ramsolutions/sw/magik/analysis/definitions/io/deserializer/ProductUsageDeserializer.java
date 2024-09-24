@@ -16,7 +16,7 @@ public class ProductUsageDeserializer extends BaseDeserializer<ProductUsage> {
 
   @Override
   public ProductUsage deserialize(JsonParser jp, DeserializationContext context)
-      throws IOException, JacksonException {
+      throws IOException {
     JsonNode node = jp.readValueAsTree();
 
     String name = getStringField(node, "name");

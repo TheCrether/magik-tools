@@ -55,7 +55,7 @@ public class MUnitTestItemProvider {
   }
 
   /**
-   * Get {@Link TestItem}s.
+   * Get {@link MUnitTestItem}s.
    *
    * <p>A hierarchy per product is provided: - product - module - test exemplar - test method
    *

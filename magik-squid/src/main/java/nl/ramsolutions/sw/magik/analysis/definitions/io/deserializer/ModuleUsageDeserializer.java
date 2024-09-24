@@ -16,7 +16,7 @@ public class ModuleUsageDeserializer extends BaseDeserializer<ModuleUsage> {
 
   @Override
   public ModuleUsage deserialize(JsonParser jp, DeserializationContext context)
-      throws IOException, JacksonException {
+      throws IOException {
     JsonNode node = jp.readValueAsTree();
 
     String name = getStringField(node, "name");

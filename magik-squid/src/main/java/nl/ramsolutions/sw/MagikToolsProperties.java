@@ -288,7 +288,7 @@ public class MagikToolsProperties {
 
   /**
    * Get a property value as a {@link List}. Items are separated by {@link
-   * MagikToolsProperties.LIST_SEPARATOR}.
+   * MagikToolsProperties#LIST_SEPARATOR}.
    *
    * @param key Key of the property.
    * @return List of values.
@@ -382,8 +382,8 @@ public class MagikToolsProperties {
   public static MagikToolsProperties merge(
       final MagikToolsProperties properties1, final MagikToolsProperties properties2) {
     final MagikToolsProperties result = new MagikToolsProperties();
-    properties1.properties.forEach(result.properties::put);
-    properties2.properties.forEach(result.properties::put);
+    result.properties.putAll(properties1.properties);
+    result.properties.putAll(properties2.properties);
     return result;
   }
 }

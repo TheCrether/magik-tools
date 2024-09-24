@@ -285,7 +285,9 @@ public class MagikWorkspaceService implements WorkspaceService {
 
   private void runIndexers() {
     final long start = System.nanoTime();
-    LOGGER.trace("Run indexers");
+    if (LOGGER.isTraceEnabled()) {
+      LOGGER.trace("Run indexers");
+    }
 
     // run indexing for workspace folders first without any other information for faster hover/completion etc on start
     for (final MagikWorkspaceFolder workspaceFolder : this.languageServer.getWorkspaceFolders()) {
@@ -307,6 +309,10 @@ public class MagikWorkspaceService implements WorkspaceService {
     final List<String> productDirs = settings.getProductDirs();
     this.readProductsClassInfos(productDirs);
 
+    if (LOGGER_DURATION.isTraceEnabled()) {
+      LOGGER_DURATION.trace("Duration: {} runIndexers", (System.nanoTime() - start) / 1000000000.0);
+    }
+
     // Update workspace folders.
     for (final MagikWorkspaceFolder workspaceFolder : this.languageServer.getWorkspaceFolders()) {
       try {
@@ -320,7 +326,9 @@ public class MagikWorkspaceService implements WorkspaceService {
 
   @SuppressWarnings("IllegalCatch")
   private void runIndexersInBackground() {
-    LOGGER.trace("Run background indexer");
+    if (LOGGER.isTraceEnabled()) {
+      LOGGER.trace("Run background indexer");
+    }
 
     final LanguageClient languageClient = this.languageServer.getLanguageClient();
     final WorkDoneProgressCreateParams params = new WorkDoneProgressCreateParams();

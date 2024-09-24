@@ -10,8 +10,6 @@ import org.slf4j.LoggerFactory;
 
 /** Magik settings. */
 public final class MagikLanguageServerSettings {
-  private static final Logger LOGGER = LoggerFactory.getLogger(MagikLanguageServerSettings.class);
-
   private static final String PRODUCT_DIRS = "magik.productDirs";
   private static final String OVERRIDE_CONFIG_FILE = "magik.lint.overrideConfigFile";
   private static final String TYPE_DATABASE_PATHS = "magik.typing.typeDatabasePaths";
@@ -73,7 +71,6 @@ public final class MagikLanguageServerSettings {
    *
    * @return magik.typing.enableChecks.
    */
-  @CheckForNull
   public Boolean getTypingEnableChecks() {
     return this.properties.getPropertyBoolean(ENABLE_TYPING_CHECKS) == Boolean.TRUE;
   }
