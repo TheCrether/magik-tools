@@ -725,7 +725,7 @@ public class HoverProvider {
           typeDoc
               .lines()
               //              .map(line -> line.trim().length() > 0 ? "*" + line.trim() + "*" : "")
-//              .map(String::trim)
+              //              .map(String::trim)
               .collect(Collectors.joining(BR));
       builder.append(typeDocMd).append(SECTION_END);
     }

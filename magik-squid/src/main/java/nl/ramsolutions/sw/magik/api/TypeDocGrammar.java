@@ -133,8 +133,12 @@ public enum TypeDocGrammar implements GrammarRuleKey {
             SPACING_NO_LB,
             b.regexp(DESCRIPTION_REGEXP),
             b.zeroOrMore(
-                DOC_START, SPACING_NO_LB, b.nextNot(ANY_ELEMENT), b.regexp(DESCRIPTION_REGEXP),
-              b.zeroOrMore(WHITESPACE, DOC_START, b.regexp("(\\t{2,}|\\s{4,})"), DESCRIPTION_REGEXP)));
+                DOC_START,
+                SPACING_NO_LB,
+                b.nextNot(ANY_ELEMENT),
+                b.regexp(DESCRIPTION_REGEXP),
+                b.zeroOrMore(
+                    WHITESPACE, DOC_START, b.regexp("(\\t{2,}|\\s{4,})"), DESCRIPTION_REGEXP)));
 
     b.rule(PARAM).is(DOC_START, Element.PARAM, b.optional(TYPE), NAME, DESCRIPTION);
     b.rule(RETURN).is(DOC_START, Element.RETURN, b.optional(TYPE), DESCRIPTION);

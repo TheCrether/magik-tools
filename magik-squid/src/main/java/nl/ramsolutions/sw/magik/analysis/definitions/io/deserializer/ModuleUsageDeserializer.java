@@ -1,6 +1,5 @@
 package nl.ramsolutions.sw.magik.analysis.definitions.io.deserializer;
 
-import com.fasterxml.jackson.core.JacksonException;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -15,8 +14,7 @@ public class ModuleUsageDeserializer extends BaseDeserializer<ModuleUsage> {
   }
 
   @Override
-  public ModuleUsage deserialize(JsonParser jp, DeserializationContext context)
-      throws IOException {
+  public ModuleUsage deserialize(JsonParser jp, DeserializationContext context) throws IOException {
     JsonNode node = jp.readValueAsTree();
 
     String name = getStringField(node, "name");

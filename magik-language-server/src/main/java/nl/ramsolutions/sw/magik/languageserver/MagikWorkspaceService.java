@@ -289,13 +289,14 @@ public class MagikWorkspaceService implements WorkspaceService {
       LOGGER.trace("Run indexers");
     }
 
-    // run indexing for workspace folders first without any other information for faster hover/completion etc on start
+    // run indexing for workspace folders first without any other information for faster
+    // hover/completion etc on start
     for (final MagikWorkspaceFolder workspaceFolder : this.languageServer.getWorkspaceFolders()) {
       try {
         workspaceFolder.onInit();
       } catch (final IOException exception) {
         LOGGER.error(
-          "Caught error when initializing workspacefolder: " + workspaceFolder, exception);
+            "Caught error when initializing workspacefolder: " + workspaceFolder, exception);
       }
     }
 

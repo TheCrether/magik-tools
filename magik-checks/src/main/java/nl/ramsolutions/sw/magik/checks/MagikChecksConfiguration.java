@@ -1,10 +1,6 @@
 package nl.ramsolutions.sw.magik.checks;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 import nl.ramsolutions.sw.MagikToolsProperties;
 import org.sonar.check.Rule;
@@ -42,22 +38,22 @@ public class MagikChecksConfiguration {
    * @return
    */
   public List<MagikCheckHolder> getAllChecks() {
-    final List<MagikCheckHolder> holders = new ArrayList<>();
+    final List<String> disabled = this.properties.getPropertyList(KEY_DISABLED_CHECKS);
+    if (disabled.contains("all")) {
+      return Collections.emptyList();
+    }
 
-    final List<String> disableds = this.properties.getPropertyList(KEY_DISABLED_CHECKS);
-    final List<String> enableds = this.properties.getPropertyList(KEY_ENABLED_CHECKS);
+    final List<String> enabled = this.properties.getPropertyList(KEY_ENABLED_CHECKS);
     final List<Class<? extends MagikCheck>> disabledByDefault =
         CheckList.getDisabledByDefaultChecks();
 
-    if (disableds.contains("all")) {
-      return holders;
-    }
+    final List<MagikCheckHolder> holders = new ArrayList<>();
 
     for (final Class<? extends MagikCheck> checkClass : this.checkClasses) {
       final String checkKey = MagikChecksConfiguration.checkKey(checkClass);
       final boolean checkEnabled =
-          enableds.contains(checkKey)
-              || (!disableds.contains(checkKey) && !disabledByDefault.contains(checkClass));
+          enabled.contains(checkKey)
+              || (!disabled.contains(checkKey) && !disabledByDefault.contains(checkClass));
 
       // Gather parameters from MagikCheck, value from config.
       final Set<MagikCheckHolder.Parameter> parameters =

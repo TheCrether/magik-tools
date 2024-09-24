@@ -5,8 +5,6 @@ import java.nio.file.Path;
 import java.util.*;
 import nl.ramsolutions.sw.MagikToolsProperties;
 import nl.ramsolutions.sw.magik.PathMapping;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /** Magik settings. */
 public final class MagikLanguageServerSettings {
