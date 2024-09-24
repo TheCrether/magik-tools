@@ -5,7 +5,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import nl.ramsolutions.sw.magik.analysis.MagikAnalysisConfiguration;
+import nl.ramsolutions.sw.MagikToolsProperties;
 import nl.ramsolutions.sw.magik.analysis.definitions.DefinitionKeeper;
 import nl.ramsolutions.sw.magik.analysis.definitions.IDefinitionKeeper;
 import org.eclipse.lsp4j.InitializeParams;
@@ -28,9 +28,9 @@ public class MagikLanguageServer implements LanguageServer, LanguageClientAware 
 
   private static final Logger LOGGER = LoggerFactory.getLogger(MagikLanguageServer.class);
 
-  private final MagikAnalysisConfiguration analysisConfiguration;
+  private final MagikToolsProperties languageServerProperties;
   private final IDefinitionKeeper definitionKeeper;
-  private final List<WorkspaceFolder> workspaceFolders = new ArrayList<>();
+  private final List<MagikWorkspaceFolder> workspaceFolders = new ArrayList<>();
   private final MagikTextDocumentService magikTextDocumentService;
   private final MagikWorkspaceService magikWorkspaceService;
   private final MagikNotebookDocumentService magikNotebookDocumentService;
@@ -42,13 +42,13 @@ public class MagikLanguageServer implements LanguageServer, LanguageClientAware 
    * @throws IOException -
    */
   public MagikLanguageServer() throws IOException {
+    this.languageServerProperties = new MagikToolsProperties();
     // We assume the DefinitionKeeper gets its types from a types database (.jsonl file).
-    this.analysisConfiguration = new MagikAnalysisConfiguration();
     this.definitionKeeper = new DefinitionKeeper(false);
     this.magikTextDocumentService =
-        new MagikTextDocumentService(this, this.analysisConfiguration, this.definitionKeeper);
+        new MagikTextDocumentService(this, this.languageServerProperties, this.definitionKeeper);
     this.magikWorkspaceService =
-        new MagikWorkspaceService(this, this.analysisConfiguration, this.definitionKeeper);
+        new MagikWorkspaceService(this, this.languageServerProperties, this.definitionKeeper);
     this.magikNotebookDocumentService = new MagikNotebookDocumentService(this);
   }
 
@@ -63,16 +63,20 @@ public class MagikLanguageServer implements LanguageServer, LanguageClientAware 
     final String version = this.getClass().getPackage().getImplementationVersion();
     LOGGER.info("Version: {}", version);
 
-    final List<WorkspaceFolder> folders = params.getWorkspaceFolders();
-    if (folders != null) {
-      this.workspaceFolders.addAll(folders);
-    }
-
-    // Handle older clients which do not provide a workspace folder.
     final String rootUri = params.getRootUri();
-    if (rootUri != null && this.workspaceFolders.isEmpty()) {
+    if (params.getWorkspaceFolders() != null && !params.getWorkspaceFolders().isEmpty()) {
+      params.getWorkspaceFolders().stream()
+          .map(
+              workspaceFolder ->
+                  new MagikWorkspaceFolder(
+                      workspaceFolder, this.definitionKeeper, this.languageServerProperties))
+          .forEach(this.workspaceFolders::add);
+    } else if (rootUri != null) {
       final WorkspaceFolder rootFolder = new WorkspaceFolder(rootUri, "workspace");
-      this.workspaceFolders.add(rootFolder);
+      final MagikWorkspaceFolder rootWorkspaceFolder =
+          new MagikWorkspaceFolder(
+              rootFolder, this.definitionKeeper, this.languageServerProperties);
+      this.workspaceFolders.add(rootWorkspaceFolder);
     }
 
     // Report workspace folders.
@@ -155,11 +159,11 @@ public class MagikLanguageServer implements LanguageServer, LanguageClientAware 
   }
 
   /**
-   * Get the {@link WorkspaceFolder}s.
+   * Get the {@link MagikWorkspaceFolder}s.
    *
-   * @return {@link WorkspaceFolder}s.
+   * @return {@link MagikWorkspaceFolder}s.
    */
-  public List<WorkspaceFolder> getWorkspaceFolders() {
+  public List<MagikWorkspaceFolder> getWorkspaceFolders() {
     return Collections.unmodifiableList(this.workspaceFolders);
   }
 }

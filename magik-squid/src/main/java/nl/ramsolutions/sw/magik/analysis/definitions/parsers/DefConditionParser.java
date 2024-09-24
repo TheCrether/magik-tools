@@ -2,10 +2,11 @@ package nl.ramsolutions.sw.magik.analysis.definitions.parsers;
 
 import com.sonar.sslr.api.AstNode;
 import java.net.URI;
+import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
-import nl.ramsolutions.sw.definitions.ModuleDefinitionScanner;
 import nl.ramsolutions.sw.magik.Location;
+import nl.ramsolutions.sw.magik.MagikFile;
 import nl.ramsolutions.sw.magik.analysis.definitions.ConditionDefinition;
 import nl.ramsolutions.sw.magik.analysis.definitions.MagikDefinition;
 import nl.ramsolutions.sw.magik.analysis.helpers.ArgumentsNodeHelper;
@@ -13,6 +14,7 @@ import nl.ramsolutions.sw.magik.analysis.helpers.ExpressionNodeHelper;
 import nl.ramsolutions.sw.magik.analysis.helpers.MethodInvocationNodeHelper;
 import nl.ramsolutions.sw.magik.api.MagikGrammar;
 import nl.ramsolutions.sw.magik.parser.MagikCommentExtractor;
+import nl.ramsolutions.sw.moduledef.ModuleDefFile;
 
 /** Condition definition parser. */
 public class DefConditionParser {
@@ -22,6 +24,7 @@ public class DefConditionParser {
   private static final String CONDITION = "condition";
   private static final String SW_CONDITION = "sw:condition";
 
+  private final MagikFile magikFile;
   private final AstNode node;
 
   /**
@@ -29,11 +32,12 @@ public class DefConditionParser {
    *
    * @param node Condition definition node.
    */
-  public DefConditionParser(final AstNode node) {
+  public DefConditionParser(final MagikFile magikFile, final AstNode node) {
     if (node.isNot(MagikGrammar.METHOD_INVOCATION)) {
       throw new IllegalArgumentException();
     }
 
+    this.magikFile = magikFile;
     this.node = node;
   }
 
@@ -64,9 +68,21 @@ public class DefConditionParser {
     final AstNode argumentsNode = node.getFirstChild(MagikGrammar.ARGUMENTS);
     final ArgumentsNodeHelper argumentsHelper = new ArgumentsNodeHelper(argumentsNode);
     final AstNode argument0Node = argumentsHelper.getArgument(0, MagikGrammar.SYMBOL);
+    if (argument0Node == null) {
+      return false;
+    }
+
     final AstNode argument1Node = argumentsHelper.getArgument(1, MagikGrammar.SYMBOL);
+    if (argument1Node == null) {
+      return false;
+    }
+
     final AstNode argument2Node = argumentsHelper.getArgument(2, MagikGrammar.SIMPLE_VECTOR);
-    return argument0Node != null && argument1Node != null && argument2Node != null;
+    if (argument2Node == null) {
+      return false;
+    }
+
+    return true;
   }
 
   /**
@@ -99,8 +115,11 @@ public class DefConditionParser {
     final URI uri = this.node.getToken().getURI();
     final Location location = new Location(uri, this.node);
 
+    // Figure timestamp.
+    final Instant timestamp = this.magikFile.getTimestamp();
+
     // Figure module name.
-    final String moduleName = ModuleDefinitionScanner.getModuleName(uri);
+    final String moduleName = ModuleDefFile.getModuleNameForUri(uri);
 
     // Figure statement node.
     final AstNode statementNode = node.getFirstAncestor(MagikGrammar.STATEMENT);
@@ -117,9 +136,14 @@ public class DefConditionParser {
                   final ExpressionNodeHelper expressionNodeHelper =
                       new ExpressionNodeHelper(expressionNode);
                   final String dataName = expressionNodeHelper.getConstant();
+                  if (dataName == null) {
+                    return null;
+                  }
+
                   if (dataName.startsWith(":")) {
                     return dataName.substring(1);
                   }
+
                   return dataName;
                 })
             .filter(Objects::nonNull)
@@ -129,7 +153,8 @@ public class DefConditionParser {
     final String doc = MagikCommentExtractor.extractDocComment(parentNode);
 
     final ConditionDefinition definition =
-        new ConditionDefinition(location, moduleName, doc, statementNode, name, parent, dataNames);
+        new ConditionDefinition(
+            location, timestamp, moduleName, doc, statementNode, name, parent, dataNames);
     return List.of(definition);
   }
 }

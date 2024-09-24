@@ -27,6 +27,7 @@ public class GlobalDefinitionDeserializer extends DefinitionDeserializer<GlobalD
 
     return new GlobalDefinition(
         base.getLocation(),
+        getTimestamp(base.getLocation()),
         base.getModuleName(),
         base.getDoc(),
         base.getNode(),

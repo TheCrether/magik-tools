@@ -26,6 +26,6 @@ public class SlotDefinitionDeserializer extends BaseDeserializer<SlotDefinition>
 
     Location location = getLocation(node);
 
-    return new SlotDefinition(location, moduleName, doc, null, name, typeName);
+    return new SlotDefinition(location, getTimestamp(location), moduleName, doc, null, name, typeName);
   }
 }

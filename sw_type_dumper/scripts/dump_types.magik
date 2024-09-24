@@ -1,0 +1,47 @@
+#% text_encoding = iso8859_1
+
+_block
+	_local product_dir << system.pathname_up(!source_file!, 2)
+	smallworld_product.add_product(product_dir)
+	sw_module_manager.load_module(:sw_type_dumper, _unset, :force_reload?, _true)
+_endblock
+$
+
+_if smallworld_product.product(:sw5_java_object_wrapper) _isnt _unset
+_then
+	smallworld_product.add_product(:sw5_java_object_wrapper)
+	sw_module_manager.load_module(:sw5_java_object_wrapper)
+_endif
+$
+
+_block
+	_local filepath << sw:system.create_temp_file("sw_types.jsonl")
+	write_with_spaces(date_time.now(), "Start writing to:", filepath)
+
+	_local ignore_vars << set.new_with(
+		:|mt|,
+		:|mt:binary_operator_definition|,
+		:|mt:condition_definition|,
+		:|mt:datamodel_type_dumper|,
+		:|mt:definition|,
+		:|mt:global_definition|,
+		:|mt:method_definition|,
+		:|mt:module_definition|,
+		:|mt:module_usage|,
+		:|mt:package_definition|,
+		:|mt:parameter_definition|,
+		:|mt:procedure_definition|,
+		:|mt:product_definition|,
+		:|mt:product_usage|,
+		:|mt:slot_definition|,
+		:|mt:type_definition|,
+		:|mt:type_dumper|,
+		:|mt:type_merger|,
+		:|mt:usage|,
+		:|sw_type_dumper|)
+	_local dumper << mt:type_dumper.new(filepath, ignore_vars)
+	dumper.run()
+
+	write_with_spaces(date_time.now(), "Finished writing to:", filepath)
+_endblock
+$

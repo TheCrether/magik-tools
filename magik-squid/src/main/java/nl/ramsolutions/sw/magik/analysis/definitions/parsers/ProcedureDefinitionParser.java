@@ -4,6 +4,7 @@ import com.sonar.sslr.api.AstNode;
 import com.sonar.sslr.api.Token;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.net.URI;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -11,8 +12,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-import nl.ramsolutions.sw.definitions.ModuleDefinitionScanner;
 import nl.ramsolutions.sw.magik.Location;
+import nl.ramsolutions.sw.magik.MagikFile;
 import nl.ramsolutions.sw.magik.analysis.definitions.MagikDefinition;
 import nl.ramsolutions.sw.magik.analysis.definitions.ParameterDefinition;
 import nl.ramsolutions.sw.magik.analysis.definitions.ProcedureDefinition;
@@ -23,9 +24,12 @@ import nl.ramsolutions.sw.magik.analysis.typing.TypeString;
 import nl.ramsolutions.sw.magik.api.MagikGrammar;
 import nl.ramsolutions.sw.magik.parser.MagikCommentExtractor;
 import nl.ramsolutions.sw.magik.parser.TypeDocParser;
+import nl.ramsolutions.sw.moduledef.ModuleDefFile;
 
+/** {@code _proc() .. _endproc} parser. */
 public class ProcedureDefinitionParser {
 
+  private final MagikFile magikFile;
   private final AstNode node;
 
   /**
@@ -33,11 +37,12 @@ public class ProcedureDefinitionParser {
    *
    * @param node {@code define_shared_constant()} node.
    */
-  public ProcedureDefinitionParser(final AstNode node) {
+  public ProcedureDefinitionParser(final MagikFile magikFile, final AstNode node) {
     if (node.isNot(MagikGrammar.PROCEDURE_DEFINITION)) {
       throw new IllegalArgumentException();
     }
 
+    this.magikFile = magikFile;
     this.node = node;
   }
 
@@ -66,8 +71,11 @@ public class ProcedureDefinitionParser {
     final URI uri = node.getToken().getURI();
     final Location location = new Location(uri, node);
 
+    // Figure timestamp.
+    final Instant timestamp = this.magikFile.getTimestamp();
+
     // Figure module name.
-    final String moduleName = ModuleDefinitionScanner.getModuleName(uri);
+    final String moduleName = ModuleDefFile.getModuleNameForUri(uri);
 
     // Figure procedure name.
     final ProcedureDefinitionNodeHelper helper = new ProcedureDefinitionNodeHelper(node);
@@ -88,7 +96,7 @@ public class ProcedureDefinitionParser {
     final TypeDocParser typeDocParser = new TypeDocParser(this.node);
     final Map<String, TypeString> parameterTypes = typeDocParser.getParameterTypes();
     final List<ParameterDefinition> parameters =
-        this.createParameterDefinitions(moduleName, parametersNode, parameterTypes);
+        this.createParameterDefinitions(timestamp, moduleName, parametersNode, parameterTypes);
 
     // Get return types from method docs.
     final List<TypeString> callResultDocs = typeDocParser.getReturnTypes();
@@ -120,6 +128,7 @@ public class ProcedureDefinitionParser {
     return List.of(
         new ProcedureDefinition(
             location,
+            timestamp,
             moduleName,
             doc,
             node,
@@ -132,6 +141,7 @@ public class ProcedureDefinitionParser {
   }
 
   private List<ParameterDefinition> createParameterDefinitions(
+      final @Nullable Instant timestamp,
       final @Nullable String moduleName,
       final AstNode parametersNode,
       final Map<String, TypeString> parameterTypes) {
@@ -156,7 +166,7 @@ public class ProcedureDefinitionParser {
       final TypeString typeRef = parameterTypes.getOrDefault(identifier, TypeString.UNDEFINED);
       final ParameterDefinition parameterDefinition =
           new ParameterDefinition(
-              location, moduleName, null, parameterNode, identifier, modifier, typeRef);
+              location, timestamp, moduleName, null, parameterNode, identifier, modifier, typeRef);
       parameterDefinitions.add(parameterDefinition);
     }
 

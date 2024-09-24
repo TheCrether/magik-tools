@@ -1,6 +1,24 @@
 # Changes
 
-0.10.0 (unreleased)
+0.11.0 (unreleased)
+
+- Fix error when parsing `def_slotted_exemplar()`/`def_indexed_exemplar()`/`define_condition()` with unknown children/data names.
+- Fix VariableCountCheck, improve message.
+- Support setting environment variables from VSCode tasks.
+- Index `MagikFileDefinitions`, to prevent needing to re-index magik files without `MagikDefinitions`.
+- Refactor `MagikFileScanner` & friends to be shared.
+- Add `magik-typed-lint` to check magik typing from CLI/during CI.
+
+0.10.1 (2024-08-14)
+
+- Fix CommentedCodeCheck, splitting commented code on newlines.
+- Fix CommentedCodeCheck, not seeing seeing the commented line if line is top of file.
+- Fix UnusedVariableCheck, not handling try/when constructs properly.
+- Show path to loaded `magik-lint.properties` in (debug) logging.
+- Fix sw_type_dumper not handling sub-objects properly.
+- Cache `magik-tools.properties` per opened file in `magik-language-server`.
+
+0.10.0 (2024-07-28)
 
 - Move to Java 17.
 - Add base functionality to apply fixes from magik-lint.
@@ -27,6 +45,24 @@
 - Remove old typing classes and use the new typing classes.
 - Fix providing Formatting CodeActions on all locations, instead of asked range.
 - Fix hovering over atoms.
+- Make `unused-variable.check-parameters` configurable.
+- Support `indexed_class`/`enumerated_class`/`delete_class` from class_info.
+- Make indent (tab/space) better configurable, by using configuration:
+  - `magik.formatting.indentChar`
+  - `magik.formatting.indentWidth`
+  - `magik.formatting.insertFinalNewline`
+  - `magik.formatting.trimTrailingWhitespace`
+  - `magik.formatting.trimFinalNewlines`
+- Typing inlay hint provide also provides inlayhints for method/procedure invocations.
+- Rename setting `magik.typing.showAtomInlayHints` to `magik.typing.showTypingInlayHints`.
+- Replace `magik.libsDirs` with `magik.productDirs`, register products instead of libs directories.
+- Dump types database (per workspace folder) on shutdown, read it on start up and re-index any changed files, for quicker initialization.
+- Transmit a product.def/module.def/load_list.txt with F4-b from VSCode.
+- Fix VSCode UNC path handling on Windows.
+- Fix TodoComment check checking whole word.
+- Also search references in procedures.
+- Add `remex` and `remove_exemplar` to the list of default warned calls.
+- Support Call hierarchy for methods and procedures.
 - Several fixes.
 
 0.9.1 (2024-03-13)
@@ -72,7 +108,7 @@
 - Paths specified in setting `ignore` in `magik-lint.properties` in magik-lint are respected.
 - Fix grammar not supporting end labels in `_loop`/`_endloop` constructs.
 - Fix reading mlint-instructions in scope.
-- Fix WarnedCallCheck default forbidden calls not seeing the `sw:`-prefixed versions.
+- Fix WarnedCallCheck default warned calls not seeing the `sw:`-prefixed versions.
 
 0.8.1 (2023-10-15)
 

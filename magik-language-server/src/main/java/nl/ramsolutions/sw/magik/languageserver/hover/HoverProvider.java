@@ -3,25 +3,28 @@ package nl.ramsolutions.sw.magik.languageserver.hover;
 import com.sonar.sslr.api.AstNode;
 import java.util.*;
 import java.util.stream.Collectors;
-import nl.ramsolutions.sw.definitions.ModuleDefinition;
-import nl.ramsolutions.sw.definitions.ProductDefinition;
-import nl.ramsolutions.sw.definitions.api.SwModuleDefinitionGrammar;
-import nl.ramsolutions.sw.definitions.api.SwProductDefinitionGrammar;
+
+import nl.ramsolutions.sw.MagikToolsProperties;
 import nl.ramsolutions.sw.magik.MagikTypedFile;
-import nl.ramsolutions.sw.magik.ModuleDefFile;
-import nl.ramsolutions.sw.magik.ProductDefFile;
 import nl.ramsolutions.sw.magik.Range;
 import nl.ramsolutions.sw.magik.analysis.AstQuery;
 import nl.ramsolutions.sw.magik.analysis.definitions.*;
 import nl.ramsolutions.sw.magik.analysis.helpers.MethodDefinitionNodeHelper;
 import nl.ramsolutions.sw.magik.analysis.helpers.MethodInvocationNodeHelper;
 import nl.ramsolutions.sw.magik.analysis.typing.ExpressionResultString;
+import nl.ramsolutions.sw.magik.analysis.typing.SelfHelper;
 import nl.ramsolutions.sw.magik.analysis.typing.TypeString;
 import nl.ramsolutions.sw.magik.analysis.typing.TypeStringResolver;
 import nl.ramsolutions.sw.magik.analysis.typing.reasoner.LocalTypeReasonerState;
 import nl.ramsolutions.sw.magik.api.MagikGrammar;
 import nl.ramsolutions.sw.magik.languageserver.Lsp4jConversion;
-import nl.ramsolutions.sw.magik.languageserver.MagikSettings;
+import nl.ramsolutions.sw.magik.languageserver.MagikLanguageServerSettings;
+import nl.ramsolutions.sw.moduledef.ModuleDefFile;
+import nl.ramsolutions.sw.moduledef.ModuleDefinition;
+import nl.ramsolutions.sw.moduledef.api.SwModuleDefinitionGrammar;
+import nl.ramsolutions.sw.productdef.ProductDefFile;
+import nl.ramsolutions.sw.productdef.ProductDefinition;
+import nl.ramsolutions.sw.productdef.api.SwProductDefinitionGrammar;
 import org.eclipse.lsp4j.Hover;
 import org.eclipse.lsp4j.MarkupContent;
 import org.eclipse.lsp4j.MarkupKind;
@@ -39,6 +42,12 @@ public class HoverProvider {
   private static final String SECTION_END = "\n\n";
   private static final String BR =
       "  \n"; // will be interpreted as <br /> according to markdown spec
+
+  private final MagikToolsProperties properties;
+
+  public HoverProvider(MagikToolsProperties properties) {
+    this.properties = properties;
+  }
 
   /**
    * Set server capabilities.
@@ -365,7 +374,8 @@ public class HoverProvider {
         final LocalTypeReasonerState reasonerState = magikFile.getTypeReasonerState();
         final ExpressionResultString result = reasonerState.getNodeType(previousSiblingNode);
         final TypeString resultTypeStr = result.get(0, TypeString.UNDEFINED);
-        final TypeString typeStr = resultTypeStr.resolveSelf(hoveredNode);
+        final TypeString typeStr = SelfHelper.substituteSelf(resultTypeStr, hoveredNode);
+
         final TypeStringResolver resolver = magikFile.getTypeStringResolver();
 
         resolver
@@ -390,7 +400,7 @@ public class HoverProvider {
     final LocalTypeReasonerState reasonerState = magikFile.getTypeReasonerState();
     final ExpressionResultString result = reasonerState.getNodeType(exemplarNameNode);
     final TypeString resultTypeStr = result.get(0, TypeString.UNDEFINED);
-    final TypeString typeStr = resultTypeStr.resolveSelf(hoveredNode);
+    final TypeString typeStr = SelfHelper.substituteSelf(resultTypeStr, hoveredNode);
 
     final MethodDefinitionNodeHelper methodDefHelper =
         new MethodDefinitionNodeHelper(methodDefNode);
@@ -413,7 +423,7 @@ public class HoverProvider {
     final LocalTypeReasonerState reasonerState = magikFile.getTypeReasonerState();
     final ExpressionResultString result = reasonerState.getNodeType(node);
     final TypeString resultTypeStr = result.get(0, TypeString.UNDEFINED);
-    final TypeString typeStr = resultTypeStr.resolveSelf(node);
+    final TypeString typeStr = SelfHelper.substituteSelf(resultTypeStr, node);
 
     final TypeStringResolver resolver = magikFile.getTypeStringResolver();
     resolver.resolve(typeStr).stream()
@@ -604,13 +614,10 @@ public class HoverProvider {
     final IDefinitionKeeper definitionKeeper = productDefFile.getDefinitionKeeper();
     final String productName = node.getTokenValue().toLowerCase();
     definitionKeeper.getProductDefinitions(productName).stream()
-        .forEach(productDef -> this.buildProductDefDoc(productDefFile, productDef, builder));
+        .forEach(productDef -> this.buildProductDefDoc(productDef, builder));
   }
 
-  private void buildProductDefDoc(
-      final ProductDefFile productDefFile,
-      final ProductDefinition productDef,
-      final StringBuilder builder) {
+  private void buildProductDefDoc(final ProductDefinition productDef, final StringBuilder builder) {
     final String productName = productDef.getName();
     builder.append("## ").append(productName);
 
@@ -647,13 +654,10 @@ public class HoverProvider {
     final IDefinitionKeeper definitionKeeper = moduleDefFile.getDefinitionKeeper();
     final String moduleName = node.getTokenValue().toLowerCase();
     definitionKeeper.getModuleDefinitions(moduleName).stream()
-        .forEach(moduleDef -> this.buildModuleDefDoc(moduleDefFile, moduleDef, builder));
+        .forEach(moduleDef -> this.buildModuleDefDoc(moduleDef, builder));
   }
 
-  private void buildModuleDefDoc(
-      final ModuleDefFile moduleDefFile,
-      final ModuleDefinition moduleDef,
-      final StringBuilder builder) {
+  private void buildModuleDefDoc(final ModuleDefinition moduleDef, final StringBuilder builder) {
     final String moduleName = moduleDef.getName();
     appendCodeBlock(builder, false, true, moduleName);
 
@@ -756,7 +760,8 @@ public class HoverProvider {
   }
 
   private void appendTopics(StringBuilder builder, String topicsStr) {
-    if (topicsStr.trim().length() > 0 && MagikSettings.INSTANCE.getShowTopicsOnHover()) {
+    final MagikLanguageServerSettings settings = new MagikLanguageServerSettings(this.properties);
+    if (topicsStr.trim().length() > 0 && settings.getShowTopicsOnHover()) {
       builder.append("Topics: ").append(topicsStr);
     }
   }

@@ -11,8 +11,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
-import nl.ramsolutions.sw.definitions.ModuleDefinition;
-import nl.ramsolutions.sw.definitions.ProductDefinition;
 import nl.ramsolutions.sw.magik.PathMapping;
 import nl.ramsolutions.sw.magik.analysis.definitions.*;
 import nl.ramsolutions.sw.magik.analysis.definitions.io.deserializer.*;
@@ -20,6 +18,10 @@ import nl.ramsolutions.sw.magik.analysis.definitions.io.deserializer.ExemplarDef
 import nl.ramsolutions.sw.magik.analysis.definitions.io.deserializer.SlotDefinitionDeserializer;
 import nl.ramsolutions.sw.magik.analysis.typing.ExpressionResultString;
 import nl.ramsolutions.sw.magik.analysis.typing.TypeString;
+import nl.ramsolutions.sw.moduledef.ModuleDefinition;
+import nl.ramsolutions.sw.moduledef.ModuleUsage;
+import nl.ramsolutions.sw.productdef.ProductDefinition;
+import nl.ramsolutions.sw.productdef.ProductUsage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,7 +35,8 @@ public final class JsonDefinitionReader {
   public static final String TYPE_DB_DEFAULT_ALIAS = "$default";
   private static final String TYPE_DB_DEFAULT_PATH =
       "../../type_dbs"; // relative to smallworldGis path
-  public static final String TYPE_DB_EXT = ".types_db.jsonl";
+  public static final Integer TYPE_DB_VERSION = 2;
+  public static final String TYPE_DB_EXT = ".types_db.v" + TYPE_DB_VERSION + ".jsonl";
 
   private final IDefinitionKeeper definitionKeeper;
   private final List<PathMapping> mappings;
@@ -81,6 +84,8 @@ public final class JsonDefinitionReader {
     module.addDeserializer(
         ProcedureDefinition.class, new ProcedureDefinitionDeserializer(mappings));
     module.addDeserializer(GlobalDefinition.class, new GlobalDefinitionDeserializer(mappings));
+    module.addDeserializer(ProductUsage.class, new ProductUsageDeserializer(mappings));
+    module.addDeserializer(ModuleUsage.class, new ModuleUsageDeserializer(mappings));
 
     return module;
   }
@@ -160,6 +165,7 @@ public final class JsonDefinitionReader {
     }
   }
 
+  @SuppressWarnings("checkstyle:IllegalCatch")
   private void processLineSafe(final int lineNo, final String line) {
     try {
       this.processLine(line);
@@ -186,6 +192,10 @@ public final class JsonDefinitionReader {
 
       case MODULE:
         this.handleModule(node);
+        break;
+
+      case MAGIK_FILE:
+        this.handleMagikFile(node);
         break;
 
       case PACKAGE:
@@ -229,6 +239,11 @@ public final class JsonDefinitionReader {
 
   private void handleModule(final JsonNode node) throws IOException {
     ModuleDefinition definition = objectMapper.reader().readValue(node, ModuleDefinition.class);
+    this.definitionKeeper.add(definition);
+  }
+
+  private void handleMagikFile(final JsonNode node) throws IOException {
+    final MagikFileDefinition definition = objectMapper.reader().readValue(node, MagikFileDefinition.class);
     this.definitionKeeper.add(definition);
   }
 

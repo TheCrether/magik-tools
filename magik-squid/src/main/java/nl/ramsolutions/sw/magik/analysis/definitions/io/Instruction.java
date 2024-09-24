@@ -11,7 +11,8 @@ enum Instruction {
   METHOD(6),
   PROCEDURE(7),
   CONDITION(8),
-  BINARY_OPERATOR(9);
+  BINARY_OPERATOR(9),
+  MAGIK_FILE(10);
 
   public static final String FIELD_NAME = "i";
 

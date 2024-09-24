@@ -42,7 +42,7 @@ public class MethodDefinitionDeserializer extends DefinitionDeserializer<MethodD
         getList(context, node, "params", ParameterDefinition.class);
 
     ParameterDefinition assignmentParameter =
-        get(context, node, "a_params", ParameterDefinition.class);
+        get(context, node, "a_param", ParameterDefinition.class);
 
     Set<String> topics = getSet(context, node, "top", String.class);
 
@@ -56,6 +56,7 @@ public class MethodDefinitionDeserializer extends DefinitionDeserializer<MethodD
 
     return new MethodDefinition(
         loc,
+        getTimestamp(loc),
         base.getModuleName(),
         base.getDoc(),
         base.getNode(),

@@ -5,6 +5,7 @@ import com.sonar.sslr.api.Token;
 import edu.umd.cs.findbugs.annotations.CheckForNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.net.URI;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -12,9 +13,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-import nl.ramsolutions.sw.definitions.ModuleDefinitionScanner;
+import nl.ramsolutions.sw.MagikToolsProperties;
 import nl.ramsolutions.sw.magik.Location;
-import nl.ramsolutions.sw.magik.analysis.MagikAnalysisConfiguration;
+import nl.ramsolutions.sw.magik.MagikFile;
+import nl.ramsolutions.sw.magik.analysis.MagikAnalysisSettings;
 import nl.ramsolutions.sw.magik.analysis.definitions.ConditionUsage;
 import nl.ramsolutions.sw.magik.analysis.definitions.GlobalUsage;
 import nl.ramsolutions.sw.magik.analysis.definitions.MagikDefinition;
@@ -30,11 +32,12 @@ import nl.ramsolutions.sw.magik.analysis.typing.TypeString;
 import nl.ramsolutions.sw.magik.api.MagikGrammar;
 import nl.ramsolutions.sw.magik.parser.MagikCommentExtractor;
 import nl.ramsolutions.sw.magik.parser.TypeDocParser;
+import nl.ramsolutions.sw.moduledef.ModuleDefFile;
 
 /** Method definition parser. */
 public class MethodDefinitionParser {
 
-  private final MagikAnalysisConfiguration configuration;
+  private final MagikFile magikFile;
   private final AstNode node;
 
   /**
@@ -42,13 +45,12 @@ public class MethodDefinitionParser {
    *
    * @param node Method definition node.
    */
-  public MethodDefinitionParser(
-      final MagikAnalysisConfiguration configuration, final AstNode node) {
+  public MethodDefinitionParser(final MagikFile magikFile, final AstNode node) {
     if (node.isNot(MagikGrammar.METHOD_DEFINITION)) {
       throw new IllegalArgumentException();
     }
 
-    this.configuration = configuration;
+    this.magikFile = magikFile;
     this.node = node;
   }
 
@@ -68,8 +70,11 @@ public class MethodDefinitionParser {
     final URI uri = this.node.getToken().getURI();
     final Location location = new Location(uri, this.node);
 
+    // Figure timestamp.
+    final Instant timestamp = this.magikFile.getTimestamp();
+
     // Figure module name.
-    final String moduleName = ModuleDefinitionScanner.getModuleName(uri);
+    final String moduleName = ModuleDefFile.getModuleNameForUri(uri);
 
     // Figure exemplar name & method name.
     final MethodDefinitionNodeHelper helper = new MethodDefinitionNodeHelper(this.node);
@@ -93,11 +98,11 @@ public class MethodDefinitionParser {
     final Map<String, TypeString> parameterTypes = typeDocParser.getParameterTypes();
     final AstNode parametersNode = this.node.getFirstChild(MagikGrammar.PARAMETERS);
     final List<ParameterDefinition> parameters =
-        this.createParameterDefinitions(moduleName, parametersNode, parameterTypes);
+        this.createParameterDefinitions(timestamp, moduleName, parametersNode, parameterTypes);
     final AstNode assignmentParameterNode = node.getFirstChild(MagikGrammar.ASSIGNMENT_PARAMETER);
     final ParameterDefinition assignmentParamter =
         this.createAssignmentParameterDefinition(
-            moduleName, assignmentParameterNode, parameterTypes);
+            timestamp, moduleName, assignmentParameterNode, parameterTypes);
 
     // Get return types from method docs.
     final List<TypeString> callResultDocs = typeDocParser.getReturnTypes();
@@ -133,26 +138,27 @@ public class MethodDefinitionParser {
             : Collections.emptySet();
 
     final MethodDefinitionUsageParser usageParser = new MethodDefinitionUsageParser(this.node);
+    final MagikToolsProperties properties = this.magikFile.getProperties();
+    final MagikAnalysisSettings settings = new MagikAnalysisSettings(properties);
     final Set<GlobalUsage> usedGlobals =
-        this.configuration.getMagikIndexerIndexGlobalUsages()
+        settings.getTypingIndexGlobalUsages()
             ? usageParser.getUsedGlobals()
             : Collections.emptySet();
     final Set<MethodUsage> usedMethods =
-        this.configuration.getMagikIndexerIndexMethodUsages()
+        settings.getTypingIndexMethodUsages()
             ? usageParser.getUsedMethods()
             : Collections.emptySet();
     final Set<SlotUsage> usedSlots =
-        this.configuration.getMagikIndexerIndexSlotUsages()
-            ? usageParser.getUsedSlots()
-            : Collections.emptySet();
+        settings.getTypingIndexSlotUsages() ? usageParser.getUsedSlots() : Collections.emptySet();
     final Set<ConditionUsage> usedConditions =
-        this.configuration.getMagikIndexerIndexConditionUsages()
+        settings.getTypingIndexConditionUsages()
             ? usageParser.getUsedConditions()
             : Collections.emptySet();
 
     final MethodDefinition methodDefinition =
         new MethodDefinition(
             location,
+            timestamp,
             moduleName,
             doc,
             this.node,
@@ -172,6 +178,7 @@ public class MethodDefinitionParser {
   }
 
   private List<ParameterDefinition> createParameterDefinitions(
+      final @Nullable Instant timestamp,
       final @Nullable String moduleName,
       final @Nullable AstNode parametersNode,
       final Map<String, TypeString> parameterTypes) {
@@ -200,7 +207,7 @@ public class MethodDefinitionParser {
       final TypeString typeRef = parameterTypes.getOrDefault(identifier, TypeString.UNDEFINED);
       final ParameterDefinition parameterDefinition =
           new ParameterDefinition(
-              location, moduleName, null, parameterNode, identifier, modifier, typeRef);
+              location, timestamp, moduleName, null, parameterNode, identifier, modifier, typeRef);
       parameterDefinitions.add(parameterDefinition);
     }
 
@@ -209,6 +216,7 @@ public class MethodDefinitionParser {
 
   @CheckForNull
   private ParameterDefinition createAssignmentParameterDefinition(
+      final @Nullable Instant timestamp,
       final @Nullable String moduleName,
       final @Nullable AstNode assignmentParameterNode,
       final Map<String, TypeString> parameterTypes) {
@@ -223,6 +231,7 @@ public class MethodDefinitionParser {
     final TypeString typeRef = parameterTypes.getOrDefault(identifier, TypeString.UNDEFINED);
     return new ParameterDefinition(
         location,
+        timestamp,
         moduleName,
         null,
         parameterNode,

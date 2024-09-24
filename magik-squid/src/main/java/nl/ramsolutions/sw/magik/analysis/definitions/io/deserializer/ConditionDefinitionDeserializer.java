@@ -27,6 +27,7 @@ public class ConditionDefinitionDeserializer extends DefinitionDeserializer<Cond
 
     return new ConditionDefinition(
         base.getLocation(),
+        base.getTimestamp(),
         base.getModuleName(),
         base.getDoc(),
         base.getNode(),

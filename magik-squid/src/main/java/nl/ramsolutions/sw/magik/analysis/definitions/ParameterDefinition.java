@@ -2,6 +2,7 @@ package nl.ramsolutions.sw.magik.analysis.definitions;
 
 import com.sonar.sslr.api.AstNode;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.time.Instant;
 import java.util.Objects;
 import nl.ramsolutions.sw.magik.Location;
 import nl.ramsolutions.sw.magik.analysis.typing.TypeString;
@@ -29,15 +30,17 @@ public class ParameterDefinition extends MagikDefinition {
    * @param name Name of parameter.
    * @param modifier Modifier of parameter.
    */
+  @SuppressWarnings({"checkstyle:ParameterNumber", "java:S107"})
   public ParameterDefinition(
       final @Nullable Location location,
+      final @Nullable Instant timestamp,
       final @Nullable String moduleName,
       final @Nullable String doc,
       final @Nullable AstNode node,
       final String name,
       final Modifier modifier,
       final TypeString typeName) {
-    super(location, moduleName, doc, node);
+    super(location, timestamp, moduleName, doc, node);
     this.name = name;
     this.modifier = modifier;
     this.typeName = typeName;
@@ -57,14 +60,10 @@ public class ParameterDefinition extends MagikDefinition {
   }
 
   @Override
-  public String getPackage() {
-    return null;
-  }
-
-  @Override
   public ParameterDefinition getWithoutNode() {
     return new ParameterDefinition(
         this.getLocation(),
+        this.getTimestamp(),
         this.getModuleName(),
         this.getDoc(),
         null,
@@ -77,6 +76,7 @@ public class ParameterDefinition extends MagikDefinition {
   public int hashCode() {
     return Objects.hash(
         this.getLocation(),
+        this.getTimestamp(),
         this.getModuleName(),
         this.getDoc(),
         this.name,

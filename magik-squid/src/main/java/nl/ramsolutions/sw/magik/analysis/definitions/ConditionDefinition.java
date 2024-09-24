@@ -3,6 +3,7 @@ package nl.ramsolutions.sw.magik.analysis.definitions;
 import com.sonar.sslr.api.AstNode;
 import edu.umd.cs.findbugs.annotations.CheckForNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -25,15 +26,17 @@ public class ConditionDefinition extends MagikDefinition {
    * @param dataNames Data name list.
    * @param doc Doc.
    */
+  @SuppressWarnings({"checkstyle:ParameterNumber", "java:S107"})
   public ConditionDefinition(
       final @Nullable Location location,
+      final @Nullable Instant timestamp,
       final @Nullable String moduleName,
       final @Nullable String doc,
       final @Nullable AstNode node,
       final String name,
       final @Nullable String parent,
       final List<String> dataNames) {
-    super(location, moduleName, doc, node);
+    super(location, timestamp, moduleName, doc, node);
     this.name = name;
     this.parent = parent;
     this.dataNames = List.copyOf(dataNames);
@@ -54,14 +57,10 @@ public class ConditionDefinition extends MagikDefinition {
   }
 
   @Override
-  public String getPackage() {
-    return null;
-  }
-
-  @Override
-  public MagikDefinition getWithoutNode() {
+  public ConditionDefinition getWithoutNode() {
     return new ConditionDefinition(
         this.getLocation(),
+        this.getTimestamp(),
         this.getModuleName(),
         this.getDoc(),
         null,
@@ -74,6 +73,7 @@ public class ConditionDefinition extends MagikDefinition {
   public int hashCode() {
     return Objects.hash(
         this.getLocation(),
+        this.getTimestamp(),
         this.getModuleName(),
         this.getDoc(),
         this.name,

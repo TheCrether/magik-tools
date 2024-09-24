@@ -1,0 +1,151 @@
+#% text_encoding = iso8859_1
+_package mt
+
+_pragma(classify_level=basic, topic=type_dumper)
+## Product definition.
+## @slot {sw:char16_vector} name
+## @slot {sw:char16_vector|sw:unset} ver
+## @slot {sw:char16_vector|sw:unset} ver_com
+## @slot {sw:char16_vector|sw:unset} parent
+## @slot {sw:simple_vector<E=mt:product_usage>} usgs
+## @slot {sw:char16_vector|sw:unset} src
+def_slotted_exemplar(
+	:product_definition,
+	{
+		{:name, _unset, :readable, :public},
+		{:ver, _unset, :readable, :public},
+		{:ver_com, _unset, :readable, :public},
+		{:parent, _unset, :readable, :public},
+		{:usgs, _unset, :readable, :public},
+		{:src, _unset, :readable, :public}
+	},
+	{@mt:definition})
+$
+
+_pragma(classify_level=basic, topic=type_dumper, usage=external)
+## @return {sw:integer}
+product_definition.define_shared_constant(
+	:instruction_type,
+	1,
+	:public)
+$
+
+_pragma(classify_level=basic, topic=type_dumper)
+_method product_definition.new(name, version, version_comment, parent, usages, source_product_def)
+	## Constructor.
+	## @param {sw:char16_vector} name
+	## @param {sw:char16_vector|sw:unset} version
+	## @param {sw:char16_vector|sw:unset} version_comment
+	## @param {sw:char16_vector|sw:unset} parent
+	## @param {sw:simple_vector<E=mt:product_usage>} usages
+	## @param {sw:char16_vector|sw:unset} source_product_def
+	## @return {_self}
+	_return _clone.init(name, version, version_comment, parent, usages, source_product_def)
+_endmethod
+$
+
+_pragma(classify_level=basic, topic=type_dumper)
+_private _method product_definition.init(name, version, version_comment, parent, usages, source_product_def)
+	## Initializer.
+	## @param {sw:char16_vector} name
+	## @param {sw:char16_vector|sw:unset} version
+	## @param {sw:char16_vector|sw:unset} version_comment
+	## @param {sw:char16_vector|sw:unset} parent
+	## @param {sw:simple_vector<E=mt:product_usage>} usages
+	## @param {sw:char16_vector|sw:unset} source_product_def
+	## @return {_self}
+	.name << name
+	.ver << version
+	.ver_com << version_comment
+	.parent << parent
+	.usgs << usages
+	.src << source_product_def
+	_return _self
+_endmethod
+$
+
+_pragma(classify_level=basic, topic=type_dumper)
+_method product_definition.new_from(product)
+	## Construct self from `sw:sw_product`.
+	## @param {sw:sw_product} product
+	## @return {_self}
+	_local parent <<
+		_if product.parent _isnt _unset
+		_then
+			>> product.parent.name
+		_endif
+	_local usages << product.prerequisites.
+		map(_proc(prereq) _return prereq[1] _endproc).
+		as_sorted_collection().
+		as_simple_vector().
+		map(_proc(prereq) _return product_usage.new(prereq) _endproc)
+	_local source_product_def <<
+		_try
+			>> system.pathname_down(product.directory, "product.def")
+		_when error
+			>> _unset
+		_endtry
+
+	_return _self.new(
+		product.name,
+		product.version_string,
+		product.version.comment,
+		parent,
+		usages,
+		source_product_def)
+_endmethod
+$
+
+_pragma(condition_definition=basic, topic=type_dumper)
+_method product_definition.sort_value
+	## Sort value.
+	## @return {sw:char16_vector}
+	_return .name
+_endmethod
+$
+
+_pragma(classify_level=basic, topic=type_dumper)
+_method product_definition.equals?(other)
+	## Equals?
+	## @param {mt:product_definition} other
+	## @return {sw:false}
+	_return _self.name = other.name _andif
+		_self.ver = other.ver _andif
+		_self.ver_com = other.ver_com _andif
+		_self.parent = other.parent _andif
+		_self.usgs.eq?(other.usgs)
+_endmethod
+$
+
+_pragma(classify_level=basic, topic=type_dumper)
+_method product_definition.equals_disregarding_typing?(other)
+	## Equals disregarding typing?
+	## @param {mt:product_definition} other
+	## @return {sw:false}
+	_return _self.equals?(other)
+_endmethod
+$
+
+define_binary_operator_case(
+	:|cf|, product_definition, product_definition,
+	_proc(definition_a, definition_b)
+		## @param {mt:product_definition} definition_a
+		## @param {mt:product_definition} definition_b
+		## @return {sw:false|sw:maybe}
+		_return definition_a.sort_value _cf definition_b.sort_value
+	_endproc)
+$
+
+define_binary_operator_case(
+	:|=|, product_definition, product_definition,
+	_proc(definition_a, definition_b)
+		## @param {mt:product_definition} definition_a
+		## @param {mt:product_definition} definition_b
+		## @return {sw:false|sw:maybe}
+		_return definition_a.equals?(definition_b)
+	_endproc)
+$
+
+product_definition.define_show_attributes(
+	:name)
+$

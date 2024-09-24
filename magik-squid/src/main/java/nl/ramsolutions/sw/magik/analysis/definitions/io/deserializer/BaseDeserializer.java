@@ -3,42 +3,35 @@ package nl.ramsolutions.sw.magik.analysis.definitions.io.deserializer;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.*;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
-import javax.annotation.Nullable;
+import nl.ramsolutions.sw.MagikToolsProperties;
 import nl.ramsolutions.sw.magik.Location;
 import nl.ramsolutions.sw.magik.MagikFile;
 import nl.ramsolutions.sw.magik.PathMapping;
 import nl.ramsolutions.sw.magik.analysis.definitions.MagikDefinition;
 import nl.ramsolutions.sw.magik.analysis.typing.TypeString;
 
+import javax.annotation.Nullable;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.time.Instant;
+import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
+
 public abstract class BaseDeserializer<T> extends StdDeserializer<T> {
   private static final HashMap<Path, IndexedFile> parsedFiles = new HashMap<>();
   private static final Set<Path> erroredFiles = new HashSet<>();
 
   private final List<PathMapping> mappings;
+  private static MagikToolsProperties properties = new MagikToolsProperties();
 
-  private static class IndexedFile {
-    private final List<MagikDefinition> definitions;
-    private final long indexedAt;
+  public static void setProperties(MagikToolsProperties properties) {
+    BaseDeserializer.properties = properties;
+  }
 
-    private IndexedFile(List<MagikDefinition> definitions, long indexedAt) {
-      this.definitions = definitions;
-      this.indexedAt = indexedAt;
-    }
-
-    public List<MagikDefinition> getDefinitions() {
-      return definitions;
-    }
-
-    public long getIndexedAt() {
-      return indexedAt;
-    }
+  private record IndexedFile(List<MagikDefinition> definitions, long indexedAt) {
   }
 
   public BaseDeserializer(List<PathMapping> mappings) {
@@ -70,31 +63,31 @@ public abstract class BaseDeserializer<T> extends StdDeserializer<T> {
   }
 
   public static <X> List<X> getList(
-      DeserializationContext context, JsonNode node, String field, Class<X> clazz) {
+    DeserializationContext context, JsonNode node, String field, Class<X> clazz) {
     return getStream(node, field)
-        .map(
-            e -> {
-              try {
-                return context.readTreeAsValue(e, clazz);
-              } catch (IOException ex) {
-                throw new RuntimeException(ex);
-              }
-            })
-        .toList();
+      .map(
+        e -> {
+          try {
+            return context.readTreeAsValue(e, clazz);
+          } catch (IOException ex) {
+            throw new RuntimeException(ex);
+          }
+        })
+      .toList();
   }
 
   public static <X> Set<X> getSet(
-      DeserializationContext context, JsonNode node, String field, Class<X> clazz) {
+    DeserializationContext context, JsonNode node, String field, Class<X> clazz) {
     return getStream(node, field)
-        .map(
-            e -> {
-              try {
-                return context.readTreeAsValue(e, clazz);
-              } catch (IOException ex) {
-                throw new RuntimeException(ex);
-              }
-            })
-        .collect(Collectors.toSet());
+      .map(
+        e -> {
+          try {
+            return context.readTreeAsValue(e, clazz);
+          } catch (IOException ex) {
+            throw new RuntimeException(ex);
+          }
+        })
+      .collect(Collectors.toSet());
   }
 
   @Nullable
@@ -126,12 +119,12 @@ public abstract class BaseDeserializer<T> extends StdDeserializer<T> {
   }
 
   public static TypeString getTypeString(
-      DeserializationContext context, JsonNode node, String field) {
+    DeserializationContext context, JsonNode node, String field) {
     return get(context, node, field, TypeString.class);
   }
 
   public static <X> X get(
-      DeserializationContext context, JsonNode node, String field, Class<X> clazz) {
+    DeserializationContext context, JsonNode node, String field, Class<X> clazz) {
     try {
       return context.readTreeAsValue(node.get(field), clazz);
     } catch (IOException e) {
@@ -158,15 +151,15 @@ public abstract class BaseDeserializer<T> extends StdDeserializer<T> {
 
     if (parsedFiles.containsKey(path)) {
       IndexedFile file = parsedFiles.get(path);
-      if (file.getIndexedAt() < path.toFile().lastModified()) {
+      if (file.indexedAt() < path.toFile().lastModified()) {
         parsedFiles.remove(path);
       }
     }
 
     if (!parsedFiles.containsKey(path)) {
       try {
-        MagikFile file = new MagikFile(path);
-        parsedFiles.put(path, new IndexedFile(file.getDefinitions(), now));
+        MagikFile file = new MagikFile(BaseDeserializer.properties, path);
+        parsedFiles.put(path, new IndexedFile(file.getMagikDefinitions(), now));
       } catch (Exception e) {
         erroredFiles.add(path);
         return new ArrayList<>();
@@ -178,18 +171,35 @@ public abstract class BaseDeserializer<T> extends StdDeserializer<T> {
       return Collections.unmodifiableList(new ArrayList<>());
     }
 
-    return Collections.unmodifiableList(file.getDefinitions());
+    return Collections.unmodifiableList(file.definitions());
   }
 
   public static <X> MagikDefinition getParsedDefinition(
-      Location location, String name, Class<X> clazz) {
+    Location location, String name, Class<X> clazz) {
     return getDefinitions(location).stream()
-        .filter(def -> def.getName().endsWith(name) && clazz.isInstance(def))
-        .findFirst()
-        .orElse(null);
+      .filter(def -> def.getName().endsWith(name) && clazz.isInstance(def))
+      .findFirst()
+      .orElse(null);
   }
 
   public static void clearParsedFiles() {
     erroredFiles.clear();
+  }
+
+  public static Instant getTimestamp(@Nullable Location location) {
+    if (location == null) {
+      return null;
+    }
+
+    Path path = location.getPath();
+    if (Files.exists(path)) {
+      try {
+        return Files.getLastModifiedTime(path).toInstant();
+      } catch (IOException e) {
+        return null;
+      }
+    }
+
+    return null;
   }
 }

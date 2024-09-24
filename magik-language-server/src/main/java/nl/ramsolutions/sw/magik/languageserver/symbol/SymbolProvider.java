@@ -6,8 +6,8 @@ import java.util.List;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
-import nl.ramsolutions.sw.definitions.ModuleDefinition;
-import nl.ramsolutions.sw.definitions.ProductDefinition;
+
+import nl.ramsolutions.sw.MagikToolsProperties;
 import nl.ramsolutions.sw.magik.Location;
 import nl.ramsolutions.sw.magik.analysis.definitions.ConditionDefinition;
 import nl.ramsolutions.sw.magik.analysis.definitions.ExemplarDefinition;
@@ -17,7 +17,9 @@ import nl.ramsolutions.sw.magik.analysis.definitions.ITypeStringDefinition;
 import nl.ramsolutions.sw.magik.analysis.definitions.MethodDefinition;
 import nl.ramsolutions.sw.magik.analysis.definitions.ProcedureDefinition;
 import nl.ramsolutions.sw.magik.languageserver.Lsp4jConversion;
-import nl.ramsolutions.sw.magik.languageserver.MagikSettings;
+import nl.ramsolutions.sw.magik.languageserver.MagikLanguageServerSettings;
+import nl.ramsolutions.sw.moduledef.ModuleDefinition;
+import nl.ramsolutions.sw.productdef.ProductDefinition;
 import org.eclipse.lsp4j.ServerCapabilities;
 import org.eclipse.lsp4j.SymbolKind;
 import org.eclipse.lsp4j.WorkspaceSymbol;
@@ -31,9 +33,11 @@ public class SymbolProvider {
   private static final Logger LOGGER = LoggerFactory.getLogger(SymbolProvider.class);
 
   private final IDefinitionKeeper definitionKeeper;
+  private final MagikToolsProperties properties;
 
-  public SymbolProvider(final IDefinitionKeeper definitionKeeper) {
+  public SymbolProvider(final IDefinitionKeeper definitionKeeper, MagikToolsProperties properties) {
     this.definitionKeeper = definitionKeeper;
+    this.properties = properties;
   }
 
   /**
@@ -78,11 +82,13 @@ public class SymbolProvider {
     final Pattern pattern = Pattern.compile(".*" + query + ".*");
     final Predicate<ProductDefinition> predicate =
         definition -> pattern.matcher(definition.getName()).matches();
+    final MagikLanguageServerSettings settings = new MagikLanguageServerSettings(this.properties);
+
     for (final ProductDefinition definition : this.definitionKeeper.getProductDefinitions()) {
       if (predicate.test(definition)) {
         final Location conditionLocation = definition.getLocation();
         final Location location =
-            Location.validLocation(conditionLocation, MagikSettings.INSTANCE.getPathMappings());
+            Location.validLocation(conditionLocation, settings.getPathMappings());
         final WorkspaceSymbol symbol =
             new WorkspaceSymbol(
                 "Product: " + definition.getName(),
@@ -97,11 +103,13 @@ public class SymbolProvider {
     final Pattern pattern = Pattern.compile(".*" + query + ".*");
     final Predicate<ModuleDefinition> predicate =
         definition -> pattern.matcher(definition.getName()).matches();
+    final MagikLanguageServerSettings settings = new MagikLanguageServerSettings(this.properties);
+
     for (final ModuleDefinition definition : this.definitionKeeper.getModuleDefinitions()) {
       if (predicate.test(definition)) {
         final Location conditionLocation = definition.getLocation();
         final Location location =
-            Location.validLocation(conditionLocation, MagikSettings.INSTANCE.getPathMappings());
+            Location.validLocation(conditionLocation, settings.getPathMappings());
         final WorkspaceSymbol symbol =
             new WorkspaceSymbol(
                 "Module: " + definition.getName(),
@@ -114,11 +122,13 @@ public class SymbolProvider {
 
   private void gatherTypes(final String query, final List<WorkspaceSymbol> workspaceSymbols) {
     final Predicate<ITypeStringDefinition> predicate = this.buildTypePredicate(query);
+    final MagikLanguageServerSettings settings = new MagikLanguageServerSettings(this.properties);
+
     for (final ExemplarDefinition definition : this.definitionKeeper.getExemplarDefinitions()) {
       if (predicate.test(definition)) {
         final Location typeLocation = definition.getLocation();
         final Location location =
-            Location.validLocation(typeLocation, MagikSettings.INSTANCE.getPathMappings());
+            Location.validLocation(typeLocation, settings.getPathMappings());
         final WorkspaceSymbol symbol =
             new WorkspaceSymbol(
                 "Exemplar: " + definition.getTypeString().getFullString(),
@@ -131,11 +141,13 @@ public class SymbolProvider {
 
   private void gatherMethods(final String query, final List<WorkspaceSymbol> workspaceSymbols) {
     final Predicate<MethodDefinition> predicate = this.buildMethodPredicate(query);
+    final MagikLanguageServerSettings settings = new MagikLanguageServerSettings(this.properties);
+
     for (final MethodDefinition definition : this.definitionKeeper.getMethodDefinitions()) {
       if (predicate.test(definition)) {
         final Location methodLocation = definition.getLocation();
         final Location location =
-            Location.validLocation(methodLocation, MagikSettings.INSTANCE.getPathMappings());
+            Location.validLocation(methodLocation, settings.getPathMappings());
         final WorkspaceSymbol symbol =
             new WorkspaceSymbol(
                 "Method: " + definition.getName(),
@@ -154,11 +166,13 @@ public class SymbolProvider {
    */
   private void gatherConditions(final String query, final List<WorkspaceSymbol> workspaceSymbols) {
     final Predicate<ConditionDefinition> predicate = this.buildConditionPredicate(query);
+    final MagikLanguageServerSettings settings = new MagikLanguageServerSettings(this.properties);
+
     for (final ConditionDefinition definition : this.definitionKeeper.getConditionDefinitions()) {
       if (predicate.test(definition)) {
         final Location conditionLocation = definition.getLocation();
         final Location location =
-            Location.validLocation(conditionLocation, MagikSettings.INSTANCE.getPathMappings());
+            Location.validLocation(conditionLocation, settings.getPathMappings());
         final WorkspaceSymbol symbol =
             new WorkspaceSymbol(
                 "Condition: " + definition.getName(),

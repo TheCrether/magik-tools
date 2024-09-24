@@ -2,9 +2,10 @@ package nl.ramsolutions.sw.magik.analysis.definitions.parsers;
 
 import com.sonar.sslr.api.AstNode;
 import java.net.URI;
+import java.time.Instant;
 import java.util.List;
-import nl.ramsolutions.sw.definitions.ModuleDefinitionScanner;
 import nl.ramsolutions.sw.magik.Location;
+import nl.ramsolutions.sw.magik.MagikFile;
 import nl.ramsolutions.sw.magik.analysis.definitions.GlobalDefinition;
 import nl.ramsolutions.sw.magik.analysis.definitions.MagikDefinition;
 import nl.ramsolutions.sw.magik.analysis.helpers.PackageNodeHelper;
@@ -13,10 +14,12 @@ import nl.ramsolutions.sw.magik.api.MagikGrammar;
 import nl.ramsolutions.sw.magik.api.MagikKeyword;
 import nl.ramsolutions.sw.magik.parser.MagikCommentExtractor;
 import nl.ramsolutions.sw.magik.parser.TypeDocParser;
+import nl.ramsolutions.sw.moduledef.ModuleDefFile;
 
 /** {@code _global} parser. */
 public class GlobalDefinitionParser {
 
+  private final MagikFile magikFile;
   private final AstNode node;
 
   /**
@@ -24,7 +27,8 @@ public class GlobalDefinitionParser {
    *
    * @param node {@code _global} node.
    */
-  public GlobalDefinitionParser(final AstNode node) {
+  public GlobalDefinitionParser(final MagikFile magikFile, final AstNode node) {
+    this.magikFile = magikFile;
     this.node = node;
   }
 
@@ -56,8 +60,11 @@ public class GlobalDefinitionParser {
     final URI uri = this.node.getToken().getURI();
     final Location location = new Location(uri, this.node);
 
+    // Figure timestamp.
+    final Instant timestamp = this.magikFile.getTimestamp();
+
     // Figure module name.
-    final String moduleName = ModuleDefinitionScanner.getModuleName(uri);
+    final String moduleName = ModuleDefFile.getModuleNameForUri(uri);
 
     // Figure name.
     final String packageName = this.getCurrentPakkage();
@@ -78,7 +85,8 @@ public class GlobalDefinitionParser {
     final String doc = MagikCommentExtractor.extractDocComment(parentNode);
 
     final GlobalDefinition globalDefinition =
-        new GlobalDefinition(location, moduleName, doc, this.node, typeName, aliasedTypeRef);
+        new GlobalDefinition(
+            location, timestamp, moduleName, doc, this.node, typeName, aliasedTypeRef);
     return List.of(globalDefinition);
   }
 

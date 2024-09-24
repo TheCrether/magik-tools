@@ -5,6 +5,8 @@ import edu.umd.cs.findbugs.annotations.CheckForNull;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
+
+import nl.ramsolutions.sw.MagikToolsProperties;
 import nl.ramsolutions.sw.magik.Location;
 import nl.ramsolutions.sw.magik.MagikTypedFile;
 import nl.ramsolutions.sw.magik.Range;
@@ -18,7 +20,7 @@ import nl.ramsolutions.sw.magik.analysis.typing.TypeStringResolver;
 import nl.ramsolutions.sw.magik.analysis.typing.reasoner.LocalTypeReasonerState;
 import nl.ramsolutions.sw.magik.api.MagikGrammar;
 import nl.ramsolutions.sw.magik.languageserver.Lsp4jConversion;
-import nl.ramsolutions.sw.magik.languageserver.MagikSettings;
+import nl.ramsolutions.sw.magik.languageserver.MagikLanguageServerSettings;
 import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.ServerCapabilities;
 import org.eclipse.lsp4j.SymbolKind;
@@ -32,14 +34,16 @@ public class TypeHierarchyProvider {
   private static final Logger LOGGER = LoggerFactory.getLogger(TypeHierarchyProvider.class);
 
   private final IDefinitionKeeper definitionKeeper;
+  private final MagikToolsProperties properties;
 
   /**
    * Constructor.
    *
    * @param definitionKeeper {@link IDefinitionKeeper}.
    */
-  public TypeHierarchyProvider(final IDefinitionKeeper definitionKeeper) {
+  public TypeHierarchyProvider(final IDefinitionKeeper definitionKeeper, MagikToolsProperties properties) {
     this.definitionKeeper = definitionKeeper;
+    this.properties = properties;
   }
 
   /**
@@ -163,8 +167,9 @@ public class TypeHierarchyProvider {
   private TypeHierarchyItem toTypeHierarchyItem(final ExemplarDefinition definition) {
     final TypeString typeStr = definition.getTypeString();
     final Location typeLocation = definition.getLocation();
+    final MagikLanguageServerSettings settings = new MagikLanguageServerSettings(this.properties);
     final Location location =
-        Location.validLocation(typeLocation, MagikSettings.INSTANCE.getPathMappings());
+        Location.validLocation(typeLocation, settings.getPathMappings());
     final Range range = location.getRange();
     Objects.requireNonNull(range);
     return new TypeHierarchyItem(

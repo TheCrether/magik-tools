@@ -5,9 +5,10 @@ import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.io.IOException;
 import java.util.List;
-import nl.ramsolutions.sw.definitions.ProductDefinition;
 import nl.ramsolutions.sw.magik.Location;
 import nl.ramsolutions.sw.magik.PathMapping;
+import nl.ramsolutions.sw.productdef.ProductDefinition;
+import nl.ramsolutions.sw.productdef.ProductUsage;
 
 public class ProductDefinitionDeserializer extends BaseDeserializer<ProductDefinition> {
   public ProductDefinitionDeserializer(List<PathMapping> mappings) {
@@ -22,16 +23,20 @@ public class ProductDefinitionDeserializer extends BaseDeserializer<ProductDefin
     String name = getStringField(node, "name");
     String version = nullableString(node, "ver");
     String versionComment = nullableString(node, "ver_com");
-    List<String> requireds = getList(context, node, "req", String.class);
+    String parent = nullableString(node, "parent");
+    List<ProductUsage> usages = getList(context, node, "usage", ProductUsage.class);
 
     Location location = getLocation(node);
 
-    ProductDefinition def =
-        new ProductDefinition(location, name, version, versionComment, null, null, requireds);
-
-    getList(context, node, "children", String.class).forEach(def::addChild);
-    getList(context, node, "mods", String.class).forEach(def::addModule);
-
-    return def;
+    return new ProductDefinition(
+        location,
+        getTimestamp(location),
+        name,
+        parent,
+        version,
+        versionComment,
+        null,
+        null,
+        usages);
   }
 }

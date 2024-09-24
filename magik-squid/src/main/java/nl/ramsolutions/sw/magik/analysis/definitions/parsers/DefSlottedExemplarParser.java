@@ -3,6 +3,7 @@ package nl.ramsolutions.sw.magik.analysis.definitions.parsers;
 import com.sonar.sslr.api.AstNode;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.net.URI;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -10,8 +11,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import nl.ramsolutions.sw.definitions.ModuleDefinitionScanner;
 import nl.ramsolutions.sw.magik.Location;
+import nl.ramsolutions.sw.magik.MagikFile;
 import nl.ramsolutions.sw.magik.analysis.definitions.ExemplarDefinition;
 import nl.ramsolutions.sw.magik.analysis.definitions.MagikDefinition;
 import nl.ramsolutions.sw.magik.analysis.definitions.MethodDefinition;
@@ -27,6 +28,7 @@ import nl.ramsolutions.sw.magik.api.MagikGrammar;
 import nl.ramsolutions.sw.magik.api.MagikOperator;
 import nl.ramsolutions.sw.magik.parser.MagikCommentExtractor;
 import nl.ramsolutions.sw.magik.parser.TypeDocParser;
+import nl.ramsolutions.sw.moduledef.ModuleDefFile;
 
 /** {@code def_slotted_exemplar} parser. */
 public class DefSlottedExemplarParser extends BaseDefParser {
@@ -39,8 +41,8 @@ public class DefSlottedExemplarParser extends BaseDefParser {
    *
    * @param node {@code def_slotted_exemplar()} node.
    */
-  public DefSlottedExemplarParser(final AstNode node) {
-    super(node);
+  public DefSlottedExemplarParser(final MagikFile magikFile, final AstNode node) {
+    super(magikFile, node);
   }
 
   /**
@@ -67,8 +69,13 @@ public class DefSlottedExemplarParser extends BaseDefParser {
     if (argument0Node == null) {
       return false;
     }
+
     final AstNode argument1Node = argumentsHelper.getArgument(1, MagikGrammar.SIMPLE_VECTOR);
-    return argument1Node != null;
+    if (argument1Node == null) {
+      return false;
+    }
+
+    return true;
   }
 
   /**
@@ -93,8 +100,11 @@ public class DefSlottedExemplarParser extends BaseDefParser {
     final URI uri = this.node.getToken().getURI();
     final Location location = new Location(uri, this.node);
 
+    // Figure timestamp.
+    final Instant timestamp = this.magikFile.getTimestamp();
+
     // Figure module name.
-    final String moduleName = ModuleDefinitionScanner.getModuleName(uri);
+    final String moduleName = ModuleDefFile.getModuleNameForUri(uri);
 
     // Figure statement node.
     final AstNode statementNode = this.node.getFirstAncestor(MagikGrammar.STATEMENT);
@@ -134,7 +144,8 @@ public class DefSlottedExemplarParser extends BaseDefParser {
       final TypeString slotTypeRef =
           Objects.requireNonNullElse(slotTypes.get(slotName), TypeString.UNDEFINED);
       final SlotDefinition slot =
-          new SlotDefinition(slotLocation, moduleName, null, slotDefNode, slotName, slotTypeRef);
+          new SlotDefinition(
+              slotLocation, timestamp, moduleName, null, slotDefNode, slotName, slotTypeRef);
       slots.add(slot);
 
       // Method definitions.
@@ -146,7 +157,14 @@ public class DefSlottedExemplarParser extends BaseDefParser {
         final TypeString exemplarName = TypeString.ofIdentifier(identifier, packageName);
         final List<MethodDefinition> slotMethodDefinitions =
             this.generateSlotMethods(
-                moduleName, slotDefNode, exemplarName, slotName, flag, flavor, slotTypeRef);
+                timestamp,
+                moduleName,
+                slotDefNode,
+                exemplarName,
+                slotName,
+                flag,
+                flavor,
+                slotTypeRef);
         methodDefinitions.addAll(slotMethodDefinitions);
       }
     }
@@ -168,6 +186,7 @@ public class DefSlottedExemplarParser extends BaseDefParser {
     final ExemplarDefinition slottedExemplarDefinition =
         new ExemplarDefinition(
             location,
+            timestamp,
             moduleName,
             doc,
             statementNode,
@@ -183,7 +202,9 @@ public class DefSlottedExemplarParser extends BaseDefParser {
     return definitions;
   }
 
+  @SuppressWarnings({"checkstyle:ParameterNumber", "java:S107"})
   private List<MethodDefinition> generateSlotMethods(
+      final @Nullable Instant timestamp,
       final @Nullable String moduleName,
       final AstNode node,
       final TypeString exemplarName,
@@ -209,6 +230,7 @@ public class DefSlottedExemplarParser extends BaseDefParser {
       final MethodDefinition getMethod =
           new MethodDefinition(
               location,
+              timestamp,
               moduleName,
               null,
               node,
@@ -232,6 +254,7 @@ public class DefSlottedExemplarParser extends BaseDefParser {
       final MethodDefinition getMethod =
           new MethodDefinition(
               location,
+              timestamp,
               moduleName,
               null,
               node,
@@ -256,6 +279,7 @@ public class DefSlottedExemplarParser extends BaseDefParser {
       final ParameterDefinition assignmentParam =
           new ParameterDefinition(
               location,
+              timestamp,
               moduleName,
               null,
               node,
@@ -265,6 +289,7 @@ public class DefSlottedExemplarParser extends BaseDefParser {
       final MethodDefinition setMethod =
           new MethodDefinition(
               location,
+              timestamp,
               moduleName,
               null,
               node,
@@ -283,6 +308,7 @@ public class DefSlottedExemplarParser extends BaseDefParser {
       final MethodDefinition bootMethod =
           new MethodDefinition(
               location,
+              timestamp,
               moduleName,
               null,
               node,

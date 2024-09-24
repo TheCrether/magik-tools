@@ -4,18 +4,13 @@ import com.sonar.sslr.api.AstNode;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
-import nl.ramsolutions.sw.definitions.ModuleDefinition;
-import nl.ramsolutions.sw.definitions.ProductDefinition;
-import nl.ramsolutions.sw.definitions.api.SwModuleDefinitionGrammar;
-import nl.ramsolutions.sw.definitions.api.SwProductDefinitionGrammar;
+import nl.ramsolutions.sw.IDefinition;
+import nl.ramsolutions.sw.MagikToolsProperties;
 import nl.ramsolutions.sw.magik.Location;
 import nl.ramsolutions.sw.magik.MagikTypedFile;
-import nl.ramsolutions.sw.magik.ModuleDefFile;
 import nl.ramsolutions.sw.magik.Position;
-import nl.ramsolutions.sw.magik.ProductDefFile;
 import nl.ramsolutions.sw.magik.analysis.AstQuery;
 import nl.ramsolutions.sw.magik.analysis.definitions.ConditionDefinition;
-import nl.ramsolutions.sw.magik.analysis.definitions.IDefinition;
 import nl.ramsolutions.sw.magik.analysis.definitions.IDefinitionKeeper;
 import nl.ramsolutions.sw.magik.analysis.definitions.MethodDefinition;
 import nl.ramsolutions.sw.magik.analysis.helpers.MethodInvocationNodeHelper;
@@ -23,15 +18,28 @@ import nl.ramsolutions.sw.magik.analysis.helpers.PackageNodeHelper;
 import nl.ramsolutions.sw.magik.analysis.scope.Scope;
 import nl.ramsolutions.sw.magik.analysis.scope.ScopeEntry;
 import nl.ramsolutions.sw.magik.analysis.typing.ExpressionResultString;
+import nl.ramsolutions.sw.magik.analysis.typing.SelfHelper;
 import nl.ramsolutions.sw.magik.analysis.typing.TypeString;
 import nl.ramsolutions.sw.magik.analysis.typing.TypeStringResolver;
 import nl.ramsolutions.sw.magik.analysis.typing.reasoner.LocalTypeReasonerState;
 import nl.ramsolutions.sw.magik.api.MagikGrammar;
-import nl.ramsolutions.sw.magik.languageserver.MagikSettings;
+import nl.ramsolutions.sw.magik.languageserver.MagikLanguageServerSettings;
+import nl.ramsolutions.sw.moduledef.ModuleDefFile;
+import nl.ramsolutions.sw.moduledef.ModuleDefinition;
+import nl.ramsolutions.sw.moduledef.api.SwModuleDefinitionGrammar;
+import nl.ramsolutions.sw.productdef.ProductDefFile;
+import nl.ramsolutions.sw.productdef.ProductDefinition;
+import nl.ramsolutions.sw.productdef.api.SwProductDefinitionGrammar;
 import org.eclipse.lsp4j.ServerCapabilities;
 
 /** Definitions provider. */
 public class DefinitionsProvider {
+
+  private final MagikToolsProperties properties;
+
+  public DefinitionsProvider(MagikToolsProperties properties) {
+    this.properties = properties;
+  }
 
   /**
    * Set server capabilities.
@@ -52,14 +60,14 @@ public class DefinitionsProvider {
   public List<Location> provideDefinitions(
       final ProductDefFile productDefFile, final Position position) {
     final AstNode node = productDefFile.getTopNode();
-    final AstNode hoveredTokenNode = AstQuery.nodeAt(node, position);
-    if (hoveredTokenNode == null) {
+    final AstNode positionTokenNode = AstQuery.nodeAt(node, position);
+    if (positionTokenNode == null) {
       return Collections.emptyList();
     }
 
     final AstNode productNameNode =
         AstQuery.getParentFromChain(
-            hoveredTokenNode,
+            positionTokenNode,
             SwProductDefinitionGrammar.IDENTIFIER,
             SwProductDefinitionGrammar.PRODUCT_NAME);
     if (productNameNode == null) {
@@ -138,11 +146,12 @@ public class DefinitionsProvider {
       final MagikTypedFile magikFile, final AstNode wantedNode) {
     final IDefinitionKeeper definitionKeeper = magikFile.getDefinitionKeeper();
     final String conditionName = wantedNode.getTokenValue();
+    final MagikLanguageServerSettings settings = new MagikLanguageServerSettings(this.properties);
     return definitionKeeper.getConditionDefinitions(conditionName).stream()
         .map(ConditionDefinition::getLocation)
         .map(
             (Location location) ->
-                Location.validLocation(location, MagikSettings.INSTANCE.getPathMappings()))
+                Location.validLocation(location, settings.getPathMappings()))
         .toList();
   }
 
@@ -156,6 +165,8 @@ public class DefinitionsProvider {
       return Collections.emptyList();
     }
 
+    final MagikLanguageServerSettings settings = new MagikLanguageServerSettings(this.properties);
+
     if (scopeEntry.isType(
         ScopeEntry.Type.DEFINITION,
         ScopeEntry.Type.LOCAL,
@@ -166,7 +177,7 @@ public class DefinitionsProvider {
       final Location definitionLocation =
           Location.validLocation(
               new Location(magikFile.getUri(), definitionNode),
-              MagikSettings.INSTANCE.getPathMappings());
+              settings.getPathMappings());
       return List.of(definitionLocation);
     }
 
@@ -179,7 +190,7 @@ public class DefinitionsProvider {
         .map(IDefinition::getLocation)
         .map(
             (Location location) ->
-                Location.validLocation(location, MagikSettings.INSTANCE.getPathMappings()))
+                Location.validLocation(location, settings.getPathMappings()))
         .toList();
   }
 
@@ -196,14 +207,16 @@ public class DefinitionsProvider {
     final LocalTypeReasonerState reasonerState = magikFile.getTypeReasonerState();
     final ExpressionResultString result = reasonerState.getNodeType(previousSiblingNode);
     final TypeString resultTypeStr = result.get(0, TypeString.UNDEFINED);
-    final TypeString typeStr = resultTypeStr.resolveSelf(methodInvocationNode);
+    final TypeString typeStr = SelfHelper.substituteSelf(resultTypeStr, methodInvocationNode);
+
+    final MagikLanguageServerSettings settings = new MagikLanguageServerSettings(this.properties);
 
     final TypeStringResolver resolver = magikFile.getTypeStringResolver();
     return resolver.getMethodDefinitions(typeStr, methodName).stream()
         .map(MethodDefinition::getLocation)
         .map(
             (Location location) ->
-                Location.validLocation(location, MagikSettings.INSTANCE.getPathMappings()))
+                Location.validLocation(location, settings.getPathMappings()))
         .toList();
   }
 

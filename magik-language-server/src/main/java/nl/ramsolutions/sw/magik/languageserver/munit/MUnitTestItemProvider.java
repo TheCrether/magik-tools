@@ -9,10 +9,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Stream;
-import nl.ramsolutions.sw.definitions.ModuleDefinition;
-import nl.ramsolutions.sw.definitions.ModuleDefinitionScanner;
-import nl.ramsolutions.sw.definitions.ProductDefinition;
-import nl.ramsolutions.sw.definitions.ProductDefinitionScanner;
+
+import nl.ramsolutions.sw.MagikToolsProperties;
 import nl.ramsolutions.sw.magik.Location;
 import nl.ramsolutions.sw.magik.analysis.definitions.ExemplarDefinition;
 import nl.ramsolutions.sw.magik.analysis.definitions.IDefinitionKeeper;
@@ -20,7 +18,13 @@ import nl.ramsolutions.sw.magik.analysis.definitions.MethodDefinition;
 import nl.ramsolutions.sw.magik.analysis.typing.TypeString;
 import nl.ramsolutions.sw.magik.analysis.typing.TypeStringResolver;
 import nl.ramsolutions.sw.magik.languageserver.Lsp4jConversion;
-import nl.ramsolutions.sw.magik.languageserver.MagikSettings;
+import nl.ramsolutions.sw.magik.languageserver.MagikLanguageServerSettings;
+import nl.ramsolutions.sw.moduledef.ModuleDefFile;
+import nl.ramsolutions.sw.moduledef.ModuleDefFileScanner;
+import nl.ramsolutions.sw.moduledef.ModuleDefinition;
+import nl.ramsolutions.sw.productdef.ProductDefFile;
+import nl.ramsolutions.sw.productdef.ProductDefFileScanner;
+import nl.ramsolutions.sw.productdef.ProductDefinition;
 import org.eclipse.lsp4j.ServerCapabilities;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,9 +38,11 @@ public class MUnitTestItemProvider {
   private static final String MUNIT_TEST_METHOD_PREFIX = "test";
 
   private final IDefinitionKeeper definitionKeeper;
+  private final MagikToolsProperties properties;
 
-  public MUnitTestItemProvider(final IDefinitionKeeper definitionKeeper) {
+  public MUnitTestItemProvider(final IDefinitionKeeper definitionKeeper, MagikToolsProperties properties) {
     this.definitionKeeper = definitionKeeper;
+    this.properties = properties;
   }
 
   /**
@@ -144,41 +150,46 @@ public class MUnitTestItemProvider {
   }
 
   private ProductDefinition getSwProduct(final Path path) throws IOException {
-    final Path productDefPath = path.resolve(ProductDefinitionScanner.SW_PRODUCT_DEF);
+    final Path productDefPath = path.resolve(ProductDefFileScanner.SW_PRODUCT_DEF);
     if (!Files.exists(productDefPath)) {
       final Path parentPath = path.getParent();
       if (parentPath == null) {
         return new ProductDefinition(
-            null, "<no_product>", "", null, null, null, Collections.emptyList());
+            null, null, "<no_product>", null, "", null, null, null, Collections.emptyList());
       }
 
       return this.getSwProduct(parentPath);
     }
 
     // Construct SwProduct.
-    return ProductDefinitionScanner.readProductDefinition(productDefPath);
+    final ProductDefFile productDefFile =
+        new ProductDefFile(productDefPath, this.definitionKeeper, null);
+    return productDefFile.getProductDefinition();
   }
 
   private ModuleDefinition getSwModule(final Path path) throws IOException {
-    final Path moduleDefPath = path.resolve(ModuleDefinitionScanner.SW_MODULE_DEF);
+    final Path moduleDefPath = path.resolve(ModuleDefFileScanner.SW_MODULE_DEF);
     if (!Files.exists(moduleDefPath)) {
       final Path parentPath = path.getParent();
       if (parentPath == null) {
-        return new ModuleDefinition(null, "<no_module>", "", "1", null, Collections.emptyList());
+        return new ModuleDefinition(
+            null, null, "<no_module>", null, "", "1", null, Collections.emptyList());
       }
 
       return this.getSwModule(parentPath);
     }
 
     // Construct SwModule.
-    return ModuleDefinitionScanner.readModuleDefinition(moduleDefPath);
+    final ModuleDefFile moduleDefFile = new ModuleDefFile(moduleDefPath, definitionKeeper, null);
+    return moduleDefFile.getModuleDefinition();
   }
 
   private MUnitTestItem createTestItem(final ProductDefinition definition) {
     final String productName = definition.getName();
     final Location definitionLocation = definition.getLocation();
+    final MagikLanguageServerSettings settings = new MagikLanguageServerSettings(this.properties);
     final Location location =
-        Location.validLocation(definitionLocation, MagikSettings.INSTANCE.getPathMappings());
+        Location.validLocation(definitionLocation, settings.getPathMappings());
     return new MUnitTestItem(
         "product:" + productName, productName, Lsp4jConversion.locationToLsp4j(location));
   }
@@ -186,8 +197,9 @@ public class MUnitTestItemProvider {
   private MUnitTestItem createTestItem(final ModuleDefinition definition) {
     final String moduleName = definition.getName();
     final Location definitionLocation = definition.getLocation();
+    final MagikLanguageServerSettings settings = new MagikLanguageServerSettings(this.properties);
     final Location location =
-        Location.validLocation(definitionLocation, MagikSettings.INSTANCE.getPathMappings());
+        Location.validLocation(definitionLocation, settings.getPathMappings());
     return new MUnitTestItem(
         "module:" + moduleName, moduleName, Lsp4jConversion.locationToLsp4j(location));
   }
@@ -195,8 +207,9 @@ public class MUnitTestItemProvider {
   private MUnitTestItem createTestItem(final ExemplarDefinition definition) {
     final String typeName = definition.getTypeString().getFullString();
     final Location definitionLocation = definition.getLocation();
+    final MagikLanguageServerSettings settings = new MagikLanguageServerSettings(this.properties);
     final Location location =
-        Location.validLocation(definitionLocation, MagikSettings.INSTANCE.getPathMappings());
+        Location.validLocation(definitionLocation, settings.getPathMappings());
     return new MUnitTestItem(
         "test_case:" + typeName, typeName, Lsp4jConversion.locationToLsp4j(location));
   }
@@ -204,8 +217,9 @@ public class MUnitTestItemProvider {
   private MUnitTestItem createTestItem(final MethodDefinition definition) {
     final String methodName = definition.getMethodName();
     final Location definitionLocation = definition.getLocation();
+    final MagikLanguageServerSettings settings = new MagikLanguageServerSettings(this.properties);
     final Location location =
-        Location.validLocation(definitionLocation, MagikSettings.INSTANCE.getPathMappings());
+        Location.validLocation(definitionLocation, settings.getPathMappings());
     return new MUnitTestItem(
         "method:" + methodName, methodName, Lsp4jConversion.locationToLsp4j(location));
   }

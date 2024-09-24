@@ -2,18 +2,24 @@
 // self type: _self
 // undefined type: _undefined
 // undefined result: __UNDEFINED_RESULT__
+// products
+{"i": 1,"name":"test_product","ver":"1.0.0","title":"Test product","desc":"Test product"}
+// modules
+{"i":2,"name":"test_module","base_ver":"1","cur_ver":"2","p_name":"test_product","desc":"test_module"}
+// magik files
+{"i":10, "location":{"uri":"file:///test.magik"}}
 // packages
-{"i":3,"name":"sw","uses":[]}
+{"i": 3,"name":"sw","uses":[]}
 {"i":3,"name":"user","uses":["sw"]}
 {"i":3,"name":"test_package","uses":["user"]}
 // types
-{"i":4,"type_n":"user:a","sort":"slotted","doc":"Test exemplar a","par":["sw:object"],"slots":[{"name":"slot1","type_n":"sw:integer"},{"name":"slot2","type_n":"sw:float"}],"mod_n":"test_module","generic_declarations":[{"location":null,"name":"K"},{"location":null,"name":"E"}]}
-{"i":4,"type_n":"user:b","sort":"indexed","doc":"Test exemplar b","par":["sw:object"],"slots":[],"mod_n":null,"generic_declarations":[]}
+{"i":4,"type_n":"user:a","sort":"slotted","doc":"Test exemplar a","par":["sw:object"],"slots":[{"name":"slot1","type_n":"sw:integer"},{"name":"slot2","type_n":"sw:float"}],"mod_n":"test_module"}
+{"i":4,"type_n":"user:b","sort":"indexed","doc":"Test exemplar b","par":["sw:object"],"slots":[],"mod_n":null}
 // globals
 {"i":5,"type_n":"sw:!print_float_precision!","alias_type_n":"sw:integer"}
 {"i":5,"type_n":"sw:tab_char","alias_type_n":"sw:character"}
 // methods
-{"i":6,"type_n":"user:b","m_name":"m1()","mods":[],"params":[{"name":"param1","mod":"gather","type_n":"sw:symbol"},{"name":"param1","mod":"none","type_n":"_undefined"}],"ret":["sw:symbol"],"loop":[],"src":null,"doc":"Test method m1()","mod_n":"test_module"}
+{"i":6,"type_n":"user:b","m_name":"m1()","mods":[],"params":[{"name":"param1","mod":"gather","type_n":"sw:symbol"},{"name":"param2","mod":"none","type_n":"_undefined"}],"ret":["sw:symbol"],"loop":[],"src":null,"doc":"Test method m1()","mod_n":"test_module"}
 {"i":6,"type_n":"user:b","m_name":"m2<<","mods":["private"],"params":[],"a_params":{"name":"param2","mod":"none","type_n":"sw:symbol"},"ret":["sw:symbol"],"loop":[],"src":null,"doc":"Test method m2()","mod_n":"test_module"}
 // procedures
 {"i":7,"type_n":"sw:quit","proc_name":"quit","mods":[],"params":[{"name":"status","mod":"optional","type_n":"_undefined"}],"ret":"__UNDEFINED_RESULT__","loop":[],"src":null,"doc":"Quit!","mod_n":"test_module"}

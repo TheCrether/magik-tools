@@ -12,8 +12,8 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import nl.ramsolutions.sw.magik.MagikTypedFile;
-import nl.ramsolutions.sw.magik.ModuleDefFile;
-import nl.ramsolutions.sw.magik.ProductDefFile;
+import nl.ramsolutions.sw.moduledef.ModuleDefFile;
+import nl.ramsolutions.sw.productdef.ProductDefFile;
 import org.eclipse.lsp4j.DocumentFilter;
 import org.eclipse.lsp4j.SemanticTokens;
 import org.eclipse.lsp4j.SemanticTokensLegend;
@@ -76,7 +76,7 @@ public class SemanticTokenProvider {
   public SemanticTokens provideSemanticTokensFull(final ModuleDefFile moduleDefFile) {
     LOGGER.debug("Providing semantic tokens full, file: {}", moduleDefFile);
 
-    final ModuleDefSemanticTokenWalker walker = new ModuleDefSemanticTokenWalker(moduleDefFile);
+    final ModuleDefSemanticTokenWalker walker = new ModuleDefSemanticTokenWalker();
     final AstNode topNode = moduleDefFile.getTopNode();
     walker.walkAst(topNode);
 
@@ -87,7 +87,7 @@ public class SemanticTokenProvider {
   public SemanticTokens provideSemanticTokensFull(final ProductDefFile productDefFile) {
     LOGGER.debug("Providing semantic tokens full, file: {}", productDefFile);
 
-    final ProductDefSemanticTokenWalker walker = new ProductDefSemanticTokenWalker(productDefFile);
+    final ProductDefSemanticTokenWalker walker = new ProductDefSemanticTokenWalker();
     final AstNode topNode = productDefFile.getTopNode();
     walker.walkAst(topNode);
 
