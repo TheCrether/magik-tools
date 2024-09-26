@@ -16,7 +16,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-
 import nl.ramsolutions.sw.magik.PathMapping;
 import nl.ramsolutions.sw.magik.analysis.definitions.*;
 import nl.ramsolutions.sw.magik.analysis.definitions.io.deserializer.*;
@@ -175,7 +174,8 @@ public final class JsonDefinitionReader {
       throw new IllegalStateException(exception);
     }
 
-    CompletableFuture<Void> allFutures = CompletableFuture.allOf(completableFutures.toArray(new CompletableFuture[0]));
+    CompletableFuture<Void> allFutures =
+        CompletableFuture.allOf(completableFutures.toArray(new CompletableFuture[0]));
     try {
       allFutures.get();
     } catch (InterruptedException | ExecutionException e) {
@@ -184,22 +184,24 @@ public final class JsonDefinitionReader {
   }
 
   @SuppressWarnings("checkstyle:IllegalCatch")
-  private CompletableFuture<Boolean> processLineSafe(final int lineNo, final String line, final Path path) {
+  private CompletableFuture<Boolean> processLineSafe(
+      final int lineNo, final String line, final Path path) {
     CompletableFuture<Boolean> completableFuture = new CompletableFuture<>();
 
-    threadPool.submit(() -> {
-      try {
-        if (lineNo % 10000 == 0) {
-          LOGGER.debug("On line {} of {}", lineNo, path);
-        }
-        this.processLine(line);
-        completableFuture.complete(true);
-      } catch (final Exception exception) {
-        LOGGER.error("Error parsing line {}, line data: {}", lineNo, line);
-        LOGGER.error(exception.getMessage(), exception);
-        completableFuture.complete(false);
-      }
-    });
+    threadPool.submit(
+        () -> {
+          try {
+            if (lineNo % 10000 == 0) {
+              LOGGER.debug("On line {} of {}", lineNo, path);
+            }
+            this.processLine(line);
+            completableFuture.complete(true);
+          } catch (final Exception exception) {
+            LOGGER.error("Error parsing line {}, line data: {}", lineNo, line);
+            LOGGER.error(exception.getMessage(), exception);
+            completableFuture.complete(false);
+          }
+        });
 
     return completableFuture;
   }
