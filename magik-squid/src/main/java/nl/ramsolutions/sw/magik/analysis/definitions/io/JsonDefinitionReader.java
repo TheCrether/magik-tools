@@ -10,7 +10,13 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
 import nl.ramsolutions.sw.magik.PathMapping;
 import nl.ramsolutions.sw.magik.analysis.definitions.*;
 import nl.ramsolutions.sw.magik.analysis.definitions.io.deserializer.*;
@@ -41,11 +47,16 @@ public final class JsonDefinitionReader {
   private final IDefinitionKeeper definitionKeeper;
   private final List<PathMapping> mappings;
   private final ObjectMapper objectMapper;
+  private final ExecutorService threadPool;
 
   private JsonDefinitionReader(
       final IDefinitionKeeper definitionKeeper, final @Nullable List<PathMapping> mappings) {
     this.definitionKeeper = definitionKeeper;
     this.mappings = mappings;
+
+    final int processors = Runtime.getRuntime().availableProcessors();
+    final int threadsToRun = Math.max(processors / 2, 6);
+    this.threadPool = Executors.newFixedThreadPool(threadsToRun);
 
     this.objectMapper = new ObjectMapper();
     objectMapper.setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
@@ -102,12 +113,13 @@ public final class JsonDefinitionReader {
       final IDefinitionKeeper definitionKeeper,
       final @Nullable List<PathMapping> mappings)
       throws IOException {
+    BaseDeserializer.clearParsedFiles();
+
     final JsonDefinitionReader reader = new JsonDefinitionReader(definitionKeeper, mappings);
     final long start = System.nanoTime();
     reader.run(path);
     LOGGER_DURATION.trace(
         "Duration: {} readTypes, type db: {}", (System.nanoTime() - start) / 1000000000.0, path);
-    BaseDeserializer.clearParsedFiles(); // free memory
   }
 
   /**
@@ -145,16 +157,15 @@ public final class JsonDefinitionReader {
   public void run(Path path) {
     LOGGER.info("Reading type database from path: {}", path);
 
+    List<CompletableFuture<Boolean>> completableFutures = new ArrayList<>();
+
     final File file = path.toFile();
     int lineNo = 1;
     try (FileReader fileReader = new FileReader(file, StandardCharsets.ISO_8859_1);
         BufferedReader bufferedReader = new BufferedReader(fileReader)) {
       String line = bufferedReader.readLine();
       while (line != null) {
-        if (lineNo % 10000 == 0) {
-          LOGGER.debug("On line {} of {}", lineNo, path);
-        }
-        this.processLineSafe(lineNo, line);
+        completableFutures.add(this.processLineSafe(lineNo, line, path));
 
         ++lineNo;
         line = bufferedReader.readLine();
@@ -163,16 +174,34 @@ public final class JsonDefinitionReader {
       LOGGER.error("JSON Error reading line no: {}", lineNo);
       throw new IllegalStateException(exception);
     }
+
+    CompletableFuture<Void> allFutures = CompletableFuture.allOf(completableFutures.toArray(new CompletableFuture[0]));
+    try {
+      allFutures.get();
+    } catch (InterruptedException | ExecutionException e) {
+      LOGGER.error("Error while reading all JSON lines");
+    }
   }
 
   @SuppressWarnings("checkstyle:IllegalCatch")
-  private void processLineSafe(final int lineNo, final String line) {
-    try {
-      this.processLine(line);
-    } catch (final Exception exception) {
-      LOGGER.error("Error parsing line {}, line data: {}", lineNo, line);
-      LOGGER.error(exception.getMessage(), exception);
-    }
+  private CompletableFuture<Boolean> processLineSafe(final int lineNo, final String line, final Path path) {
+    CompletableFuture<Boolean> completableFuture = new CompletableFuture<>();
+
+    threadPool.submit(() -> {
+      try {
+        if (lineNo % 10000 == 0) {
+          LOGGER.debug("On line {} of {}", lineNo, path);
+        }
+        this.processLine(line);
+        completableFuture.complete(true);
+      } catch (final Exception exception) {
+        LOGGER.error("Error parsing line {}, line data: {}", lineNo, line);
+        LOGGER.error(exception.getMessage(), exception);
+        completableFuture.complete(false);
+      }
+    });
+
+    return completableFuture;
   }
 
   private void processLine(String line) throws Exception {

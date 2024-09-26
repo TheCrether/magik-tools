@@ -3,38 +3,46 @@ package nl.ramsolutions.sw.magik.analysis.definitions.io.deserializer;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.time.Instant;
-import java.util.*;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
-import javax.annotation.Nullable;
 import nl.ramsolutions.sw.MagikToolsProperties;
 import nl.ramsolutions.sw.magik.Location;
 import nl.ramsolutions.sw.magik.MagikFile;
 import nl.ramsolutions.sw.magik.PathMapping;
 import nl.ramsolutions.sw.magik.analysis.definitions.MagikDefinition;
+import nl.ramsolutions.sw.magik.analysis.helpers.Memoizer;
 import nl.ramsolutions.sw.magik.analysis.typing.TypeString;
 
+import javax.annotation.Nullable;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.time.Instant;
+import java.util.Collections;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
+
 public abstract class BaseDeserializer<T> extends StdDeserializer<T> {
-  private static final HashMap<Path, IndexedFile> parsedFiles = new HashMap<>();
-  private static final Set<Path> erroredFiles = new HashSet<>();
+  private static final Memoizer<Path, IndexedFile> parsedFiles = new Memoizer<>(BaseDeserializer::computeParsedFile);
 
   private final List<PathMapping> mappings;
   private static MagikToolsProperties properties = new MagikToolsProperties();
+
+  private static final Long EMPTY_INDEXED_AT = -1L;
+  private static final IndexedFile EMPTY_INDEXED_FILE = new IndexedFile(Collections.emptyList(), EMPTY_INDEXED_AT);
 
   public static void setProperties(MagikToolsProperties properties) {
     BaseDeserializer.properties = properties;
   }
 
-  private record IndexedFile(List<MagikDefinition> definitions, long indexedAt) {}
+  private record IndexedFile(List<MagikDefinition> definitions, long indexedAt) {
+  }
 
   public BaseDeserializer(List<PathMapping> mappings) {
     super((Class<?>) null);
-    this.mappings = mappings;
+    this.mappings = Collections.unmodifiableList(mappings);
   }
 
   @Nullable
@@ -61,31 +69,31 @@ public abstract class BaseDeserializer<T> extends StdDeserializer<T> {
   }
 
   public static <X> List<X> getList(
-      DeserializationContext context, JsonNode node, String field, Class<X> clazz) {
+    DeserializationContext context, JsonNode node, String field, Class<X> clazz) {
     return getStream(node, field)
-        .map(
-            e -> {
-              try {
-                return context.readTreeAsValue(e, clazz);
-              } catch (IOException ex) {
-                throw new RuntimeException(ex);
-              }
-            })
-        .toList();
+      .map(
+        e -> {
+          try {
+            return context.readTreeAsValue(e, clazz);
+          } catch (IOException ex) {
+            throw new RuntimeException(ex);
+          }
+        })
+      .toList();
   }
 
   public static <X> Set<X> getSet(
-      DeserializationContext context, JsonNode node, String field, Class<X> clazz) {
+    DeserializationContext context, JsonNode node, String field, Class<X> clazz) {
     return getStream(node, field)
-        .map(
-            e -> {
-              try {
-                return context.readTreeAsValue(e, clazz);
-              } catch (IOException ex) {
-                throw new RuntimeException(ex);
-              }
-            })
-        .collect(Collectors.toSet());
+      .map(
+        e -> {
+          try {
+            return context.readTreeAsValue(e, clazz);
+          } catch (IOException ex) {
+            throw new RuntimeException(ex);
+          }
+        })
+      .collect(Collectors.toSet());
   }
 
   @Nullable
@@ -117,12 +125,12 @@ public abstract class BaseDeserializer<T> extends StdDeserializer<T> {
   }
 
   public static TypeString getTypeString(
-      DeserializationContext context, JsonNode node, String field) {
+    DeserializationContext context, JsonNode node, String field) {
     return get(context, node, field, TypeString.class);
   }
 
   public static <X> X get(
-      DeserializationContext context, JsonNode node, String field, Class<X> clazz) {
+    DeserializationContext context, JsonNode node, String field, Class<X> clazz) {
     try {
       return context.readTreeAsValue(node.get(field), clazz);
     } catch (IOException e) {
@@ -132,56 +140,27 @@ public abstract class BaseDeserializer<T> extends StdDeserializer<T> {
 
   public static List<MagikDefinition> getDefinitions(Location location) {
     if (location == null) {
-      return new ArrayList<>();
+      return Collections.emptyList();
     }
 
     Path path = location.getPath();
-    if (erroredFiles.contains(path)) {
-      return new ArrayList<>();
+    try {
+      return parsedFiles.compute(path).definitions;
+    } catch (InterruptedException e) {
+      return Collections.emptyList();
     }
-
-    if (Files.notExists(path)) {
-      erroredFiles.add(path);
-      return new ArrayList<>();
-    }
-
-    long now = System.currentTimeMillis();
-
-    if (parsedFiles.containsKey(path)) {
-      IndexedFile file = parsedFiles.get(path);
-      if (file.indexedAt() < path.toFile().lastModified()) {
-        parsedFiles.remove(path);
-      }
-    }
-
-    if (!parsedFiles.containsKey(path)) {
-      try {
-        MagikFile file = new MagikFile(BaseDeserializer.properties, path);
-        parsedFiles.put(path, new IndexedFile(file.getMagikDefinitions(), now));
-      } catch (Exception e) {
-        erroredFiles.add(path);
-        return new ArrayList<>();
-      }
-    }
-
-    IndexedFile file = parsedFiles.get(path);
-    if (file == null) {
-      return Collections.unmodifiableList(new ArrayList<>());
-    }
-
-    return Collections.unmodifiableList(file.definitions());
   }
 
   public static <X> MagikDefinition getParsedDefinition(
-      Location location, String name, Class<X> clazz) {
+    Location location, String name, Class<X> clazz) {
     return getDefinitions(location).stream()
-        .filter(def -> def.getName().endsWith(name) && clazz.isInstance(def))
-        .findFirst()
-        .orElse(null);
+      .filter(def -> def.getName().endsWith(name) && clazz.isInstance(def))
+      .findFirst()
+      .orElse(null);
   }
 
   public static void clearParsedFiles() {
-    erroredFiles.clear();
+    parsedFiles.clear();
   }
 
   public static Instant getTimestamp(@Nullable Location location) {
@@ -199,5 +178,20 @@ public abstract class BaseDeserializer<T> extends StdDeserializer<T> {
     }
 
     return null;
+  }
+
+  private static IndexedFile computeParsedFile(Path path) {
+    if (Files.notExists(path)) {
+      return EMPTY_INDEXED_FILE;
+    }
+
+    long now = System.currentTimeMillis();
+
+    try {
+      MagikFile file = new MagikFile(BaseDeserializer.properties, path);
+      return new IndexedFile(file.getMagikDefinitions(), now);
+    } catch (Exception e) {
+      return EMPTY_INDEXED_FILE;
+    }
   }
 }
