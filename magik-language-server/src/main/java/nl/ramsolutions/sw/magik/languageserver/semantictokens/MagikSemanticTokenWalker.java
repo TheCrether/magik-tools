@@ -259,7 +259,7 @@ public class MagikSemanticTokenWalker extends MagikAstWalker {
 
   @Override
   protected void walkPostSymbol(final AstNode node) {
-    this.addSemanticToken(node, SemanticToken.Type.STRING);
+    this.addSemanticToken(node, SemanticToken.Type.TYPE, Set.of(SemanticToken.Modifier.ITALIC));
   }
 
   @Override
@@ -340,11 +340,16 @@ public class MagikSemanticTokenWalker extends MagikAstWalker {
   }
 
   private void walkPostIdentifierVariableDefinition(final AstNode node) {
-    this.addSemanticToken(node, SemanticToken.Type.VARIABLE);
+    String value = node.getTokenValue();
+    if (value.startsWith("!") && value.endsWith("!")) {
+      this.addSemanticToken(node, SemanticToken.Type.VARIABLE, Set.of(SemanticToken.Modifier.BOLD));
+    } else {
+      this.addSemanticToken(node, SemanticToken.Type.VARIABLE);
+    }
   }
 
   private void walkPostIdentifierVariableDefinitionMulti(final AstNode node) {
-    this.addSemanticToken(node, SemanticToken.Type.VARIABLE);
+    this.walkPostIdentifierVariableDefinition(node);
   }
 
   private void walkPostIdentifierFor(final AstNode node) {

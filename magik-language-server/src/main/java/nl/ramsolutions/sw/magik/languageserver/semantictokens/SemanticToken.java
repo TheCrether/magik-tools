@@ -24,7 +24,9 @@ public class SemanticToken {
     NUMBER(10),
     REGEXP(11),
     OPERATOR(12),
-    TYPE_PARAMETER(13);
+    TYPE_PARAMETER(13),
+    TYPE(14),
+    MACRO(15);
 
     private final int value;
 
@@ -56,7 +58,9 @@ public class SemanticToken {
     DOCUMENTATION(0x01),
     READONLY(0x02),
     VARIABLE_GLOBAL(0x04),
-    DEPRECATED(0x08);
+    DEPRECATED(0x08),
+    BOLD(0x10),
+    ITALIC(0x20);
 
     private final int value;
 

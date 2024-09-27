@@ -4,6 +4,7 @@ import java.util.concurrent.*;
 
 /**
  * memoize expensive calls and make sure that they do not get called twice by two/multiple threads
+ * TODO include recompute filter computable?
  *
  * <p>Source:
  *
@@ -30,7 +31,7 @@ public class Memoizer<A, V> implements Computable<A, V> {
       Future<V> f = cache.get(arg);
       if (f == null) {
         Callable<V> eval = () -> c.compute(arg);
-        FutureTask<V> ft = new FutureTask<V>(eval);
+        FutureTask<V> ft = new FutureTask<>(eval);
         f = cache.putIfAbsent(arg, ft);
         if (f == null) {
           f = ft;
