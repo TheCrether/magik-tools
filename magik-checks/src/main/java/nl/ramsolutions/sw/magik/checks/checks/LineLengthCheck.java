@@ -18,7 +18,7 @@ public class LineLengthCheck extends MagikCheck {
   public static final String CHECK_KEY = "LineLength";
 
   private static final String MESSAGE = "Line is too long (%s/%s)";
-  private static final int DEFAULT_MAX_LINE_LENGTH = 100;
+  private static final int DEFAULT_MAX_LINE_LENGTH = 80;
   private static final int TAB_WIDTH = 4;
 
   /** Maximum number of characters on a single line. */
