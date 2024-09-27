@@ -5,7 +5,6 @@ import edu.umd.cs.findbugs.annotations.CheckForNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.*;
-
 import nl.ramsolutions.sw.magik.Location;
 import nl.ramsolutions.sw.magik.analysis.typing.ExpressionResultString;
 import nl.ramsolutions.sw.magik.analysis.typing.TypeString;
@@ -151,24 +150,26 @@ public class MethodDefinition extends MagikDefinition implements ICallableDefini
   }
 
   public String getMethodNameWithoutParentheses() {
-    return this.methodName.replaceAll("\\(\\)",  "");
+    return this.methodName.replaceAll("\\(\\)", "");
   }
 
-  public List<ParameterDefinition> filteredParameters(boolean includeOptional, boolean includeGather) {
+  public List<ParameterDefinition> filteredParameters(
+      boolean includeOptional, boolean includeGather) {
     return this.parameters.stream()
-      .filter(def -> {
-        boolean isOk = true;
-        if (!includeOptional) {
-          isOk = !def.getModifier().equals(ParameterDefinition.Modifier.OPTIONAL);
-        }
+        .filter(
+            def -> {
+              boolean isOk = true;
+              if (!includeOptional) {
+                isOk = !def.getModifier().equals(ParameterDefinition.Modifier.OPTIONAL);
+              }
 
-        if (!includeGather) {
-          isOk = isOk && !def.getModifier().equals(ParameterDefinition.Modifier.GATHER);
-        }
+              if (!includeGather) {
+                isOk = isOk && !def.getModifier().equals(ParameterDefinition.Modifier.GATHER);
+              }
 
-        return isOk;
-      })
-      .toList();
+              return isOk;
+            })
+        .toList();
   }
 
   public String getMethodNameWithParameters() {

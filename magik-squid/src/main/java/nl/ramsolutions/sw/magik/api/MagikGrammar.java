@@ -183,7 +183,7 @@ public enum MagikGrammar implements GrammarRuleKey {
   private static final String BARE_IDENTIFIER_REGEXP =
       "(" + SIMPLE_IDENTIFIER_REGEXP + "|" + PIPED_IDENTIFIER_REGEXP + ")";
   private static final String LABEL_REGEXP = "(?is)" + BARE_IDENTIFIER_REGEXP + "+";
-  private static final String IDENTIFIER_REGEXP =
+  public static final String IDENTIFIER_REGEXP =
       "(?is)("
           + BARE_IDENTIFIER_REGEXP
           + "["

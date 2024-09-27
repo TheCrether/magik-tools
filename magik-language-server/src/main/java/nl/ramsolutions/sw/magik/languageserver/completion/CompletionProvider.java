@@ -230,9 +230,7 @@ public class CompletionProvider {
     // Global types.
     final String identifierPart = tokenNode != null ? tokenNode.getTokenValue() : "";
     definitionKeeper.getExemplarDefinitions().stream()
-        .filter(
-            exemplarDef ->
-              exemplarDef.getTypeString().getFullString().contains(identifierPart))
+        .filter(exemplarDef -> exemplarDef.getTypeString().getFullString().contains(identifierPart))
         .map(exemplarDef -> exemplarCompletion(exemplarDef, finalCurrentPackage))
         .forEach(items::add);
 
@@ -243,8 +241,7 @@ public class CompletionProvider {
     boolean pakkage = shouldPrependPackage(exemplarDef.getTypeString(), currentPackage);
     final TypeString typeString = exemplarDef.getTypeString();
 
-    final CompletionItem item =
-      new CompletionItem(typeString.getFullString());
+    final CompletionItem item = new CompletionItem(typeString.getFullString());
     if (pakkage) {
       item.setInsertText(typeString.getFullString());
     } else {
@@ -319,7 +316,8 @@ public class CompletionProvider {
         .filter(methodDef -> methodDef.getMethodName().contains(methodNamePart))
         .map(
             methodDef -> {
-              final CompletionItem item = new CompletionItem(methodDef.getMethodNameWithParameters());
+              final CompletionItem item =
+                  new CompletionItem(methodDef.getMethodNameWithParameters());
 
               item.setInsertText(this.buildMethodInvocationSnippet(methodDef));
               TypeString type = methodDef.getTypeName();
@@ -334,7 +332,8 @@ public class CompletionProvider {
               }
               item.setInsertTextFormat(InsertTextFormat.Snippet);
               item.setDetail(methodDef.getTypeName().getFullString());
-              item.setDocumentation(methodDef.getDoc()); // TODO better documentation of parameters like with method hover
+              // TODO better documentation of parameters like with method hover
+              item.setDocumentation(methodDef.getDoc());
               item.setKind(CompletionItemKind.Method);
               if (methodDef.getTopics().contains(TOPIC_DEPRECATED)) {
                 item.setTags(List.of(CompletionItemTag.Deprecated));
@@ -347,6 +346,7 @@ public class CompletionProvider {
 
   /**
    * build the insert text for a method invocation as an snippet
+   *
    * @param methodDef the method definition to build
    * @return the string that should be inserted
    */
@@ -357,9 +357,12 @@ public class CompletionProvider {
     String insertText = methodName + "(";
 
     AtomicInteger index = new AtomicInteger(1);
-    insertText += parameters.stream()
-      .map(parameterDefinition -> "${" + index.getAndIncrement() + ":" + parameterDefinition.getName() + "}")
-      .collect(Collectors.joining(", "));
+    insertText +=
+        parameters.stream()
+            .map(
+                parameterDefinition ->
+                    "${" + index.getAndIncrement() + ":" + parameterDefinition.getName() + "}")
+            .collect(Collectors.joining(", "));
 
     insertText += ")$0";
 
@@ -467,8 +470,7 @@ public class CompletionProvider {
       final URI uri = magikFile.getUri();
       final IDefinitionKeeper definitionKeeper = magikFile.getDefinitionKeeper();
       newMagikFile = new MagikTypedFile(uri, cleanedSource, definitionKeeper);
-    } else if (tokenNode != null
-    && tokenNode.getParent() != null) {
+    } else if (tokenNode != null && tokenNode.getParent() != null) {
       AstNode parent = tokenNode.getParent();
       if (parent.getParent().is(MagikGrammar.METHOD_INVOCATION)) {
         cleanedToken = ".";

@@ -3,16 +3,13 @@ package nl.ramsolutions.sw.magik.languageserver.semantictokens;
 import com.sonar.sslr.api.AstNode;
 import com.sonar.sslr.api.Token;
 import com.sonar.sslr.api.Trivia;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import nl.ramsolutions.sw.magik.MagikTypedFile;
+import nl.ramsolutions.sw.magik.Position;
+import nl.ramsolutions.sw.magik.analysis.AstQuery;
 import nl.ramsolutions.sw.magik.analysis.MagikAstWalker;
 import nl.ramsolutions.sw.magik.analysis.definitions.ExemplarDefinition;
 import nl.ramsolutions.sw.magik.analysis.definitions.ITypeStringDefinition;
@@ -25,11 +22,7 @@ import nl.ramsolutions.sw.magik.analysis.typing.ExpressionResultString;
 import nl.ramsolutions.sw.magik.analysis.typing.TypeString;
 import nl.ramsolutions.sw.magik.analysis.typing.TypeStringResolver;
 import nl.ramsolutions.sw.magik.analysis.typing.reasoner.LocalTypeReasonerState;
-import nl.ramsolutions.sw.magik.api.MagikGrammar;
-import nl.ramsolutions.sw.magik.api.MagikKeyword;
-import nl.ramsolutions.sw.magik.api.MagikOperator;
-import nl.ramsolutions.sw.magik.api.TypeDocGrammar;
-import nl.ramsolutions.sw.magik.api.TypeStringGrammar;
+import nl.ramsolutions.sw.magik.api.*;
 import nl.ramsolutions.sw.magik.parser.TypeDocParser;
 import nl.ramsolutions.sw.magik.parser.TypeStringParser;
 
@@ -38,6 +31,14 @@ public class MagikSemanticTokenWalker extends MagikAstWalker {
 
   private static final String DEFAULT_PACKAGE = "user";
   private static final String TOPIC_DEPRECATED = "deprecated";
+
+  private static final Pattern typeRegex =
+      Pattern.compile(
+          "^#\\s*type: ?("
+              + MagikGrammar.IDENTIFIER_REGEXP
+              + ")"); // equivalent to the MagikGrammar.EXEMPLAR
+  private static final Pattern iterTypeRegex =
+      Pattern.compile("^#\\s*iter-type: ?(" + MagikGrammar.IDENTIFIER_REGEXP + ")");
 
   private static final List<String> MAGIK_MODIFIER_VALUES =
       List.of(
@@ -199,6 +200,46 @@ public class MagikSemanticTokenWalker extends MagikAstWalker {
                         descriptionNode, SemanticToken.Type.COMMENT, docModifier));
           });
     } else {
+      Matcher typeRegexMatcher = typeRegex.matcher(value);
+      Matcher iterTypeRegexMatcher = iterTypeRegex.matcher(value);
+      String type = null, originalValue = null;
+      int start = 0;
+      if (typeRegexMatcher.find()) {
+        type = typeRegexMatcher.group(1);
+        start = typeRegexMatcher.start(1);
+        originalValue = typeRegexMatcher.group(0);
+      } else if (iterTypeRegexMatcher.find()) {
+        type = iterTypeRegexMatcher.group(1);
+        start = iterTypeRegexMatcher.start(1);
+        originalValue = iterTypeRegexMatcher.group(0);
+      }
+
+      final AstNode node = this.magikFile.getTopNode();
+      // TODO find better way to get token in front of comment
+      AstNode currentNode =
+          AstQuery.nodeAt(node, new Position(token.getLine(), token.getColumn() - 4));
+      if (type != null && currentNode != null) {
+        PackageNodeHelper helper = new PackageNodeHelper(currentNode);
+        Collection<ITypeStringDefinition> definitions =
+            this.magikFile
+                .getTypeStringResolver()
+                .resolve(TypeString.ofIdentifier(type, helper.getCurrentPackage()));
+
+        if (!definitions.isEmpty()) {
+          Token exemplarToken =
+              Token.builder()
+                  .setLine(token.getLine())
+                  .setType(token.getType())
+                  .setTrivia(token.getTrivia())
+                  .setURI(token.getURI())
+                  .setGeneratedCode(token.isGeneratedCode())
+                  .setColumn(token.getColumn() + start)
+                  .setValueAndOriginalValue(type, originalValue)
+                  .build();
+          this.addSemanticToken(exemplarToken, SemanticToken.Type.CLASS);
+        }
+      }
+
       this.addSemanticToken(token, SemanticToken.Type.COMMENT);
     }
   }
