@@ -5,13 +5,18 @@ import edu.umd.cs.findbugs.annotations.CheckForNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.net.URI;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import nl.ramsolutions.sw.magik.MagikTypedFile;
 import nl.ramsolutions.sw.magik.Range;
 import nl.ramsolutions.sw.magik.analysis.AstQuery;
+import nl.ramsolutions.sw.magik.analysis.definitions.ExemplarDefinition;
 import nl.ramsolutions.sw.magik.analysis.definitions.IDefinitionKeeper;
+import nl.ramsolutions.sw.magik.analysis.definitions.MethodDefinition;
+import nl.ramsolutions.sw.magik.analysis.definitions.ParameterDefinition;
 import nl.ramsolutions.sw.magik.analysis.helpers.MethodDefinitionNodeHelper;
+import nl.ramsolutions.sw.magik.analysis.helpers.PackageNodeHelper;
 import nl.ramsolutions.sw.magik.analysis.scope.GlobalScope;
 import nl.ramsolutions.sw.magik.analysis.scope.Scope;
 import nl.ramsolutions.sw.magik.analysis.typing.ExpressionResultString;
@@ -24,12 +29,7 @@ import nl.ramsolutions.sw.magik.api.MagikOperator;
 import nl.ramsolutions.sw.magik.api.MagikPunctuator;
 import nl.ramsolutions.sw.magik.languageserver.Lsp4jConversion;
 import nl.ramsolutions.sw.magik.parser.MagikCommentExtractor;
-import org.eclipse.lsp4j.CompletionItem;
-import org.eclipse.lsp4j.CompletionItemKind;
-import org.eclipse.lsp4j.CompletionItemTag;
-import org.eclipse.lsp4j.CompletionOptions;
-import org.eclipse.lsp4j.Position;
-import org.eclipse.lsp4j.ServerCapabilities;
+import org.eclipse.lsp4j.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -89,10 +89,14 @@ public class CompletionProvider {
         new Position(position.getLine(), position.getCharacter() - removedPart.length());
     final AstNode node = newMagikFile.getTopNode();
     final AstNode tokenNode = AstQuery.nodeAt(node, Lsp4jConversion.positionFromLsp4j(newPosition));
-    LOGGER.trace("Current token: {}", removedPart);
+
+    if (LOGGER.isTraceEnabled()) {
+      LOGGER.trace("Current token: {}", removedPart);
+    }
 
     // Ensure not in comment.
     if (this.inComment(node, position)) {
+      // TODO completion for @param, @slot etc
       return Collections.emptyList();
     }
 
@@ -144,6 +148,13 @@ public class CompletionProvider {
   private List<CompletionItem> provideGlobalCompletion(
       final MagikTypedFile magikFile, final Position position, final @Nullable AstNode tokenNode) {
     final List<CompletionItem> items = new ArrayList<>();
+
+    String currentPackage = "sw";
+    if (tokenNode != null) {
+      PackageNodeHelper helper = new PackageNodeHelper(tokenNode);
+      currentPackage = helper.getCurrentPackage();
+    }
+    final String finalCurrentPackage = currentPackage;
 
     // Keyword entries.
     Stream.of(MagikKeyword.values())
@@ -221,23 +232,44 @@ public class CompletionProvider {
     definitionKeeper.getExemplarDefinitions().stream()
         .filter(
             exemplarDef ->
-                exemplarDef.getTypeString().getFullString().indexOf(identifierPart) != -1)
-        .map(
-            exemplarDef -> {
-              final CompletionItem item =
-                  new CompletionItem(exemplarDef.getTypeString().getFullString());
-              item.setInsertText(exemplarDef.getTypeString().getFullString());
-              item.setDetail(exemplarDef.getTypeString().getFullString());
-              item.setDocumentation(exemplarDef.getDoc());
-              item.setKind(CompletionItemKind.Class);
-              if (exemplarDef.getTopics().contains(TOPIC_DEPRECATED)) {
-                item.setTags(List.of(CompletionItemTag.Deprecated));
-              }
-              return item;
-            })
+              exemplarDef.getTypeString().getFullString().contains(identifierPart))
+        .map(exemplarDef -> exemplarCompletion(exemplarDef, finalCurrentPackage))
         .forEach(items::add);
 
     return items;
+  }
+
+  private CompletionItem exemplarCompletion(ExemplarDefinition exemplarDef, String currentPackage) {
+    boolean pakkage = shouldPrependPackage(exemplarDef.getTypeString(), currentPackage);
+    final TypeString typeString = exemplarDef.getTypeString();
+
+    final CompletionItem item =
+      new CompletionItem(typeString.getFullString());
+    if (pakkage) {
+      item.setInsertText(typeString.getFullString());
+    } else {
+      item.setInsertText(typeString.getIdentifier());
+    }
+    item.setDetail(typeString.getFullString());
+    item.setDocumentation(exemplarDef.getDoc());
+    item.setKind(CompletionItemKind.Class);
+    if (exemplarDef.getTopics().contains(TOPIC_DEPRECATED)) {
+      item.setTags(List.of(CompletionItemTag.Deprecated));
+    }
+    return item;
+  }
+
+  private boolean shouldPrependPackage(TypeString typeString, String currentPackage) {
+    String pakkage = typeString.getPakkage();
+    if (currentPackage.equals(pakkage)) {
+      return false;
+    }
+
+    if (currentPackage.equals("user") && pakkage.equals("sw")) {
+      return false;
+    }
+
+    return true;
   }
 
   /**
@@ -287,34 +319,57 @@ public class CompletionProvider {
         .filter(methodDef -> methodDef.getMethodName().contains(methodNamePart))
         .map(
             methodDef -> {
-              final String methodName = methodDef.getMethodNameWithParameters();
-              final CompletionItem item = new CompletionItem(methodName);
-              item.setInsertText(methodName);
+              final CompletionItem item = new CompletionItem(methodDef.getMethodNameWithParameters());
+
+              item.setInsertText(this.buildMethodInvocationSnippet(methodDef));
               TypeString type = methodDef.getTypeName();
               if (!finalTypeStr.equals(TypeString.SW_OBJECT)) {
                 if (type.equals(finalTypeStr)) {
-                  item.setSortText("  " + item.getInsertText());
+                  item.setSortText("  " + item.getLabel());
                 } else if (!type.equals(TypeString.SW_OBJECT)) {
-                  item.setSortText("!!" + item.getInsertText());
+                  item.setSortText("!!" + item.getLabel());
                 } else {
-                  item.setSortText("##" + item.getInsertText());
+                  item.setSortText("##" + item.getLabel());
                 }
               }
+              item.setInsertTextFormat(InsertTextFormat.Snippet);
               item.setDetail(methodDef.getTypeName().getFullString());
-              item.setDocumentation(methodDef.getDoc());
+              item.setDocumentation(methodDef.getDoc()); // TODO better documentation of parameters like with method hover
               item.setKind(CompletionItemKind.Method);
               if (methodDef.getTopics().contains(TOPIC_DEPRECATED)) {
                 item.setTags(List.of(CompletionItemTag.Deprecated));
               }
+
               return item;
             })
         .toList();
   }
 
   /**
+   * build the insert text for a method invocation as an snippet
+   * @param methodDef the method definition to build
+   * @return the string that should be inserted
+   */
+  private String buildMethodInvocationSnippet(MethodDefinition methodDef) {
+    final String methodName = methodDef.getMethodNameWithoutParentheses();
+    final List<ParameterDefinition> parameters = methodDef.filteredParameters(false, false);
+
+    String insertText = methodName + "(";
+
+    AtomicInteger index = new AtomicInteger(1);
+    insertText += parameters.stream()
+      .map(parameterDefinition -> "${" + index.getAndIncrement() + ":" + parameterDefinition.getName() + "}")
+      .collect(Collectors.joining(", "));
+
+    insertText += ")$0";
+
+    return insertText;
+  }
+
+  /**
    * Strip the current token at position.
    *
-   * @param text Text to strip from.
+   * @param source Text to strip from.
    * @param position Position to strip.
    * @return Cleared source, removed token.
    */
@@ -412,6 +467,13 @@ public class CompletionProvider {
       final URI uri = magikFile.getUri();
       final IDefinitionKeeper definitionKeeper = magikFile.getDefinitionKeeper();
       newMagikFile = new MagikTypedFile(uri, cleanedSource, definitionKeeper);
+    } else if (tokenNode != null
+    && tokenNode.getParent() != null) {
+      AstNode parent = tokenNode.getParent();
+      if (parent.getParent().is(MagikGrammar.METHOD_INVOCATION)) {
+        cleanedToken = ".";
+      }
+      cleanedToken += tokenNode.getTokenValue();
     }
 
     return Map.entry(newMagikFile, cleanedToken);

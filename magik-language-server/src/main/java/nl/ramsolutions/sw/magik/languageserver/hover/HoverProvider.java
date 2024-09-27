@@ -499,14 +499,15 @@ public class HoverProvider {
     if (!methodDef.getParameters().isEmpty()) {
       builder.append("### Parameters:");
       for (final ParameterDefinition parameter : methodDef.getParameters()) {
+        // TODO add definitionKeeper instance variable to HoverProvider for linking to types
         builder
             .append("\n  - **")
             .append(parameter.getName())
             .append("** *")
             .append(this.formatTypeString(parameter.getTypeName()))
             .append("*");
-        if (parameter.getDoc() != null) {
-          builder.append(": ").append(parameter.getDoc());
+        if (parameter.getDoc() != null && !parameter.getDoc().isEmpty()) {
+          builder.append(" – ").append(parameter.getDoc());
         }
       }
 

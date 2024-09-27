@@ -583,12 +583,14 @@ public class MagikTextDocumentService implements TextDocumentService {
       final CompletionParams params) {
     final long start = System.nanoTime();
 
+
     final TextDocumentIdentifier textDocument = params.getTextDocument();
     LOGGER.debug(
-        "completion, uri: {}, position: {},{}",
-        textDocument.getUri(),
-        params.getPosition().getLine(),
-        params.getPosition().getCharacter());
+      "completion, uri: {}, position: {},{}",
+      textDocument.getUri(),
+      params.getPosition().getLine(),
+      params.getPosition().getCharacter()
+    );
 
     final OpenedFile openedFile = this.openedFiles.get(textDocument);
 
@@ -603,19 +605,20 @@ public class MagikTextDocumentService implements TextDocumentService {
     final MagikTypedFile magikFile = (MagikTypedFile) openedFile;
     final Position position = params.getPosition();
     return CompletableFuture.supplyAsync(
-        () -> {
-          final List<CompletionItem> completions =
-              this.completionProvider.provideCompletions(magikFile, position);
-          if (LOGGER_DURATION.isTraceEnabled()) {
-            LOGGER_DURATION.trace(
-                "Duration: {} completion, uri: {}, position: {},{}",
-                String.format("%.3f", (System.nanoTime() - start) / 1000000000.0),
-                textDocument.getUri(),
-                params.getPosition().getLine(),
-                params.getPosition().getCharacter());
-          }
-          return Either.forLeft(completions);
-        });
+      () -> {
+        final List<CompletionItem> completions =
+          this.completionProvider.provideCompletions(magikFile, position);
+        if (LOGGER_DURATION.isTraceEnabled()) {
+          LOGGER_DURATION.trace(
+            "Duration: {} completion, uri: {}, position: {},{}",
+            String.format("%.3f", (System.nanoTime() - start) / 1000000000.0),
+            textDocument.getUri(),
+            params.getPosition().getLine(),
+            params.getPosition().getCharacter()
+          );
+        }
+        return Either.forLeft(completions);
+      });
   }
 
   @Override
