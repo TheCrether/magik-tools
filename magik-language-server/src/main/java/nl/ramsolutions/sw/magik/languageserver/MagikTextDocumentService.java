@@ -43,6 +43,7 @@ import org.eclipse.lsp4j.services.LanguageClient;
 import org.eclipse.lsp4j.services.TextDocumentService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.sonar.check.Rule;
 import org.sonar.check.RuleProperty;
 
 /** Magik TextDocumentService. */
@@ -1057,10 +1058,11 @@ public class MagikTextDocumentService implements TextDocumentService {
                     checks.stream()
                         .map(
                             check -> {
-                              String rule = MagikChecksConfiguration.checkKey(check);
-                              CompletionItem item = new CompletionItem(rule);
+                              Rule rule = MagikChecksConfiguration.getRuleAnnotation(check);
+                              String ruleText = MagikChecksConfiguration.checkKey(check);
+                              CompletionItem item = new CompletionItem(ruleText);
 
-                              item.setInsertText(rule);
+                              item.setInsertText(ruleText);
                               item.setKind(CompletionItemKind.Property);
                               item.setTextEdit(
                                   Either.forRight(
@@ -1075,8 +1077,7 @@ public class MagikTextDocumentService implements TextDocumentService {
                                                       + item.getInsertText().length())))));
                               // TODO find out why the completion items do not get rendered if the
                               // toReplaceStr is empty
-                              // item.setDocumentation(); // TODO add description to @Rule
-                              // annotations
+                              item.setDocumentation(rule.description());
 
                               return item;
                             })
@@ -1171,7 +1172,7 @@ public class MagikTextDocumentService implements TextDocumentService {
               return Either.forLeft(new ArrayList<>());
             default:
               throw new UnsupportedOperationException(
-                  "Unsupported completion type: " + completionType);
+                  "Unsupported completion type: " + finalCompletionType);
           }
         });
   }

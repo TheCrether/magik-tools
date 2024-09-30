@@ -99,6 +99,10 @@ public class MagikChecksConfiguration {
     return holders;
   }
 
+  public static Rule getRuleAnnotation(final Class<? extends MagikCheck> checkClass) {
+    return checkClass.getAnnotation(Rule.class);
+  }
+
   public static String checkKey(final Class<?> checkClass) {
     final Rule annotation = checkClass.getAnnotation(Rule.class);
     final String checkKey = annotation.key();
