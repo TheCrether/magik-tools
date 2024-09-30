@@ -226,7 +226,7 @@ public class HoverProvider {
       final StringBuilder builder,
       final int indent) {
     if (indent == 0) {
-      builder.append(pakkageDef.getName()).append("\n\n");
+      builder.append(pakkageDef.getName()).append(BR);
     }
 
     final IDefinitionKeeper definitionKeeper = magikFile.getDefinitionKeeper();
@@ -235,7 +235,7 @@ public class HoverProvider {
         .sorted()
         .forEach(
             use -> {
-              builder.append(indentStr).append(" ↳ ").append(use).append("\n\n");
+              builder.append(indentStr).append(" ↳ ").append(use).append(BR);
 
               definitionKeeper
                   .getPackageDefinitions(use)
@@ -282,17 +282,17 @@ public class HoverProvider {
       final StringBuilder builder,
       final int indent) {
     if (indent == 0) {
-      builder.append(conditionDefinition.getName()).append("\n\n");
+      builder.append(conditionDefinition.getName()).append(BR);
     }
 
     final IDefinitionKeeper definitionKeeper = magikFile.getDefinitionKeeper();
     final String indentStr = NBSP_NBSP.repeat(indent);
     final String parentConditionName = conditionDefinition.getParent();
     if (parentConditionName != null) {
-      builder.append(indentStr).append(" ↳ ").append(parentConditionName).append("\n\n");
+      builder.append(indentStr).append(" ↳ ").append(parentConditionName).append(BR);
 
       definitionKeeper
-          .getConditionDefinitions(parentConditionName)
+          .getConditionDefinitions()
           .forEach(
               parentConditionDef ->
                   this.addConditionTaxonomy(magikFile, parentConditionDef, builder, indent + 1));
@@ -381,7 +381,7 @@ public class HoverProvider {
         resolver
             .tryToGetOneMethodDefinition(typeStr, methodName)
             // could be found, use it
-            .forEach(methodDef -> this.buildMethodSignatureDoc(methodDef, builder));
+            .forEach(methodDef -> buildMethodSignatureDoc(methodDef, builder, this.properties));
       }
     }
   }
@@ -408,7 +408,7 @@ public class HoverProvider {
     final TypeStringResolver resolver = magikFile.getTypeStringResolver();
     resolver
         .tryToGetOneMethodDefinition(typeStr, methodName)
-        .forEach(methodDef -> this.buildMethodSignatureDoc(methodDef, builder));
+        .forEach(methodDef -> buildMethodSignatureDoc(methodDef, builder, this.properties));
   }
 
   /**
@@ -429,7 +429,8 @@ public class HoverProvider {
     resolver.resolve(typeStr).stream()
         .filter(ExemplarDefinition.class::isInstance)
         .map(ExemplarDefinition.class::cast)
-        .forEach(exemplarDef -> this.buildTypeSignatureDoc(magikFile, exemplarDef, builder));
+        .forEach(
+            exemplarDef -> buildTypeSignatureDoc(magikFile, exemplarDef, builder, this.properties));
   }
 
   private void buildProcDoc(
@@ -445,14 +446,14 @@ public class HoverProvider {
     }
   }
 
-  private void addSuperDoc(
+  private static void addSuperDoc(
       final MagikTypedFile magikFile,
       final ExemplarDefinition exemplarDef,
       final StringBuilder builder,
       final int indent) {
     final TypeString typeStr = exemplarDef.getTypeString();
     if (indent == 0) {
-      builder.append(this.formatTypeString(typeStr)).append("\n\n");
+      builder.append(formatTypeString(typeStr)).append(BR);
     }
 
     final IDefinitionKeeper definitionKeeper = magikFile.getDefinitionKeeper();
@@ -465,19 +466,21 @@ public class HoverProvider {
               builder
                   .append(indentStr)
                   .append(" ↳ ")
-                  .append(this.formatTypeString(parentTypeStr))
-                  .append("\n\n");
+                  .append(formatTypeString(parentTypeStr))
+                  .append(BR);
 
               definitionKeeper
                   .getExemplarDefinitions(parentTypeStr)
                   .forEach(
                       parentExemplarDef ->
-                          this.addSuperDoc(magikFile, parentExemplarDef, builder, indent + 1));
+                          addSuperDoc(magikFile, parentExemplarDef, builder, indent + 1));
             });
   }
 
-  private void buildMethodSignatureDoc(
-      final MethodDefinition methodDef, final StringBuilder builder) {
+  public static void buildMethodSignatureDoc(
+      final MethodDefinition methodDef,
+      final StringBuilder builder,
+      MagikToolsProperties properties) {
     appendCodeBlock(builder, true, false, "_method " + methodDef.getNameWithParameters());
 
     // return type
@@ -488,7 +491,7 @@ public class HoverProvider {
     if (methodDef.getModifiers().contains(MethodDefinition.Modifier.ITER)) {
       builder.append("⟳ Iterable ");
       final String iterResultString = methodDef.getLoopTypes().getTypeNames(", ");
-      builder.append(this.formatTypeString(iterResultString));
+      builder.append(formatTypeString(iterResultString));
 
       builder.append(SECTION_END);
     }
@@ -504,7 +507,7 @@ public class HoverProvider {
             .append("\n  - **")
             .append(parameter.getName())
             .append("** *")
-            .append(this.formatTypeString(parameter.getTypeName()))
+            .append(formatTypeString(parameter.getTypeName()))
             .append("*");
         if (parameter.getDoc() != null && !parameter.getDoc().isEmpty()) {
           builder.append(" – ").append(parameter.getDoc());
@@ -524,7 +527,7 @@ public class HoverProvider {
 
     // Method topics.
     final String topics = String.join(", ", methodDef.getTopics());
-    appendTopics(builder, topics);
+    appendTopics(builder, topics, properties);
 
     builder.append(SECTION_END);
   }
@@ -533,7 +536,7 @@ public class HoverProvider {
       final ProcedureDefinition procDef, final StringBuilder builder) {
     final TypeString typeStr = procDef.getTypeString();
 
-    final String aliasName = typeStr.isAnonymous() ? "proc" : this.formatTypeString(typeStr);
+    final String aliasName = typeStr.isAnonymous() ? "proc" : formatTypeString(typeStr);
 
     // proc name
     final String joiner = procDef.getName().startsWith("[") ? "" : ".";
@@ -546,7 +549,7 @@ public class HoverProvider {
     if (procDef.getModifiers().contains(ProcedureDefinition.Modifier.ITER)) {
       builder.append("⟳ Iterable ");
       final String iterResultString = procDef.getLoopTypes().getTypeNames(", ");
-      builder.append(this.formatTypeString(iterResultString));
+      builder.append(formatTypeString(iterResultString));
       builder.append(SECTION_END);
     }
 
@@ -555,28 +558,22 @@ public class HoverProvider {
 
     // Procedure topics.
     final String topics = String.join(", ", procDef.getTopics());
-    appendTopics(builder, topics);
+    appendTopics(builder, topics, this.properties);
 
     // Procedure doc.
     appendDoc(builder, procDef);
   }
 
-  private void buildTypeSignatureDoc(
+  public static void buildTypeSignatureDoc(
       final MagikTypedFile magikFile,
       final ExemplarDefinition exemplarDef,
-      final StringBuilder builder) {
+      final StringBuilder builder,
+      final MagikToolsProperties properties) {
     // type name
     final TypeString typeStr = exemplarDef.getTypeString();
-    appendCodeBlock(builder, true, true, this.formatTypeString(typeStr));
+    appendCodeBlock(builder, true, false, formatTypeString(typeStr));
 
-    appendDoc(builder, exemplarDef);
-
-    appendModuleName(builder, exemplarDef);
-
-    final String topics = String.join(", ", exemplarDef.getTopics());
-    appendTopics(builder, topics);
-
-    builder.append(SECTION_END);
+    builder.append(SEPARATOR);
 
     final Collection<SlotDefinition> slots = exemplarDef.getSlots();
     if (!slots.isEmpty()) {
@@ -590,25 +587,34 @@ public class HoverProvider {
                     .append("- ")
                     .append(slot.getName())
                     .append(": ")
-                    .append(this.formatTypeString(slotType))
+                    .append(formatTypeString(slotType))
                     .append("\n");
               });
-      builder.append(SECTION_END);
+      builder.append(SEPARATOR);
     }
+
+    appendDoc(builder, exemplarDef);
+
+    appendModuleName(builder, exemplarDef);
+
+    final String topics = String.join(", ", exemplarDef.getTopics());
+    appendTopics(builder, topics, properties);
+
+    builder.append(SECTION_END);
 
     final List<TypeString> generics = exemplarDef.getTypeString().getGenerics();
     if (!generics.isEmpty()) {
       builder.append("### Generic definitions\n");
       generics.forEach(
           genericTypeStr ->
-              builder.append("* ").append(this.formatTypeString(genericTypeStr)).append("\n"));
+              builder.append("* ").append(formatTypeString(genericTypeStr)).append("\n"));
       builder.append(SECTION_END);
     }
 
     final TypeStringResolver resolver = magikFile.getTypeStringResolver();
     if (!resolver.getParents(typeStr).isEmpty()) {
       builder.append("### Supers\n");
-      this.addSuperDoc(magikFile, exemplarDef, builder, 0);
+      addSuperDoc(magikFile, exemplarDef, builder, 0);
       builder.append(SECTION_END);
     }
   }
@@ -694,7 +700,7 @@ public class HoverProvider {
    * @param builder the string builder
    * @param def the definition
    */
-  private void appendModuleName(StringBuilder builder, MagikDefinition def) {
+  public static void appendModuleName(StringBuilder builder, MagikDefinition def) {
     appendModuleName(builder, def, false);
   }
 
@@ -706,7 +712,7 @@ public class HoverProvider {
    * @param end if the module name is a section end, if true -> add {@link
    *     HoverProvider#SECTION_END}
    */
-  private void appendModuleName(StringBuilder builder, MagikDefinition def, Boolean end) {
+  public static void appendModuleName(StringBuilder builder, MagikDefinition def, Boolean end) {
     final String moduleName = def.getModuleName();
     if (moduleName != null) {
       builder.append("Module: ").append(moduleName).append(end ? SECTION_END : BR);
@@ -719,7 +725,7 @@ public class HoverProvider {
    * @param builder the string builder
    * @param def the definition
    */
-  private void appendDoc(StringBuilder builder, MagikDefinition def) {
+  public static void appendDoc(StringBuilder builder, MagikDefinition def) {
     final String typeDoc = def.getDoc();
     if (typeDoc != null) {
       final String typeDocMd =
@@ -741,7 +747,7 @@ public class HoverProvider {
    *     after the code block
    * @param code the lines of code to be added
    */
-  private void appendCodeBlock(
+  public static void appendCodeBlock(
       StringBuilder builder, boolean isMagik, boolean end, String... code) {
     builder
         .append("```")
@@ -758,16 +764,16 @@ public class HoverProvider {
    * @param builder the string builder
    * @param typeString the type string which should be used
    */
-  private void appendResultType(StringBuilder builder, String typeString) {
+  private static void appendResultType(StringBuilder builder, String typeString) {
     builder.append("→ ");
-    builder.append(
-        typeString.trim().isEmpty() ? "_unset" : this.formatTypeString(typeString.trim()));
+    builder.append(typeString.trim().isEmpty() ? "_unset" : formatTypeString(typeString.trim()));
 
     builder.append(SECTION_END);
   }
 
-  private void appendTopics(StringBuilder builder, String topicsStr) {
-    final MagikLanguageServerSettings settings = new MagikLanguageServerSettings(this.properties);
+  public static void appendTopics(
+      StringBuilder builder, String topicsStr, MagikToolsProperties properties) {
+    final MagikLanguageServerSettings settings = new MagikLanguageServerSettings(properties);
     if (topicsStr.trim().length() > 0 && settings.getShowTopicsOnHover()) {
       builder.append("Topics: ").append(topicsStr);
     }
@@ -779,8 +785,8 @@ public class HoverProvider {
    * @param typeStr the type string to format
    * @return formatted type string
    */
-  private String formatTypeString(final TypeString typeStr) {
-    return this.formatTypeString(typeStr.getFullString());
+  public static String formatTypeString(final TypeString typeStr) {
+    return formatTypeString(typeStr.getFullString());
   }
 
   /**
@@ -789,7 +795,7 @@ public class HoverProvider {
    * @param typeStr the type string to format
    * @return formatted type string
    */
-  private String formatTypeString(final String typeStr) {
+  public static String formatTypeString(final String typeStr) {
     return typeStr.replace("<", "[").replace(">", "]");
   }
 }

@@ -96,7 +96,7 @@ public class MagikTextDocumentService implements TextDocumentService {
     this.signatureHelpProvider = new SignatureHelpProvider();
     this.definitionsProvider = new DefinitionsProvider(this.properties);
     this.referencesProvider = new ReferencesProvider(this.properties);
-    this.completionProvider = new CompletionProvider();
+    this.completionProvider = new CompletionProvider(this.properties);
     this.formattingProvider = new FormattingProvider();
     this.foldingRangeProvider = new FoldingRangeProvider();
     this.semanticTokenProver = new SemanticTokenProvider();

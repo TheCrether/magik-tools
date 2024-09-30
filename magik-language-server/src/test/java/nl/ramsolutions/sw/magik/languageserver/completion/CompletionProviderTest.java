@@ -8,6 +8,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import nl.ramsolutions.sw.MagikToolsProperties;
 import nl.ramsolutions.sw.magik.MagikTypedFile;
 import nl.ramsolutions.sw.magik.analysis.definitions.DefinitionKeeper;
 import nl.ramsolutions.sw.magik.analysis.definitions.ExemplarDefinition;
@@ -31,7 +32,7 @@ class CompletionProviderTest {
   private List<CompletionItem> getCompletions(
       final String code, final IDefinitionKeeper definitionKeeper, final Position position) {
     final MagikTypedFile magikFile = new MagikTypedFile(DEFAULT_URI, code, definitionKeeper);
-    final CompletionProvider provider = new CompletionProvider();
+    final CompletionProvider provider = new CompletionProvider(new MagikToolsProperties());
     return provider.provideCompletions(magikFile, position);
   }
 

@@ -8,13 +8,11 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import nl.ramsolutions.sw.MagikToolsProperties;
 import nl.ramsolutions.sw.magik.MagikTypedFile;
 import nl.ramsolutions.sw.magik.Range;
 import nl.ramsolutions.sw.magik.analysis.AstQuery;
-import nl.ramsolutions.sw.magik.analysis.definitions.ExemplarDefinition;
-import nl.ramsolutions.sw.magik.analysis.definitions.IDefinitionKeeper;
-import nl.ramsolutions.sw.magik.analysis.definitions.MethodDefinition;
-import nl.ramsolutions.sw.magik.analysis.definitions.ParameterDefinition;
+import nl.ramsolutions.sw.magik.analysis.definitions.*;
 import nl.ramsolutions.sw.magik.analysis.helpers.MethodDefinitionNodeHelper;
 import nl.ramsolutions.sw.magik.analysis.helpers.PackageNodeHelper;
 import nl.ramsolutions.sw.magik.analysis.scope.GlobalScope;
@@ -28,6 +26,7 @@ import nl.ramsolutions.sw.magik.api.MagikKeyword;
 import nl.ramsolutions.sw.magik.api.MagikOperator;
 import nl.ramsolutions.sw.magik.api.MagikPunctuator;
 import nl.ramsolutions.sw.magik.languageserver.Lsp4jConversion;
+import nl.ramsolutions.sw.magik.languageserver.hover.HoverProvider;
 import nl.ramsolutions.sw.magik.parser.MagikCommentExtractor;
 import org.eclipse.lsp4j.*;
 import org.slf4j.Logger;
@@ -39,6 +38,8 @@ public class CompletionProvider {
   private static final Logger LOGGER = LoggerFactory.getLogger(CompletionProvider.class);
   private static final Set<Character> REMOVAL_STOP_CHARS = new HashSet<>();
   private static final String TOPIC_DEPRECATED = "deprecated";
+
+  private final MagikToolsProperties properties;
 
   static {
     REMOVAL_STOP_CHARS.add(' ');
@@ -59,6 +60,10 @@ public class CompletionProvider {
             .flatMap(value -> value.chars().mapToObj(i -> (char) i))
             .collect(Collectors.toSet());
     REMOVAL_STOP_CHARS.addAll(operatorChars);
+  }
+
+  public CompletionProvider(MagikToolsProperties properties) {
+    this.properties = properties;
   }
 
   /**
@@ -82,9 +87,9 @@ public class CompletionProvider {
   public List<CompletionItem> provideCompletions(
       final MagikTypedFile magikFile, final Position position) {
     // Do our best to get a token value, and clean up the source while we're at it.
-    final Map.Entry<MagikTypedFile, String> usables = this.getUsableMagikFile(magikFile, position);
-    final MagikTypedFile newMagikFile = usables.getKey();
-    final String removedPart = usables.getValue();
+    final Map.Entry<MagikTypedFile, String> usable = this.getUsableMagikFile(magikFile, position);
+    final MagikTypedFile newMagikFile = usable.getKey();
+    final String removedPart = usable.getValue();
     final Position newPosition =
         new Position(position.getLine(), position.getCharacter() - removedPart.length());
     final AstNode node = newMagikFile.getTopNode();
@@ -231,13 +236,14 @@ public class CompletionProvider {
     final String identifierPart = tokenNode != null ? tokenNode.getTokenValue() : "";
     definitionKeeper.getExemplarDefinitions().stream()
         .filter(exemplarDef -> exemplarDef.getTypeString().getFullString().contains(identifierPart))
-        .map(exemplarDef -> exemplarCompletion(exemplarDef, finalCurrentPackage))
+        .map(exemplarDef -> exemplarCompletion(magikFile, exemplarDef, finalCurrentPackage))
         .forEach(items::add);
 
     return items;
   }
 
-  private CompletionItem exemplarCompletion(ExemplarDefinition exemplarDef, String currentPackage) {
+  private CompletionItem exemplarCompletion(
+      MagikTypedFile magikFile, ExemplarDefinition exemplarDef, String currentPackage) {
     boolean pakkage = shouldPrependPackage(exemplarDef.getTypeString(), currentPackage);
     final TypeString typeString = exemplarDef.getTypeString();
 
@@ -247,26 +253,14 @@ public class CompletionProvider {
     } else {
       item.setInsertText(typeString.getIdentifier());
     }
-    item.setDetail(typeString.getFullString());
-    item.setDocumentation(exemplarDef.getDoc());
+    StringBuilder doc = new StringBuilder();
+    HoverProvider.buildTypeSignatureDoc(magikFile, exemplarDef, doc, this.properties);
+    item.setDocumentation(new MarkupContent(MarkupKind.MARKDOWN, doc.toString()));
     item.setKind(CompletionItemKind.Class);
     if (exemplarDef.getTopics().contains(TOPIC_DEPRECATED)) {
       item.setTags(List.of(CompletionItemTag.Deprecated));
     }
     return item;
-  }
-
-  private boolean shouldPrependPackage(TypeString typeString, String currentPackage) {
-    String pakkage = typeString.getPakkage();
-    if (currentPackage.equals(pakkage)) {
-      return false;
-    }
-
-    if (currentPackage.equals("user") && pakkage.equals("sw")) {
-      return false;
-    }
-
-    return true;
   }
 
   /**
@@ -331,9 +325,8 @@ public class CompletionProvider {
                 }
               }
               item.setInsertTextFormat(InsertTextFormat.Snippet);
-              item.setDetail(methodDef.getTypeName().getFullString());
-              // TODO better documentation of parameters like with method hover
-              item.setDocumentation(methodDef.getDoc());
+              item.setDocumentation(
+                  new MarkupContent(MarkupKind.MARKDOWN, this.buildMethodDocumentation(methodDef)));
               item.setKind(CompletionItemKind.Method);
               if (methodDef.getTopics().contains(TOPIC_DEPRECATED)) {
                 item.setTags(List.of(CompletionItemTag.Deprecated));
@@ -345,7 +338,7 @@ public class CompletionProvider {
   }
 
   /**
-   * build the insert text for a method invocation as an snippet
+   * build the insert text for a method invocation as a snippet
    *
    * @param methodDef the method definition to build
    * @return the string that should be inserted
@@ -372,6 +365,12 @@ public class CompletionProvider {
     insertText += ")$0";
 
     return insertText;
+  }
+
+  private String buildMethodDocumentation(MethodDefinition methodDef) {
+    StringBuilder builder = new StringBuilder();
+    HoverProvider.buildMethodSignatureDoc(methodDef, builder, this.properties);
+    return builder.toString();
   }
 
   /**
@@ -411,11 +410,8 @@ public class CompletionProvider {
     // Clean up by replacing the scanned part with whitespace.
     final String stripped = line.substring(beginIndex, endIndex);
     lines[lineNo] =
-        ""
-            + line.substring(0, beginIndex)
-            + " ".repeat(stripped.length())
-            + line.substring(endIndex);
-    return new String[] {Arrays.stream(lines).collect(Collectors.joining("\n")), stripped.trim()};
+        line.substring(0, beginIndex) + " ".repeat(stripped.length()) + line.substring(endIndex);
+    return new String[] {String.join("\n", lines), stripped.trim()};
   }
 
   /**
@@ -484,5 +480,18 @@ public class CompletionProvider {
     }
 
     return Map.entry(newMagikFile, cleanedToken);
+  }
+
+  private boolean shouldPrependPackage(TypeString typeString, String currentPackage) {
+    String pakkage = typeString.getPakkage();
+    if (currentPackage.equals(pakkage)) {
+      return false;
+    }
+
+    if (currentPackage.equals("user") && pakkage.equals("sw")) {
+      return false;
+    }
+
+    return true;
   }
 }

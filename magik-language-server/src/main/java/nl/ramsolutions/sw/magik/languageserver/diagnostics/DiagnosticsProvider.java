@@ -93,6 +93,10 @@ public class DiagnosticsProvider {
   }
 
   public boolean isIgnoredUri(final String uri) {
-    return this.ignoredUris.contains(URI.create(uri));
+    try {
+      return this.ignoredUris.contains(URI.create(uri));
+    } catch (RuntimeException e) { // for URISyntaxException
+      return false;
+    }
   }
 }
