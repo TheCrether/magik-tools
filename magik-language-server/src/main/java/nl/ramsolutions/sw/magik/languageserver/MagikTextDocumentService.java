@@ -1021,14 +1021,15 @@ public class MagikTextDocumentService implements TextDocumentService {
 
     List<Class<? extends MagikCheck>> checks = CheckList.getChecks();
 
-    String finalLine = line == null ? "" : line;
+    final String finalLine = line == null ? "" : line;
+    final String finalCompletionType = completionType;
+    final int finalStartIndex = tempStartIndex;
 
-    switch (completionType) {
-      case "rules":
-        {
-          int finalStartIndex = tempStartIndex;
-          return CompletableFuture.supplyAsync(
-              () -> {
+    return CompletableFuture.supplyAsync(
+        () -> {
+          switch (finalCompletionType) {
+            case "rules":
+              {
                 int startIndex = finalStartIndex;
                 int endIndex = finalLine.length() - 1;
                 Set<Character> startSeparators = Set.of('=', ',');
@@ -1088,12 +1089,9 @@ public class MagikTextDocumentService implements TextDocumentService {
                     (System.nanoTime() - start) / 1000000000.0,
                     completions.size());
                 return Either.forLeft(completions);
-              });
-        }
-      case "properties":
-        {
-          return CompletableFuture.supplyAsync(
-              () -> {
+              }
+            case "properties":
+              {
                 List<CompletionItem> completions =
                     checks.stream()
                         .flatMap(
@@ -1168,12 +1166,14 @@ public class MagikTextDocumentService implements TextDocumentService {
                     "Duration: {} completionsForLintFile/properties",
                     (System.nanoTime() - start) / 1000000000.0);
                 return Either.forLeft(completions);
-              });
-        }
-      case "none":
-        return CompletableFuture.supplyAsync(() -> Either.forLeft(new ArrayList<>()));
-    }
-    throw new UnsupportedOperationException("Unsupported completion type: " + completionType);
+              }
+            case "none":
+              return Either.forLeft(new ArrayList<>());
+            default:
+              throw new UnsupportedOperationException(
+                  "Unsupported completion type: " + completionType);
+          }
+        });
   }
 
   private void setInsertEditForProperty(CompletionItem item, Position position, String finalLine) {

@@ -73,7 +73,7 @@ public class CompletionProvider {
    */
   public void setCapabilities(final ServerCapabilities capabilities) {
     final CompletionOptions completionOptions = new CompletionOptions();
-    completionOptions.setTriggerCharacters(List.of("."));
+    completionOptions.setTriggerCharacters(List.of(".", "="));
     capabilities.setCompletionProvider(completionOptions);
   }
 
