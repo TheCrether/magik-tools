@@ -90,9 +90,10 @@ public class MagikWorkspaceService implements WorkspaceService {
 
     final MagikLanguageServerSettings oldLspSettings =
         new MagikLanguageServerSettings(this.languageServerProperties);
-    final List<String> oldTypeDBPaths = oldLspSettings.getTypingTypeDatabasePaths();
-    final List<String> oldProductDirs = oldLspSettings.getProductDirs();
-    final List<PathMapping> oldPathMappings = oldLspSettings.getPathMappings();
+    final List<String> oldTypeDBPaths =
+        new ArrayList<>(oldLspSettings.getTypingTypeDatabasePaths());
+    final List<String> oldProductDirs = new ArrayList<>(oldLspSettings.getProductDirs());
+    final List<PathMapping> oldPathMappings = new ArrayList<>(oldLspSettings.getPathMappings());
 
     final JsonObject settings = (JsonObject) params.getSettings();
     final Properties props = JsonObjectPropertiesConverter.convert(settings);

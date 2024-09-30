@@ -351,6 +351,11 @@ public class CompletionProvider {
    * @return the string that should be inserted
    */
   private String buildMethodInvocationSnippet(MethodDefinition methodDef) {
+    final String originalMethodName = methodDef.getMethodNameWithParameters();
+    if (!originalMethodName.endsWith(")")) {
+      return originalMethodName;
+    }
+
     final String methodName = methodDef.getMethodNameWithoutParentheses();
     final List<ParameterDefinition> parameters = methodDef.filteredParameters(false, false);
 

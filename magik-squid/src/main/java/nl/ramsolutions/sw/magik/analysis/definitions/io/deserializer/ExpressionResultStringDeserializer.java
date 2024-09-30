@@ -23,9 +23,12 @@ public final class ExpressionResultStringDeserializer
   public ExpressionResultString deserialize(JsonParser jp, DeserializationContext context)
       throws IOException {
     JsonNode json = jp.readValueAsTree();
-    if (asString(json) != null
-        && json.asText().equals(ExpressionResultString.UNDEFINED_SERIALIZED_NAME)) {
-      return ExpressionResultString.UNDEFINED;
+    if (asString(json) != null) {
+      if (json.asText().equals(ExpressionResultString.UNDEFINED_SERIALIZED_NAME)) {
+        return ExpressionResultString.UNDEFINED;
+      }
+
+      return new ExpressionResultString(TypeStringParser.parseTypeString(asString(json)));
     } else if (json.isArray()) {
       final List<TypeString> types =
           StreamSupport.stream(json.spliterator(), false)
