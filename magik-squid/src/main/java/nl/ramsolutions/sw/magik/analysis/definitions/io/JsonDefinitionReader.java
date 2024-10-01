@@ -178,8 +178,9 @@ public final class JsonDefinitionReader {
         CompletableFuture.allOf(completableFutures.toArray(new CompletableFuture[0]));
     try {
       allFutures.get();
+      LOGGER.info("Finished reading type database from: {}", path);
     } catch (InterruptedException | ExecutionException e) {
-      LOGGER.error("Error while reading all JSON lines");
+      LOGGER.error("Error while reading type database from: {}", path, e);
     }
   }
 

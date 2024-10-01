@@ -24,7 +24,7 @@ public class FormattingFixer extends MagikCheckFixer {
   public List<CodeAction> provideCodeActions(final MagikFile magikFile, final Range range) {
     final AstNode node = magikFile.getTopNode();
     if (!this.canFormat(magikFile)) {
-      LOGGER.warn("Cannot format due to syntax errors");
+      LOGGER.warn("Cannot provide code actions due to syntax errors");
       return Collections.emptyList();
     }
 

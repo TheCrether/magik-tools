@@ -295,17 +295,22 @@ public class CompletionProvider {
     final LocalTypeReasonerState reasonerState = magikFile.getTypeReasonerState();
     final ExpressionResultString result = reasonerState.getNodeType(wantedNode);
     TypeString typeStr = result.get(0, TypeString.UNDEFINED);
-    if (typeStr == TypeString.SELF) {
+    final boolean isSelfInvocation = typeStr == TypeString.SELF;
+    if (isSelfInvocation) {
       final AstNode methodDefNode = tokenNode.getFirstAncestor(MagikGrammar.METHOD_DEFINITION);
       final MethodDefinitionNodeHelper helper = new MethodDefinitionNodeHelper(methodDefNode);
       typeStr = helper.getTypeString();
     }
 
-    // Convert all known methods to CompletionItems.
-    LOGGER.debug("Providing method completions for type: {}", typeStr.getFullString());
+    if (LOGGER.isDebugEnabled()) {
+      LOGGER.debug("Providing method completions for type: {}", typeStr.getFullString());
+    }
+
     final String methodNamePart = tokenValue.startsWith(".") ? tokenValue.substring(1) : tokenValue;
     final TypeStringResolver resolver = magikFile.getTypeStringResolver();
     final TypeString finalTypeStr = typeStr;
+
+    // Convert all known methods to CompletionItems.
     return resolver.getMethodDefinitions(typeStr).stream()
         .filter(methodDef -> methodDef.getMethodName().contains(methodNamePart))
         .map(
@@ -314,16 +319,25 @@ public class CompletionProvider {
                   new CompletionItem(methodDef.getMethodNameWithParameters());
 
               item.setInsertText(this.buildMethodInvocationSnippet(methodDef));
-              TypeString type = methodDef.getTypeName();
+              TypeString methodExemplarType = methodDef.getTypeName();
+
+              String prefix = "";
               if (!finalTypeStr.equals(TypeString.SW_OBJECT)) {
-                if (type.equals(finalTypeStr)) {
-                  item.setSortText("  " + item.getLabel());
-                } else if (!type.equals(TypeString.SW_OBJECT)) {
-                  item.setSortText("!!" + item.getLabel());
+                if (methodExemplarType.equals(finalTypeStr)) {
+                  prefix = " ";
+                } else if (!methodExemplarType.equals(TypeString.SW_OBJECT)) {
+                  prefix = "!";
                 } else {
-                  item.setSortText("##" + item.getLabel());
+                  prefix = "#";
                 }
               }
+
+              if (methodDef.getMethodName().startsWith("new") && !isSelfInvocation) {
+                item.setSortText(" ".repeat(3) + item.getLabel());
+              } else {
+                item.setSortText(prefix.repeat(2) + item.getLabel());
+              }
+
               item.setInsertTextFormat(InsertTextFormat.Snippet);
               item.setDocumentation(
                   new MarkupContent(MarkupKind.MARKDOWN, this.buildMethodDocumentation(methodDef)));

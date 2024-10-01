@@ -193,7 +193,9 @@ public class MagikWorkspaceService implements WorkspaceService {
               }
             });
 
-    LOGGER_DURATION.trace("Duration: {} readTypesDbs", (System.nanoTime() - start) / 1000000000.0);
+    LOGGER.info(
+        "Finished reading type databases, Duration: {}",
+        (System.nanoTime() - start) / 1000000000.0);
   }
 
   @Override
