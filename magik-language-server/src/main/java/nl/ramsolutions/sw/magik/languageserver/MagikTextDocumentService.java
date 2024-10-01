@@ -17,7 +17,9 @@ import nl.ramsolutions.sw.magik.checks.MagikCheck;
 import nl.ramsolutions.sw.magik.checks.MagikChecksConfiguration;
 import nl.ramsolutions.sw.magik.languageserver.callhierarchy.CallHierarchyProvider;
 import nl.ramsolutions.sw.magik.languageserver.codeactions.CodeActionProvider;
+import nl.ramsolutions.sw.magik.languageserver.completion.CompletionHelper;
 import nl.ramsolutions.sw.magik.languageserver.completion.CompletionProvider;
+import nl.ramsolutions.sw.magik.languageserver.completion.CompletionResponses;
 import nl.ramsolutions.sw.magik.languageserver.definitions.DefinitionsProvider;
 import nl.ramsolutions.sw.magik.languageserver.diagnostics.DiagnosticsProvider;
 import nl.ramsolutions.sw.magik.languageserver.documentsymbols.DocumentSymbolProvider;
@@ -600,6 +602,8 @@ public class MagikTextDocumentService implements TextDocumentService {
     } else if (!(openedFile instanceof MagikTypedFile)) {
       return CompletableFuture.supplyAsync(() -> Either.forLeft(Collections.emptyList()));
     }
+
+    CompletionResponses.clear();
 
     final MagikTypedFile magikFile = (MagikTypedFile) openedFile;
     final Position position = params.getPosition();
@@ -1321,5 +1325,45 @@ public class MagikTextDocumentService implements TextDocumentService {
           }
           return items;
         });
+  }
+
+  @Override
+  public CompletableFuture<CompletionItem> resolveCompletionItem(CompletionItem completionItem) {
+    if (LOGGER.isTraceEnabled()) {
+      LOGGER.trace("resolveCompletionItem, completion item: {}", completionItem.getLabel());
+    }
+
+    if (completionItem.getData() == null) {
+      return CompletableFuture.completedFuture(completionItem);
+    }
+
+    URI uri = CompletionHelper.getUriField(completionItem);
+    if (uri == null) {
+      completionItem.setData(null);
+      completionItem.setDocumentation(
+          "could not resolve documentation for: " + completionItem.getLabel());
+      return CompletableFuture.completedFuture(completionItem);
+    }
+
+    TextDocumentIdentifier identifier = new TextDocumentIdentifier(uri.toString());
+    OpenedFile openedFile = this.openedFiles.get(identifier);
+    if (openedFile == null) {
+      completionItem.setData(null);
+      completionItem.setDocumentation(
+          "could not resolve opened file for: " + completionItem.getLabel());
+      return CompletableFuture.completedFuture(completionItem);
+    }
+
+    if (!(openedFile instanceof MagikTypedFile magikFile)) {
+      completionItem.setData(null);
+      LOGGER.warn(
+          "tried to resolve completion item for {} in a {}",
+          completionItem.getLabel(),
+          openedFile.getClass().getSimpleName());
+      return CompletableFuture.completedFuture(completionItem);
+    }
+
+    return CompletableFuture.completedFuture(
+        completionProvider.provideCompletionItem(magikFile, completionItem));
   }
 }

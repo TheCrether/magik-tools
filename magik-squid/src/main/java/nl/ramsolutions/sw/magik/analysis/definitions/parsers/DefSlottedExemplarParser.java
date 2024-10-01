@@ -120,6 +120,7 @@ public class DefSlottedExemplarParser extends BaseDefParser {
     final AstNode parentNode = this.node.getParent();
     final TypeDocParser docParser = new TypeDocParser(parentNode);
     final Map<String, TypeString> slotTypes = docParser.getSlotTypes();
+    final Map<String, String> documentation = docParser.getDocumentationForSlots();
 
     // Figure slots.
     final List<SlotDefinition> slots = new ArrayList<>();
@@ -143,9 +144,10 @@ public class DefSlottedExemplarParser extends BaseDefParser {
       final String slotName = slotNameSymbol.substring(1);
       final TypeString slotTypeRef =
           Objects.requireNonNullElse(slotTypes.get(slotName), TypeString.UNDEFINED);
+      final String doc = documentation.get(slotName);
       final SlotDefinition slot =
           new SlotDefinition(
-              slotLocation, timestamp, moduleName, null, slotDefNode, slotName, slotTypeRef);
+              slotLocation, timestamp, moduleName, doc, slotDefNode, slotName, slotTypeRef);
       slots.add(slot);
 
       // Method definitions.

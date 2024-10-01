@@ -399,7 +399,8 @@ public class TypeStringResolver {
   }
 
   public Collection<TypeString> getSelfAndAncestors(final TypeString typeString) {
-    return Stream.concat(Stream.of(typeString), this.getAllAncestors(typeString).stream())
+    return Stream.concat(
+            typeString.getCombinedTypes().stream(), this.getAllAncestors(typeString).stream())
         .collect(Collectors.toUnmodifiableSet());
   }
 }

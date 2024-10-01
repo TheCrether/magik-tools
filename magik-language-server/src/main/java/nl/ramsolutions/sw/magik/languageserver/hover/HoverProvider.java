@@ -24,11 +24,7 @@ import nl.ramsolutions.sw.moduledef.api.SwModuleDefinitionGrammar;
 import nl.ramsolutions.sw.productdef.ProductDefFile;
 import nl.ramsolutions.sw.productdef.ProductDefinition;
 import nl.ramsolutions.sw.productdef.api.SwProductDefinitionGrammar;
-import org.eclipse.lsp4j.Hover;
-import org.eclipse.lsp4j.MarkupContent;
-import org.eclipse.lsp4j.MarkupKind;
-import org.eclipse.lsp4j.Position;
-import org.eclipse.lsp4j.ServerCapabilities;
+import org.eclipse.lsp4j.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -569,6 +565,7 @@ public class HoverProvider {
       final ExemplarDefinition exemplarDef,
       final StringBuilder builder,
       final MagikToolsProperties properties) {
+
     // type name
     final TypeString typeStr = exemplarDef.getTypeString();
     appendCodeBlock(builder, true, false, formatTypeString(typeStr));

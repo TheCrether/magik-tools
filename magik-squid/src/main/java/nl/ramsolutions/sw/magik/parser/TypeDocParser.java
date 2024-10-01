@@ -287,13 +287,13 @@ public class TypeDocParser {
    *
    * @return the slot name nodes (the names of the slots and their corresponding node)
    */
-  public Map<String, AstNode> getSlotNameNodes() {
+  public Map<AstNode, String> getSlotNameNodes() {
     final AstNode node = this.getTypeDocNode();
     return node.getChildren(TypeDocGrammar.SLOT).stream()
         .filter(this::noEmptyName)
         .collect(
             Collectors.toMap(
-                this::getName, slotNode -> slotNode.getFirstChild(TypeDocGrammar.NAME)));
+                slotNode -> slotNode.getFirstChild(TypeDocGrammar.NAME), this::getName));
   }
 
   /**
@@ -302,7 +302,15 @@ public class TypeDocParser {
    * @return a map for the documentation for every parameter
    */
   public Map<String, String> getDocumentationForParameters() {
-    return this.getParameterNameNodes().entrySet().stream()
+    return getDocumentationForCommentNodes(this.getParameterNameNodes());
+  }
+
+  public Map<String, String> getDocumentationForSlots() {
+    return getDocumentationForCommentNodes(this.getSlotNameNodes());
+  }
+
+  private Map<String, String> getDocumentationForCommentNodes(final Map<AstNode, String> nodes) {
+    return nodes.entrySet().stream()
         .collect(
             Collectors.toMap(
                 Map.Entry::getValue,
