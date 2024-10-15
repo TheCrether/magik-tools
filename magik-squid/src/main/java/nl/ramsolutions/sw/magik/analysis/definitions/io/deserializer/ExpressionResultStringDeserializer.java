@@ -15,6 +15,8 @@ import nl.ramsolutions.sw.magik.parser.TypeStringParser;
 public final class ExpressionResultStringDeserializer
     extends BaseDeserializer<ExpressionResultString> {
 
+  private static final ExpressionResultString EMPTY_RESULT_STRING = new ExpressionResultString();
+
   public ExpressionResultStringDeserializer(List<PathMapping> mappings) {
     super(mappings);
   }
@@ -37,8 +39,10 @@ public final class ExpressionResultStringDeserializer
               .map(TypeStringParser::parseTypeString)
               .toList();
       return new ExpressionResultString(types);
+    } else {
+      return EMPTY_RESULT_STRING;
     }
 
-    throw new IllegalStateException();
+    //    throw new IllegalStateException();
   }
 }

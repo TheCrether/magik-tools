@@ -398,9 +398,24 @@ public class CompletionProvider {
 
     // Convert all known methods to CompletionItems.
     final List<MethodDefinition> filteredMethods =
-        resolver.getMethodDefinitions(typeStr).stream()
-            .filter(methodDef -> methodDef.getMethodName().contains(methodNamePart))
+        new ArrayList<>(
+            resolver.getMethodDefinitions(finalTypeStr).stream()
+                .filter(methodDef -> methodDef.getMethodName().contains(methodNamePart))
+                .toList());
+
+    final List<MethodDefinition> dbFields =
+        filteredMethods.stream()
+            .filter(
+                methodDef -> methodDef.getModifiers().contains(MethodDefinition.Modifier.DB_TYPE))
             .toList();
+    if (dbFields.stream().anyMatch(f -> f.getTypeName().equals(finalTypeStr))) {
+      for (MethodDefinition dbField : dbFields) {
+        if (!dbField.getTypeName().equals(finalTypeStr)) {
+          filteredMethods.remove(dbField);
+        }
+      }
+    }
+
     final List<CompletionItem> completionItems = new ArrayList<>();
     for (int i = 0; i < filteredMethods.size(); i++) {
       final MethodDefinition methodDef = filteredMethods.get(i);
@@ -410,6 +425,11 @@ public class CompletionProvider {
       item.setInsertTextFormat(InsertTextFormat.Snippet);
       item.setInsertText(this.buildMethodInvocationSnippet(methodDef));
       item.setFilterText(methodDef.getMethodNameWithoutParentheses());
+      if (methodDef.getModifiers().contains(MethodDefinition.Modifier.DB_TYPE)) {
+        item.setKind(CompletionItemKind.Field);
+      } else {
+        item.setKind(CompletionItemKind.Method);
+      }
 
       TypeString methodExemplarType = methodDef.getTypeName();
       String prefix = "";
@@ -432,7 +452,6 @@ public class CompletionProvider {
       definitions.add(methodDef);
       item.setData(completionHelper.getCompletionData(response.getId(), i, magikFile.getUri()));
 
-      item.setKind(CompletionItemKind.Method);
       if (methodDef.getTopics().contains(TOPIC_DEPRECATED)) {
         item.setTags(List.of(CompletionItemTag.Deprecated));
       }

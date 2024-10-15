@@ -79,6 +79,9 @@ public class DocumentSymbolProvider {
       if (methodDef.getModifiers().contains(MethodDefinition.Modifier.SHARED_VARIABLE)) {
         return SymbolKind.EnumMember;
       }
+      if (methodDef.getModifiers().contains(MethodDefinition.Modifier.DB_TYPE)) {
+        return SymbolKind.Field;
+      }
     }
     return SymbolKind.Method;
   }
