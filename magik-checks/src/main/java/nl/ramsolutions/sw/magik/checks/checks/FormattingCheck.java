@@ -9,7 +9,12 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import nl.ramsolutions.sw.magik.MagikFile;
+import nl.ramsolutions.sw.magik.Position;
+import nl.ramsolutions.sw.magik.analysis.AstQuery;
+import nl.ramsolutions.sw.magik.api.MagikGrammar;
 import nl.ramsolutions.sw.magik.checks.MagikCheck;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.sonar.check.Rule;
 import org.sonar.check.RuleProperty;
 
@@ -17,6 +22,7 @@ import org.sonar.check.RuleProperty;
 // TODO: Can we use FormattingWalker here?
 @Rule(key = FormattingCheck.CHECK_KEY)
 public class FormattingCheck extends MagikCheck {
+  private static final Logger LOGGER = LoggerFactory.getLogger(FormattingCheck.class);
 
   @SuppressWarnings("checkstyle:JavadocVariable")
   public static final String CHECK_KEY = "Formatting";
@@ -124,7 +130,7 @@ public class FormattingCheck extends MagikCheck {
     this.requireMaxNewlines(this.currentToken);
 
     // Don't care about pragma.
-    if (this.isPragmaLine(this.currentToken)) {
+    if (this.isInPragmaBlock(this.currentToken)) {
       return;
     }
 
@@ -195,9 +201,22 @@ public class FormattingCheck extends MagikCheck {
     }
   }
 
-  private boolean isPragmaLine(final Token token) {
-    final String line = this.getLineFor(token).trim();
-    return line.startsWith("_pragma");
+  private boolean isInPragmaBlock(final Token token) {
+    AstNode topNode = this.getMagikFile().getTopNode();
+    Position tokenPosition = new Position(token.getLine(), token.getColumn());
+    AstNode currentNode = AstQuery.nodeSurrounding(topNode, tokenPosition);
+    if (currentNode == null) {
+      return false;
+    }
+
+    AstNode parent = currentNode.getFirstChild();
+    while ((parent = parent.getParent()) != null) {
+      if (parent.is(MagikGrammar.PRAGMA) || parent.is(MagikGrammar.PRAGMA_PARAM)) {
+        return true;
+      }
+    }
+
+    return false;
   }
 
   private String getLineFor(final Token token) {

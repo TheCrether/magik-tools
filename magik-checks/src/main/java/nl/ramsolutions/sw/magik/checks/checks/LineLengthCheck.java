@@ -6,6 +6,8 @@ import nl.ramsolutions.sw.magik.Location;
 import nl.ramsolutions.sw.magik.MagikFile;
 import nl.ramsolutions.sw.magik.Position;
 import nl.ramsolutions.sw.magik.Range;
+import nl.ramsolutions.sw.magik.analysis.AstQuery;
+import nl.ramsolutions.sw.magik.api.MagikGrammar;
 import nl.ramsolutions.sw.magik.checks.MagikCheck;
 import org.sonar.check.Rule;
 import org.sonar.check.RuleProperty;
@@ -32,6 +34,7 @@ public class LineLengthCheck extends MagikCheck {
 
   @Override
   protected void walkPreMagik(final AstNode node) {
+    System.out.println("bruh");
     final MagikFile magikFile = this.getMagikFile();
     String[] lines = magikFile.getSourceLines();
     if (lines == null) {
@@ -60,10 +63,26 @@ public class LineLengthCheck extends MagikCheck {
         final URI uri = this.getMagikFile().getUri();
         final Position startPosition = new Position(lineNo, issueColumnNo - 1);
         final Position endPosition = new Position(lineNo, line.length());
-        final Range range = new Range(startPosition, endPosition);
-        final Location location = new Location(uri, range);
-        final String message = String.format(MESSAGE, columnNo, this.maxLineLength);
-        this.addIssue(location, message);
+
+        // check for pragma block
+        final AstNode currentNode = AstQuery.nodeSurrounding(magikFile.getTopNode(), startPosition);
+        boolean isInPragmaBLock = false;
+        if (currentNode != null) {
+          AstNode parent = currentNode.getFirstChild();
+          while ((parent = parent.getParent()) != null) {
+            if (parent.is(MagikGrammar.PRAGMA) || parent.is(MagikGrammar.PRAGMA_PARAM)) {
+              isInPragmaBLock = true;
+              break;
+            }
+          }
+        }
+
+        if (!isInPragmaBLock) {
+          final Range range = new Range(startPosition, endPosition);
+          final Location location = new Location(uri, range);
+          final String message = String.format(MESSAGE, columnNo, this.maxLineLength);
+          this.addIssue(location, message);
+        }
       }
 
       ++lineNo;
