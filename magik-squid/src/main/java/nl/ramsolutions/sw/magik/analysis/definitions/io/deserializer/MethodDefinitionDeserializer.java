@@ -46,7 +46,14 @@ public class MethodDefinitionDeserializer extends DefinitionDeserializer<MethodD
 
     Set<String> topics = getSet(context, node, "top", String.class);
 
+    // if no return type is defined check for new* or init*
+    //   -> assume the method returns an object of the same exemplar
     ExpressionResultString returnTypes = get(context, node, "ret", ExpressionResultString.class);
+    if ((methodName.startsWith("new") || methodName.startsWith("init"))
+        && returnTypes.equals(ExpressionResultString.UNDEFINED)) {
+      returnTypes = new ExpressionResultString(typeName);
+    }
+
     ExpressionResultString loopTypes = get(context, node, "loop", ExpressionResultString.class);
 
     Set<GlobalUsage> usedGlobals = getSet(context, node, "u_globals", GlobalUsage.class);

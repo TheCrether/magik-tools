@@ -444,7 +444,7 @@ public class CompletionProvider {
       }
 
       if (methodDef.getMethodName().startsWith("new") && isExemplarInvocation) {
-        item.setSortText(" ".repeat(3) + item.getLabel());
+        item.setSortText(" ".repeat(3) + prefix + item.getLabel());
       } else {
         item.setSortText(prefix.repeat(2) + item.getLabel());
       }

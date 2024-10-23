@@ -30,8 +30,8 @@ public final class MagikFileScanner {
     return Files.walk(fromPath)
         .filter(Files::isRegularFile)
         .filter(this::notIgnored)
-        .filter(this::sizeOk)
-        .filter(this::isMagikFile);
+        .filter(this::isMagikFile)
+        .filter(this::sizeOk);
   }
 
   private boolean notIgnored(final Path path) {

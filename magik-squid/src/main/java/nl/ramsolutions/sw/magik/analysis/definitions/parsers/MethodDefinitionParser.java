@@ -109,11 +109,15 @@ public class MethodDefinitionParser {
     // Get return types from method docs.
     final List<TypeString> callResultDocs = typeDocParser.getReturnTypes();
     // Ensure we can believe the docs, sort of.
+    // if no return type is defined check for new* or init*
+    //   -> assume the method returns an object of the same exemplar
     final boolean returnsAnything = helper.returnsAnything();
     final ExpressionResultString callResult =
         !callResultDocs.isEmpty() || callResultDocs.isEmpty() && !returnsAnything
             ? new ExpressionResultString(callResultDocs)
-            : ExpressionResultString.UNDEFINED;
+            : methodName.startsWith("new") || methodName.startsWith("init")
+                ? new ExpressionResultString(exemplarName)
+                : ExpressionResultString.UNDEFINED;
 
     // Get iterator types from method docs.
     final List<TypeString> loopResultDocs = typeDocParser.getLoopTypes();

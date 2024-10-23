@@ -419,6 +419,16 @@ public class HoverProvider {
     final LocalTypeReasonerState reasonerState = magikFile.getTypeReasonerState();
     final ExpressionResultString result = reasonerState.getNodeType(node);
     final TypeString resultTypeStr = result.get(0, TypeString.UNDEFINED);
+    if (resultTypeStr.isCombined()) {
+      appendCodeBlock(
+          builder,
+          true,
+          false,
+          formatTypeString(
+              resultTypeStr.getCombinedTypes().stream()
+                  .map(TypeString::getFullString)
+                  .collect(Collectors.joining("|"))));
+    }
     final TypeString typeStr = SelfHelper.substituteSelf(resultTypeStr, node);
 
     final TypeStringResolver resolver = magikFile.getTypeStringResolver();

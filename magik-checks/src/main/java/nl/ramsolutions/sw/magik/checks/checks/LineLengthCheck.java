@@ -34,7 +34,6 @@ public class LineLengthCheck extends MagikCheck {
 
   @Override
   protected void walkPreMagik(final AstNode node) {
-    System.out.println("bruh");
     final MagikFile magikFile = this.getMagikFile();
     String[] lines = magikFile.getSourceLines();
     if (lines == null) {
