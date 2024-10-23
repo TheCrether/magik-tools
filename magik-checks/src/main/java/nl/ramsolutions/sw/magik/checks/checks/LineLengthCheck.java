@@ -2,6 +2,8 @@ package nl.ramsolutions.sw.magik.checks.checks;
 
 import com.sonar.sslr.api.AstNode;
 import java.net.URI;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import nl.ramsolutions.sw.magik.Location;
 import nl.ramsolutions.sw.magik.MagikFile;
 import nl.ramsolutions.sw.magik.Position;
@@ -22,6 +24,8 @@ public class LineLengthCheck extends MagikCheck {
   private static final String MESSAGE = "Line is too long (%s/%s)";
   private static final int DEFAULT_MAX_LINE_LENGTH = 80;
   private static final int TAB_WIDTH = 4;
+
+  private static final Pattern BEFORE_COMMENT_PATTERN = Pattern.compile("[\\t ]*#");
 
   /** Maximum number of characters on a single line. */
   @RuleProperty(
@@ -44,11 +48,15 @@ public class LineLengthCheck extends MagikCheck {
     for (final String line : lines) {
       int columnNo = 0;
       int issueColumnNo = 0;
+      int commentColumnNo = 0;
       for (int i = 0; i < line.length(); ++i) {
         final char chr = line.charAt(i);
         if (chr == '\t') {
           final int mod = columnNo % TAB_WIDTH;
           columnNo += TAB_WIDTH - mod;
+        } else if (chr == '#') {
+          commentColumnNo = i;
+          break;
         } else {
           ++columnNo;
         }
@@ -58,10 +66,19 @@ public class LineLengthCheck extends MagikCheck {
         }
       }
 
+      if (commentColumnNo == 0) {
+        commentColumnNo = line.length();
+      } else {
+        Matcher matcher = BEFORE_COMMENT_PATTERN.matcher(line);
+        if (matcher.find()) {
+          commentColumnNo = matcher.start() - 1;
+        }
+      }
+
       if (columnNo > this.maxLineLength) {
         final URI uri = this.getMagikFile().getUri();
         final Position startPosition = new Position(lineNo, issueColumnNo - 1);
-        final Position endPosition = new Position(lineNo, line.length());
+        final Position endPosition = new Position(lineNo, Math.min(line.length(), commentColumnNo));
 
         // check for pragma block
         final AstNode currentNode = AstQuery.nodeSurrounding(magikFile.getTopNode(), startPosition);
@@ -87,4 +104,8 @@ public class LineLengthCheck extends MagikCheck {
       ++lineNo;
     }
   }
+  //
+  //  public static void setTabWidth(int tabWidth) {
+  //    TAB_WIDTH = tabWidth;
+  //  }
 }

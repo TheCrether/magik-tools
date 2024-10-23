@@ -28,6 +28,7 @@ import nl.ramsolutions.sw.magik.languageserver.formatting.FormattingProvider;
 import nl.ramsolutions.sw.magik.languageserver.hover.HoverProvider;
 import nl.ramsolutions.sw.magik.languageserver.implementation.ImplementationProvider;
 import nl.ramsolutions.sw.magik.languageserver.inlayhint.InlayHintProvider;
+import nl.ramsolutions.sw.magik.languageserver.jsonrpc.EditorOptionsParams;
 import nl.ramsolutions.sw.magik.languageserver.jsonrpc.LintIgnoreParams;
 import nl.ramsolutions.sw.magik.languageserver.references.ReferencesProvider;
 import nl.ramsolutions.sw.magik.languageserver.rename.RenameProvider;
@@ -1246,6 +1247,19 @@ public class MagikTextDocumentService implements TextDocumentService {
     final String uri = params.getUri();
 
     return CompletableFuture.completedFuture(this.diagnosticsProvider.isIgnoredUri(uri));
+  }
+
+  @JsonRequest(value = "custom/editorOptions")
+  public CompletableFuture<Void> editorOptions(JsonArray array) {
+    if (array.isEmpty()) {
+      LOGGER.error("editorOptions, no EditorOptions object");
+      return CompletableFuture.completedFuture(null);
+    }
+
+    EditorOptionsParams params = new Gson().fromJson(array.get(0), EditorOptionsParams.class);
+    LOGGER.trace("editorOptions, tabSize: {}", params.getTabSize());
+
+    return CompletableFuture.completedFuture(null);
   }
 
   @Override
