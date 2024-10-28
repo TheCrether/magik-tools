@@ -178,7 +178,8 @@ public enum MagikGrammar implements GrammarRuleKey {
   private static final String CHARACTER_REGEXP = "%(\\W|\\w+)";
   private static final String REGEXP_REGEXP = "/[^/]*/[cdilmqsux]*";
 
-  private static final String SIMPLE_IDENTIFIER_REGEXP = "([a-z!?]|\\\\.)([a-z0-9_!?]|\\\\.)*";
+  private static final String SIMPLE_IDENTIFIER_REGEXP =
+      "([\\p{L}!?]|\\\\.)([\\p{L}0-9_!?äüö]|\\\\.)*";
   private static final String PIPED_IDENTIFIER_REGEXP = "\\|[^\\|]*\\|";
   private static final String BARE_IDENTIFIER_REGEXP =
       "(" + SIMPLE_IDENTIFIER_REGEXP + "|" + PIPED_IDENTIFIER_REGEXP + ")";
@@ -197,7 +198,7 @@ public enum MagikGrammar implements GrammarRuleKey {
           + BARE_IDENTIFIER_REGEXP
           + ")+";
 
-  private static final String SIMPLE_SYMBOL_REGEXP = "([a-z0-9_!?]|\\\\.)+";
+  private static final String SIMPLE_SYMBOL_REGEXP = "([\\p{L}0-9_!?]|\\\\.)+";
   private static final String PIPED_SYMBOL_REGEXP = "(\\|[^\\|]*\\|)";
   private static final String SYMBOL_REGEXP =
       "(?is):["
