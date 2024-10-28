@@ -14,6 +14,7 @@ import nl.ramsolutions.sw.magik.checks.MagikCheck;
 import nl.ramsolutions.sw.magik.checks.MagikCheckFixer;
 import nl.ramsolutions.sw.magik.checks.MagikCheckHolder;
 import nl.ramsolutions.sw.magik.checks.MagikChecksConfiguration;
+import org.eclipse.lsp4j.jsonrpc.CancelChecker;
 
 /** Provide {@link CodeAction}s for {@link MagikCheck}s. */
 public class MagikChecksCodeActionProvider {
@@ -32,7 +33,8 @@ public class MagikChecksCodeActionProvider {
    * @throws ReflectiveOperationException -
    * @throws IOException -
    */
-  public List<CodeAction> provideCodeActions(final MagikTypedFile magikFile, final Range range)
+  public List<CodeAction> provideCodeActions(
+      final MagikTypedFile magikFile, final Range range, CancelChecker checker)
       throws ReflectiveOperationException, IOException {
     final List<CodeAction> codeActions = new ArrayList<>();
     for (final Entry<Class<? extends MagikCheck>, List<Class<? extends MagikCheckFixer>>> entry :
@@ -40,6 +42,10 @@ public class MagikChecksCodeActionProvider {
       final Class<?> checkClass = entry.getKey();
       final List<Class<? extends MagikCheckFixer>> fixerClassses = entry.getValue();
       for (final Class<?> fixerClass : fixerClassses) {
+        if (checker.isCanceled()) {
+          return List.of();
+        }
+
         if (!this.isCheckEnabled(magikFile, checkClass)) {
           continue;
         }

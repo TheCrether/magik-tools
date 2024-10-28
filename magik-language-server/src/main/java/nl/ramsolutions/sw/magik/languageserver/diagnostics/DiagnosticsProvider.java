@@ -7,7 +7,9 @@ import nl.ramsolutions.sw.MagikToolsProperties;
 import nl.ramsolutions.sw.magik.MagikTypedFile;
 import nl.ramsolutions.sw.magik.languageserver.MagikLanguageServerSettings;
 import org.eclipse.lsp4j.Diagnostic;
+import org.eclipse.lsp4j.DiagnosticRegistrationOptions;
 import org.eclipse.lsp4j.ServerCapabilities;
+import org.eclipse.lsp4j.jsonrpc.CancelChecker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,6 +27,8 @@ public class DiagnosticsProvider {
   }
 
   public void setCapabilities(final ServerCapabilities capabilities) {
+    DiagnosticRegistrationOptions options = new DiagnosticRegistrationOptions();
+    capabilities.setDiagnosticProvider(options);
     // No capabilities to set.
   }
 
@@ -34,17 +38,26 @@ public class DiagnosticsProvider {
    * @param magikFile Magik file.
    * @return Diagnostics.
    */
-  public List<Diagnostic> provideDiagnostics(final MagikTypedFile magikFile) {
+  public List<Diagnostic> provideDiagnostics(
+      final MagikTypedFile magikFile, CancelChecker checker) {
     final List<Diagnostic> diagnostics = new ArrayList<>();
 
     if (ignoredUris.contains(magikFile.getUri())) {
       return diagnostics;
     }
 
+    if (checker.isCanceled()) {
+      return diagnostics;
+    }
+
     // Linter diagnostics.
     final List<Diagnostic> diagnosticsLinter =
-        DiagnosticsProvider.getDiagnosticsFromLinter(magikFile);
+        DiagnosticsProvider.getDiagnosticsFromLinter(magikFile, checker);
     diagnostics.addAll(diagnosticsLinter);
+
+    if (checker.isCanceled()) {
+      return List.of();
+    }
 
     // Typing diagnostics.
     final MagikLanguageServerSettings settings = new MagikLanguageServerSettings(this.properties);
@@ -58,12 +71,13 @@ public class DiagnosticsProvider {
     return diagnostics;
   }
 
-  private static List<Diagnostic> getDiagnosticsFromLinter(final MagikTypedFile magikFile) {
+  private static List<Diagnostic> getDiagnosticsFromLinter(
+      final MagikTypedFile magikFile, CancelChecker checker) {
     final MagikToolsProperties magikFileProperties = magikFile.getProperties();
     final MagikChecksDiagnosticsProvider lintProvider =
         new MagikChecksDiagnosticsProvider(magikFileProperties);
     try {
-      return lintProvider.getDiagnostics(magikFile);
+      return lintProvider.getDiagnostics(magikFile, checker);
     } catch (final IOException exception) {
       LOGGER.error(exception.getMessage(), exception);
     }

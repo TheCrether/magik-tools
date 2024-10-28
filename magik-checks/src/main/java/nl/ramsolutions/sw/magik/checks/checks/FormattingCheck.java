@@ -1,16 +1,11 @@
 package nl.ramsolutions.sw.magik.checks.checks;
 
-import com.sonar.sslr.api.AstNode;
-import com.sonar.sslr.api.GenericTokenType;
-import com.sonar.sslr.api.Token;
-import com.sonar.sslr.api.TokenType;
-import com.sonar.sslr.api.Trivia;
+import com.sonar.sslr.api.*;
+
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import nl.ramsolutions.sw.magik.MagikFile;
-import nl.ramsolutions.sw.magik.Position;
-import nl.ramsolutions.sw.magik.analysis.AstQuery;
 import nl.ramsolutions.sw.magik.api.MagikGrammar;
 import nl.ramsolutions.sw.magik.checks.MagikCheck;
 import org.slf4j.Logger;
@@ -22,6 +17,7 @@ import org.sonar.check.RuleProperty;
 // TODO: Can we use FormattingWalker here?
 @Rule(key = FormattingCheck.CHECK_KEY)
 public class FormattingCheck extends MagikCheck {
+
   private static final Logger LOGGER = LoggerFactory.getLogger(FormattingCheck.class);
 
   @SuppressWarnings("checkstyle:JavadocVariable")
@@ -42,7 +38,7 @@ public class FormattingCheck extends MagikCheck {
   @RuleProperty(
       key = "indent character",
       description = "The character used for indentation (tab/space)",
-      defaultValue = "" + DEFAULT_INDENT_CHARACTER,
+      defaultValue = DEFAULT_INDENT_CHARACTER,
       type = "STRING")
   @SuppressWarnings("checkstyle:VisibilityModifier")
   public String indentCharacter = DEFAULT_INDENT_CHARACTER;
@@ -99,6 +95,26 @@ public class FormattingCheck extends MagikCheck {
   }
 
   @Override
+  protected void walkPrePragma(AstNode node) {
+    // do nothing
+  }
+
+  @Override
+  protected void walkPostPragma(AstNode node) {
+    // do nothing
+  }
+
+  @Override
+  protected void walkChildren(AstNode node) {
+    if (node.is(MagikGrammar.PRAGMA) || node.is(MagikGrammar.PRAGMA_PARAM)) {
+      // Don't care about pragma
+      return;
+    }
+
+    super.walkChildren(node);
+  }
+
+  @Override
   protected void walkPostMagik(final AstNode node) {
     // Process last token.
     this.previousToken = this.currentToken;
@@ -128,11 +144,6 @@ public class FormattingCheck extends MagikCheck {
     }
 
     this.requireMaxNewlines(this.currentToken);
-
-    // Don't care about pragma.
-    if (this.isInPragmaBlock(this.currentToken)) {
-      return;
-    }
 
     final String value = this.currentToken.getValue();
     switch (value) {
@@ -199,24 +210,6 @@ public class FormattingCheck extends MagikCheck {
       default:
         break;
     }
-  }
-
-  private boolean isInPragmaBlock(final Token token) {
-    AstNode topNode = this.getMagikFile().getTopNode();
-    Position tokenPosition = new Position(token.getLine(), token.getColumn());
-    AstNode currentNode = AstQuery.nodeSurrounding(topNode, tokenPosition);
-    if (currentNode == null) {
-      return false;
-    }
-
-    AstNode parent = currentNode.getFirstChild();
-    while ((parent = parent.getParent()) != null) {
-      if (parent.is(MagikGrammar.PRAGMA) || parent.is(MagikGrammar.PRAGMA_PARAM)) {
-        return true;
-      }
-    }
-
-    return false;
   }
 
   private String getLineFor(final Token token) {

@@ -10,6 +10,7 @@ import nl.ramsolutions.sw.magik.MagikTypedFile;
 import nl.ramsolutions.sw.magik.Range;
 import org.eclipse.lsp4j.CodeActionContext;
 import org.eclipse.lsp4j.ServerCapabilities;
+import org.eclipse.lsp4j.jsonrpc.CancelChecker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,11 +46,16 @@ public class CodeActionProvider {
    * @throws IOException -
    */
   public List<CodeAction> provideCodeActions(
-      final MagikTypedFile magikFile, final Range range, final CodeActionContext context) {
+      final MagikTypedFile magikFile,
+      final Range range,
+      final CodeActionContext context,
+      CancelChecker checker) {
     try {
       return Stream.concat(
-              this.checksCodeActionProvider.provideCodeActions(magikFile, range).stream(),
-              this.typedChecksCodeActionProvider.provideCodeActions(magikFile, range).stream())
+              this.checksCodeActionProvider.provideCodeActions(magikFile, range, checker).stream(),
+              this.typedChecksCodeActionProvider
+                  .provideCodeActions(magikFile, range, checker)
+                  .stream())
           .filter(
               codeAction ->
                   codeAction.getEdits().stream()

@@ -1,11 +1,9 @@
 package nl.ramsolutions.sw.magik.languageserver.diagnostics;
 
 import java.io.IOException;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import nl.ramsolutions.sw.ConfigurationLocator;
 import nl.ramsolutions.sw.MagikToolsProperties;
 import nl.ramsolutions.sw.magik.MagikFile;
@@ -21,6 +19,7 @@ import org.eclipse.lsp4j.Diagnostic;
 import org.eclipse.lsp4j.DiagnosticSeverity;
 import org.eclipse.lsp4j.Location;
 import org.eclipse.lsp4j.Range;
+import org.eclipse.lsp4j.jsonrpc.CancelChecker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,28 +53,56 @@ public class MagikChecksDiagnosticsProvider {
    * @return List with {@link Diagnostic}s.
    * @throws IOException -
    */
-  public List<Diagnostic> getDiagnostics(final MagikFile magikFile) throws IOException {
+  public List<Diagnostic> getDiagnostics(final MagikFile magikFile, CancelChecker checker)
+      throws IOException {
     // Empty cache, as the configuration may have changed without us knowing it.
     ConfigurationLocator.resetCache();
 
-    return this.createChecks(magikFile).stream()
-        .flatMap(check -> this.runChecks(check, magikFile).stream())
-        .filter(magikIssue -> !MagikIssueDisabledChecker.issueDisabled(magikFile, magikIssue))
+    // fetch the top node once, so the following checks have it already and do not compute it
+    // multiple times
+    magikFile.getTopNode();
+
+    Optional<Stream<MagikIssue>> parallelIssues =
+        this.createChecks(magikFile).stream()
+            .parallel()
+            .map(check -> this.runChecks(check, magikFile, checker).stream())
+            .reduce(Stream::concat);
+
+    if (checker.isCanceled()) {
+      return Collections.emptyList();
+    }
+
+    return parallelIssues
         .map(
-            issue -> {
-              final MagikCheckHolder holder = issue.check().getHolder();
-              final Location location = Lsp4jConversion.locationToLsp4j(issue.location());
-              final Range range = location.getRange();
-              final String message = issue.message();
-              final DiagnosticSeverity severity = this.getCheckSeverity(holder);
-              final String checkKeyKebabCase = holder.getCheckKeyKebabCase();
-              final String diagnosticSource = String.format("mlint (%s)", checkKeyKebabCase);
-              return new Diagnostic(range, message, severity, diagnosticSource);
-            })
-        .toList();
+            magikIssueStream ->
+                magikIssueStream
+                    .filter(
+                        magikIssue ->
+                            !MagikIssueDisabledChecker.issueDisabled(magikFile, magikIssue))
+                    .map(
+                        issue -> {
+                          final MagikCheckHolder holder = issue.check().getHolder();
+                          final Location location =
+                              Lsp4jConversion.locationToLsp4j(issue.location());
+                          final Range range = location.getRange();
+                          final String message = issue.message();
+                          final DiagnosticSeverity severity = this.getCheckSeverity(holder);
+                          final String checkKeyKebabCase = holder.getCheckKeyKebabCase();
+                          final String diagnosticSource =
+                              String.format("mlint (%s)", checkKeyKebabCase);
+                          return new Diagnostic(range, message, severity, diagnosticSource);
+                        })
+                    .toList())
+        .orElseGet(List::of);
   }
 
-  private List<MagikIssue> runChecks(final MagikCheck check, final MagikFile magikFile) {
+  private List<MagikIssue> runChecks(
+      final MagikCheck check, final MagikFile magikFile, CancelChecker checker) {
+    if (checker.isCanceled()) {
+      //      LOGGER.warn("cancel in runChecks, check: {}", check);
+      return List.of();
+    }
+
     final long start = System.nanoTime();
 
     final List<MagikIssue> issues = check.scanFileForIssues(magikFile);

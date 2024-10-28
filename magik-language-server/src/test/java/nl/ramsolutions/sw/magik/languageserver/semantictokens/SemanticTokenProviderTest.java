@@ -6,6 +6,7 @@ import java.net.URI;
 import nl.ramsolutions.sw.magik.MagikTypedFile;
 import nl.ramsolutions.sw.magik.analysis.definitions.DefinitionKeeper;
 import nl.ramsolutions.sw.magik.analysis.definitions.IDefinitionKeeper;
+import nl.ramsolutions.sw.magik.languageserver.NullCancelChecker;
 import org.eclipse.lsp4j.SemanticTokens;
 import org.junit.jupiter.api.Test;
 
@@ -19,7 +20,7 @@ class SemanticTokenProviderTest {
     final IDefinitionKeeper definitionKeeper = new DefinitionKeeper();
     final MagikTypedFile magikFile = new MagikTypedFile(DEFAULT_URI, code, definitionKeeper);
     final SemanticTokenProvider provider = new SemanticTokenProvider();
-    return provider.provideSemanticTokensFull(magikFile);
+    return provider.provideSemanticTokensFull(magikFile, new NullCancelChecker());
   }
 
   @Test

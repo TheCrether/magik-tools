@@ -39,6 +39,7 @@ import nl.ramsolutions.sw.magik.languageserver.typehierarchy.TypeHierarchyProvid
 import nl.ramsolutions.sw.moduledef.ModuleDefFile;
 import nl.ramsolutions.sw.productdef.ProductDefFile;
 import org.eclipse.lsp4j.*;
+import org.eclipse.lsp4j.jsonrpc.CompletableFutures;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.lsp4j.jsonrpc.messages.Either3;
 import org.eclipse.lsp4j.jsonrpc.services.JsonRequest;
@@ -70,7 +71,7 @@ public class MagikTextDocumentService implements TextDocumentService {
   private final CompletionProvider completionProvider;
   private final FormattingProvider formattingProvider;
   private final FoldingRangeProvider foldingRangeProvider;
-  private final SemanticTokenProvider semanticTokenProver;
+  private final SemanticTokenProvider semanticTokenProvider;
   private final RenameProvider renameProvider;
   private final DocumentSymbolProvider documentSymbolProvider;
   private final TypeHierarchyProvider typeHierarchyProvider;
@@ -103,7 +104,7 @@ public class MagikTextDocumentService implements TextDocumentService {
     this.completionProvider = new CompletionProvider(this.properties);
     this.formattingProvider = new FormattingProvider();
     this.foldingRangeProvider = new FoldingRangeProvider();
-    this.semanticTokenProver = new SemanticTokenProvider();
+    this.semanticTokenProvider = new SemanticTokenProvider();
     this.renameProvider = new RenameProvider();
     this.documentSymbolProvider = new DocumentSymbolProvider();
     this.typeHierarchyProvider = new TypeHierarchyProvider(this.definitionKeeper, this.properties);
@@ -130,7 +131,7 @@ public class MagikTextDocumentService implements TextDocumentService {
     this.completionProvider.setCapabilities(capabilities);
     this.formattingProvider.setCapabilities(capabilities);
     this.foldingRangeProvider.setCapabilities(capabilities);
-    this.semanticTokenProver.setCapabilities(capabilities);
+    this.semanticTokenProvider.setCapabilities(capabilities);
     this.renameProvider.setCapabilities(capabilities);
     this.documentSymbolProvider.setCapabilities(capabilities);
     this.typeHierarchyProvider.setCapabilities(capabilities);
@@ -179,9 +180,6 @@ public class MagikTextDocumentService implements TextDocumentService {
           final MagikTypedFile magikFile =
               new MagikTypedFile(fileProperties, uri, text, this.definitionKeeper);
           openedFile = magikFile;
-
-          // Publish diagnostics to client.
-          this.publishDiagnostics(magikFile);
           break;
         }
       case "properties":
@@ -201,22 +199,6 @@ public class MagikTextDocumentService implements TextDocumentService {
           "Duration: {} didOpen, uri: {}",
           String.format("%.3f", (System.nanoTime() - start) / 1000000000.0),
           textDocument.getUri());
-    }
-  }
-
-  public void reopenAllFiles() {
-    Map<TextDocumentIdentifier, OpenedFile> openFilesCopy = new HashMap<>(this.openedFiles);
-
-    for (Map.Entry<TextDocumentIdentifier, OpenedFile> openFile : openFilesCopy.entrySet()) {
-      if (openFile.getValue() instanceof ProductDefFile) {}
-
-      this.didOpen(
-          new DidOpenTextDocumentParams(
-              new TextDocumentItem(
-                  openFile.getKey().getUri(),
-                  openFile.getValue().getLanguageId(),
-                  1,
-                  openFile.getValue().getSource())));
     }
   }
 
@@ -270,9 +252,6 @@ public class MagikTextDocumentService implements TextDocumentService {
           final MagikTypedFile magikFile =
               new MagikTypedFile(fileProperties, uri, text, this.definitionKeeper);
           openedFile = magikFile;
-
-          // Publish diagnostics to client.
-          this.publishDiagnostics(magikFile);
           break;
         }
 
@@ -335,8 +314,46 @@ public class MagikTextDocumentService implements TextDocumentService {
     }
   }
 
+  @Override
+  public CompletableFuture<DocumentDiagnosticReport> diagnostic(DocumentDiagnosticParams params) {
+    return CompletableFutures.computeAsync(
+        (checker) -> {
+          final long start = System.nanoTime();
+
+          final TextDocumentIdentifier textDocument = params.getTextDocument();
+          LOGGER.debug("diagnostic, uri: {}", textDocument.getUri());
+
+          final OpenedFile openedFile = this.openedFiles.get(textDocument);
+
+          DocumentDiagnosticReport report = null;
+          if (openedFile instanceof MagikTypedFile magikFile) {
+            if (checker.isCanceled()) {
+              return report;
+            }
+            final List<Diagnostic> diagnostics =
+                this.diagnosticsProvider.provideDiagnostics(magikFile, checker);
+            if (checker.isCanceled()) {
+              return report;
+            }
+
+            final RelatedFullDocumentDiagnosticReport fullDiagnostics =
+                new RelatedFullDocumentDiagnosticReport(diagnostics);
+            report = new DocumentDiagnosticReport(fullDiagnostics);
+          }
+
+          if (LOGGER_DURATION.isTraceEnabled()) {
+            LOGGER_DURATION.trace(
+                "Duration: {} diagnostics: uri: {}",
+                String.format("%.3f", (System.nanoTime() - start) / 1000000000.0),
+                textDocument.getUri());
+          }
+          return report;
+        });
+  }
+
   private void publishDiagnostics(final MagikTypedFile magikFile) {
-    final List<Diagnostic> diagnostics = this.diagnosticsProvider.provideDiagnostics(magikFile);
+    final List<Diagnostic> diagnostics =
+        this.diagnosticsProvider.provideDiagnostics(magikFile, new NullCancelChecker());
 
     // Publish to client.
     final String uri = magikFile.getUri().toString();
@@ -666,19 +683,24 @@ public class MagikTextDocumentService implements TextDocumentService {
     LOGGER.debug("semanticTokensFull, uri: {}", textDocument.getUri());
 
     final OpenedFile openedFile = this.openedFiles.get(textDocument);
-    return CompletableFuture.supplyAsync(
-        () -> {
+
+    return CompletableFutures.computeAsync(
+        (checker) -> {
           final SemanticTokens semanticTokens;
           if (openedFile == null) {
             semanticTokens = null;
           } else if (openedFile instanceof ProductDefFile productDefFile) {
-            semanticTokens = this.semanticTokenProver.provideSemanticTokensFull(productDefFile);
+            semanticTokens = this.semanticTokenProvider.provideSemanticTokensFull(productDefFile);
           } else if (openedFile instanceof ModuleDefFile moduleDefFile) {
-            semanticTokens = this.semanticTokenProver.provideSemanticTokensFull(moduleDefFile);
+            semanticTokens = this.semanticTokenProvider.provideSemanticTokensFull(moduleDefFile);
           } else if (openedFile instanceof MagikTypedFile magikFile) {
-            semanticTokens = this.semanticTokenProver.provideSemanticTokensFull(magikFile);
+            semanticTokens = this.semanticTokenProvider.provideSemanticTokensFull(magikFile, checker);
           } else {
             throw new UnsupportedOperationException();
+          }
+
+          if (checker.isCanceled()) {
+            return SemanticTokenProvider.EMPTY_TOKENS;
           }
 
           if (LOGGER_DURATION.isTraceEnabled()) {
@@ -775,10 +797,14 @@ public class MagikTextDocumentService implements TextDocumentService {
     }
 
     final MagikTypedFile magikFile = (MagikTypedFile) openedFile;
-    return CompletableFuture.supplyAsync(
-        () -> {
+    return CompletableFutures.computeAsync(
+        (checker) -> {
+          if (checker.isCanceled()) {
+            return List.of();
+          }
+
           final List<Either<SymbolInformation, DocumentSymbol>> documentSymbols =
-              this.documentSymbolProvider.provideDocumentSymbols(magikFile);
+              this.documentSymbolProvider.provideDocumentSymbols(magikFile, checker);
           if (LOGGER_DURATION.isTraceEnabled()) {
             LOGGER_DURATION.trace(
                 "Duration: {} documentSymbol, uri: {}",
@@ -958,10 +984,14 @@ public class MagikTextDocumentService implements TextDocumentService {
     final MagikTypedFile magikFile = (MagikTypedFile) openedFile;
     final nl.ramsolutions.sw.magik.Range magikRange = Lsp4jConversion.rangeFromLsp4j(range);
     final CodeActionContext context = params.getContext();
-    return CompletableFuture.supplyAsync(
-        () -> {
+    return CompletableFutures.computeAsync(
+        (checker) -> {
           final List<nl.ramsolutions.sw.magik.CodeAction> codeActions =
-              this.codeActionProvider.provideCodeActions(magikFile, magikRange, context);
+              this.codeActionProvider.provideCodeActions(magikFile, magikRange, context, checker);
+          if (checker.isCanceled()) {
+            return List.of();
+          }
+
           final List<Either<Command, CodeAction>> codeActionsLsp4j =
               codeActions.stream()
                   .map(

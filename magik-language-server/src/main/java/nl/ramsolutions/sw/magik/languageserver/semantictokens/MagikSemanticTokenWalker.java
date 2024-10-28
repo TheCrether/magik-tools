@@ -25,6 +25,7 @@ import nl.ramsolutions.sw.magik.analysis.typing.reasoner.LocalTypeReasonerState;
 import nl.ramsolutions.sw.magik.api.*;
 import nl.ramsolutions.sw.magik.parser.TypeDocParser;
 import nl.ramsolutions.sw.magik.parser.TypeStringParser;
+import org.eclipse.lsp4j.jsonrpc.CancelChecker;
 
 /** Magik semantic token walker. */
 public class MagikSemanticTokenWalker extends MagikAstWalker {
@@ -80,6 +81,7 @@ public class MagikSemanticTokenWalker extends MagikAstWalker {
       Arrays.stream(MagikOperator.values()).map(MagikOperator::getValue).toList();
 
   private final MagikTypedFile magikFile;
+  private final CancelChecker checker;
   private final List<SemanticToken> semanticTokens = new ArrayList<>();
   private String currentPakkage = DEFAULT_PACKAGE;
 
@@ -88,8 +90,9 @@ public class MagikSemanticTokenWalker extends MagikAstWalker {
    *
    * @param magikFile {@link MagikTypedFile} to operate on.
    */
-  MagikSemanticTokenWalker(final MagikTypedFile magikFile) {
+  MagikSemanticTokenWalker(final MagikTypedFile magikFile, CancelChecker checker) {
     this.magikFile = magikFile;
+    this.checker = checker;
   }
 
   public List<SemanticToken> getSemanticTokens() {
@@ -474,5 +477,14 @@ public class MagikSemanticTokenWalker extends MagikAstWalker {
     final TypeStringResolver resolver = this.magikFile.getTypeStringResolver();
     final Collection<ITypeStringDefinition> typeDefs = resolver.resolve(typeString);
     return typeDefs.stream().anyMatch(ExemplarDefinition.class::isInstance);
+  }
+
+  @Override
+  protected void walkChildren(AstNode node) {
+    if (checker.isCanceled()) {
+      return;
+    }
+
+    super.walkChildren(node);
   }
 }

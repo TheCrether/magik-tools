@@ -10,6 +10,7 @@ import nl.ramsolutions.sw.magik.languageserver.Lsp4jConversion;
 import org.eclipse.lsp4j.DocumentSymbol;
 import org.eclipse.lsp4j.ServerCapabilities;
 import org.eclipse.lsp4j.SymbolKind;
+import org.eclipse.lsp4j.jsonrpc.CancelChecker;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 
 /** Document symbol provider. */
@@ -31,9 +32,15 @@ public class DocumentSymbolProvider {
    * @return {@link DocumentSymbol}s.
    */
   public List<Either<org.eclipse.lsp4j.SymbolInformation, DocumentSymbol>> provideDocumentSymbols(
-      final MagikTypedFile magikFile) {
+      final MagikTypedFile magikFile, final CancelChecker checker) {
     // Convert definitions to DocumentSymbols.
-    return magikFile.getMagikDefinitions().stream()
+    List<MagikDefinition> definitions = magikFile.getMagikDefinitions();
+
+    if (checker.isCanceled()) {
+      return List.of();
+    }
+
+    return definitions.stream()
         .map(this::convertDefinition)
         .map(Either::<org.eclipse.lsp4j.SymbolInformation, DocumentSymbol>forRight)
         .toList();

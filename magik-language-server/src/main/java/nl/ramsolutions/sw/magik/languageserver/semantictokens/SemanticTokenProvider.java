@@ -19,11 +19,13 @@ import org.eclipse.lsp4j.SemanticTokens;
 import org.eclipse.lsp4j.SemanticTokensLegend;
 import org.eclipse.lsp4j.SemanticTokensWithRegistrationOptions;
 import org.eclipse.lsp4j.ServerCapabilities;
+import org.eclipse.lsp4j.jsonrpc.CancelChecker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** Semantic token provider. */
 public class SemanticTokenProvider {
+  public static final SemanticTokens EMPTY_TOKENS = new SemanticTokens();
 
   private static final Logger LOGGER = LoggerFactory.getLogger(SemanticTokenProvider.class);
   private static final int SIZE_PER_TOKEN = 5;
@@ -62,14 +64,26 @@ public class SemanticTokenProvider {
    * @return SemanticTokens.
    * @throws IOException -
    */
-  public SemanticTokens provideSemanticTokensFull(final MagikTypedFile magikFile) {
+  public SemanticTokens provideSemanticTokensFull(
+      final MagikTypedFile magikFile, CancelChecker checker) {
     LOGGER.debug("Providing semantic tokens full, file: {}", magikFile);
+    if (checker.isCanceled()) {
+      return EMPTY_TOKENS;
+    }
 
-    final MagikSemanticTokenWalker walker = new MagikSemanticTokenWalker(magikFile);
+    final MagikSemanticTokenWalker walker = new MagikSemanticTokenWalker(magikFile, checker);
     final AstNode topNode = magikFile.getTopNode();
     walker.walkAst(topNode);
 
+    if (checker.isCanceled()) {
+      return EMPTY_TOKENS;
+    }
+
     final List<SemanticToken> walkedSemanticTokens = walker.getSemanticTokens();
+    if (checker.isCanceled()) {
+      return EMPTY_TOKENS;
+    }
+
     return this.buildSemanticTokens(walkedSemanticTokens);
   }
 
