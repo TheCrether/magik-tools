@@ -1,7 +1,6 @@
 package nl.ramsolutions.sw.magik.checks.checks;
 
 import com.sonar.sslr.api.*;
-
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;

@@ -694,7 +694,8 @@ public class MagikTextDocumentService implements TextDocumentService {
           } else if (openedFile instanceof ModuleDefFile moduleDefFile) {
             semanticTokens = this.semanticTokenProvider.provideSemanticTokensFull(moduleDefFile);
           } else if (openedFile instanceof MagikTypedFile magikFile) {
-            semanticTokens = this.semanticTokenProvider.provideSemanticTokensFull(magikFile, checker);
+            semanticTokens =
+                this.semanticTokenProvider.provideSemanticTokensFull(magikFile, checker);
           } else {
             throw new UnsupportedOperationException();
           }
