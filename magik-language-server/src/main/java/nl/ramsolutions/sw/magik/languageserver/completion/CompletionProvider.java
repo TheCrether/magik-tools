@@ -16,6 +16,7 @@ import nl.ramsolutions.sw.magik.analysis.helpers.MethodDefinitionNodeHelper;
 import nl.ramsolutions.sw.magik.analysis.helpers.PackageNodeHelper;
 import nl.ramsolutions.sw.magik.analysis.scope.GlobalScope;
 import nl.ramsolutions.sw.magik.analysis.scope.Scope;
+import nl.ramsolutions.sw.magik.analysis.scope.ScopeEntry;
 import nl.ramsolutions.sw.magik.analysis.typing.ExpressionResultString;
 import nl.ramsolutions.sw.magik.analysis.typing.TypeString;
 import nl.ramsolutions.sw.magik.analysis.typing.TypeStringResolver;
@@ -29,6 +30,7 @@ import nl.ramsolutions.sw.magik.languageserver.Lsp4jConversion;
 import nl.ramsolutions.sw.magik.languageserver.hover.HoverProvider;
 import nl.ramsolutions.sw.magik.parser.MagikCommentExtractor;
 import org.eclipse.lsp4j.*;
+import org.eclipse.lsp4j.jsonrpc.CancelChecker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -90,7 +92,7 @@ public class CompletionProvider {
    * @return List of completions.
    */
   public List<CompletionItem> provideCompletions(
-      final MagikTypedFile magikFile, final Position position) {
+      final MagikTypedFile magikFile, final Position position, CancelChecker checker) {
     // Do our best to get a token value, and clean up the source while we're at it.
     final Map.Entry<MagikTypedFile, String> usable = this.getUsableMagikFile(magikFile, position);
     final MagikTypedFile newMagikFile = usable.getKey();
@@ -107,6 +109,10 @@ public class CompletionProvider {
     // Ensure not in comment.
     if (this.inComment(node, position)) {
       // TODO completion for @param, @slot etc
+      return Collections.emptyList();
+    }
+
+    if (checker.isCanceled()) {
       return Collections.emptyList();
     }
 
@@ -131,6 +137,10 @@ public class CompletionProvider {
               tokenNode, MagikGrammar.IDENTIFIER, MagikGrammar.SLOT, MagikGrammar.ATOM);
     }
 
+    if (checker.isCanceled()) {
+      return Collections.emptyList();
+    }
+
     if (tokenNode == null && removedPart.equals(".")
         || tokenNode != null && tokenNode.getTokenOriginalValue().equals(".")) {
       // only '.' or starts with '.' -> slot invocations
@@ -138,7 +148,8 @@ public class CompletionProvider {
       if (removedPart.equals(".")) {
         searchedText = "";
       }
-      completionItems = this.provideSlotCompletion(response, newMagikFile, position, searchedText);
+      completionItems =
+          this.provideSlotCompletion(response, newMagikFile, position, searchedText, checker);
     } else if (tokenNode != null) {
       // Method completion: METHOD_INVOCATION
       if (methodInvocationOnSlotNode != null) {
@@ -146,18 +157,25 @@ public class CompletionProvider {
         if (identifier != null) {
           completionItems =
               this.provideMethodInvocationCompletion(
-                  response, newMagikFile, identifier, removedPart);
+                  response, newMagikFile, identifier, removedPart, checker);
         }
       } else if (methodInvocationNode != null
           || removedPart.startsWith(".")
           || removedPart.isEmpty()) {
         completionItems =
-            this.provideMethodInvocationCompletion(response, newMagikFile, tokenNode, removedPart);
+            this.provideMethodInvocationCompletion(
+                response, newMagikFile, tokenNode, removedPart, checker);
       } else {
-        completionItems = this.provideGlobalCompletion(response, newMagikFile, position, tokenNode);
+        completionItems =
+            this.provideGlobalCompletion(response, newMagikFile, position, tokenNode, checker);
       }
     } else if (!removedPart.equals(":")) {
-      completionItems = this.provideGlobalCompletion(response, newMagikFile, position, tokenNode);
+      completionItems =
+          this.provideGlobalCompletion(response, newMagikFile, position, tokenNode, checker);
+    }
+
+    if (checker.isCanceled()) {
+      return Collections.emptyList();
     }
 
     if (!completionItems.isEmpty()) {
@@ -246,7 +264,8 @@ public class CompletionProvider {
       final CompletionResponse response,
       final MagikTypedFile magikFile,
       final Position position,
-      final @Nullable AstNode tokenNode) {
+      final @Nullable AstNode tokenNode,
+      final CancelChecker checker) {
     final List<MagikDefinition> definitions = response.getDefinitions();
     final IDefinitionKeeper definitionKeeper = magikFile.getDefinitionKeeper();
 
@@ -259,6 +278,10 @@ public class CompletionProvider {
       currentPackage = helper.getCurrentPackage();
     }
     final String finalCurrentPackage = currentPackage;
+
+    if (checker.isCanceled()) {
+      return Collections.emptyList();
+    }
 
     // Scope entries.
     final AstNode topNode = magikFile.getTopNode();
@@ -291,6 +314,10 @@ public class CompletionProvider {
                 })
             .forEach(items::add);
       }
+    }
+
+    if (checker.isCanceled()) {
+      return Collections.emptyList();
     }
 
     // Global types.
@@ -348,7 +375,8 @@ public class CompletionProvider {
       final CompletionResponse response,
       final MagikTypedFile magikFile,
       final AstNode tokenNode,
-      final String tokenValue) {
+      final String tokenValue,
+      final CancelChecker checker) {
     // Token -->
     // - parent: any --> parent: ATOM
     // - parent: IDENTIFIER --> parent: METHOD_INVOCATION --> previous sibling: ATOM
@@ -374,11 +402,24 @@ public class CompletionProvider {
 
     final TypeStringResolver resolver = magikFile.getTypeStringResolver();
 
-    // TODO look if the node token value can be found in the local scope (variable)
-    // because for a variable called `product` it matches the sw:product -> `new()` is at the top
+    if (checker.isCanceled()) {
+      return Collections.emptyList();
+    }
+
+    final GlobalScope globalScope = magikFile.getGlobalScope();
+    final Scope currentScope = globalScope.getScopeForNode(node);
+    ScopeEntry localScopeEntry = null;
+    if (currentScope != null) {
+      localScopeEntry = currentScope.getScopeEntry(node.getTokenValue());
+    }
+
     final String currentPackage = new PackageNodeHelper(node).getCurrentPackage();
     final boolean isExemplarInvocation =
-        !resolver.resolve(TypeString.ofIdentifier(node.getTokenValue(), currentPackage)).isEmpty();
+        localScopeEntry == null
+            && resolver
+                .resolve(TypeString.ofIdentifier(node.getTokenValue(), currentPackage))
+                .stream()
+                .anyMatch(def -> def instanceof ExemplarDefinition);
 
     final boolean isSelfInvocation =
         typeStr.getCombinedTypes().stream().anyMatch(type -> type == TypeString.SELF);
@@ -388,8 +429,12 @@ public class CompletionProvider {
       typeStr = helper.getTypeString();
     }
 
-    if (LOGGER.isDebugEnabled()) {
-      LOGGER.debug("Providing method completions for type: {}", typeStr.getFullString());
+    if (checker.isCanceled()) {
+      return Collections.emptyList();
+    }
+
+    if (LOGGER.isTraceEnabled()) {
+      LOGGER.trace("Providing method completions for type: {}", typeStr.getFullString());
     }
 
     final String methodNamePart = tokenValue.startsWith(".") ? tokenValue.substring(1) : tokenValue;
@@ -416,6 +461,10 @@ public class CompletionProvider {
       }
     }
 
+    if (checker.isCanceled()) {
+      return Collections.emptyList();
+    }
+
     final List<CompletionItem> completionItems = new ArrayList<>();
     for (int i = 0; i < filteredMethods.size(); i++) {
       final MethodDefinition methodDef = filteredMethods.get(i);
@@ -432,6 +481,11 @@ public class CompletionProvider {
       }
 
       TypeString methodExemplarType = methodDef.getTypeName();
+
+      CompletionItemLabelDetails labelDetails = new CompletionItemLabelDetails();
+      labelDetails.setDescription(methodExemplarType.getIdentifier());
+      item.setLabelDetails(labelDetails);
+
       String prefix = "";
       if (!finalTypeStr.equals(TypeString.SW_OBJECT)) {
         if (methodExemplarType.equals(finalTypeStr)) {
@@ -465,7 +519,8 @@ public class CompletionProvider {
       final CompletionResponse response,
       final MagikTypedFile magikFile,
       final Position position,
-      final String tokenValue) {
+      final String tokenValue,
+      final CancelChecker checker) {
     List<CompletionItem> completionItems = new ArrayList<>();
     List<MagikDefinition> definitions = response.getDefinitions();
 
@@ -475,6 +530,10 @@ public class CompletionProvider {
 
     if (scopeNode == null) {
       return completionItems;
+    }
+
+    if (checker.isCanceled()) {
+      return Collections.emptyList();
     }
 
     final IDefinitionKeeper definitionKeeper = magikFile.getDefinitionKeeper();

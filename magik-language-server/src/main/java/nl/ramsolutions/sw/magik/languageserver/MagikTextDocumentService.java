@@ -625,10 +625,10 @@ public class MagikTextDocumentService implements TextDocumentService {
 
     final MagikTypedFile magikFile = (MagikTypedFile) openedFile;
     final Position position = params.getPosition();
-    return CompletableFuture.supplyAsync(
-        () -> {
+    return CompletableFutures.computeAsync(
+        (checker) -> {
           final List<CompletionItem> completions =
-              this.completionProvider.provideCompletions(magikFile, position);
+              this.completionProvider.provideCompletions(magikFile, position, checker);
           if (LOGGER_DURATION.isTraceEnabled()) {
             LOGGER_DURATION.trace(
                 "Duration: {} completion, uri: {}, position: {},{}",
