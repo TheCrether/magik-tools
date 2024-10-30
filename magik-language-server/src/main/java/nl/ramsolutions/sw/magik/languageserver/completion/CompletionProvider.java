@@ -415,7 +415,7 @@ public class CompletionProvider {
 
     final String currentPackage = new PackageNodeHelper(node).getCurrentPackage();
     final boolean isExemplarInvocation =
-        localScopeEntry == null
+        (localScopeEntry == null || localScopeEntry.isType(ScopeEntry.Type.GLOBAL))
             && resolver
                 .resolve(TypeString.ofIdentifier(node.getTokenValue(), currentPackage))
                 .stream()
