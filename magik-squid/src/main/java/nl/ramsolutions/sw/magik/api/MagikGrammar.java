@@ -178,8 +178,7 @@ public enum MagikGrammar implements GrammarRuleKey {
   private static final String CHARACTER_REGEXP = "%(\\W|\\w+)";
   private static final String REGEXP_REGEXP = "/[^/]*/[cdilmqsux]*";
 
-  private static final String SIMPLE_IDENTIFIER_REGEXP =
-      "([\\p{L}!?]|\\\\.)([\\p{L}0-9_!?äüö]|\\\\.)*";
+  public static final String SIMPLE_IDENTIFIER_REGEXP = "([\\p{L}!?]|\\\\.)([\\p{L}0-9_!?]|\\\\.)*";
   private static final String PIPED_IDENTIFIER_REGEXP = "\\|[^\\|]*\\|";
   private static final String BARE_IDENTIFIER_REGEXP =
       "(" + SIMPLE_IDENTIFIER_REGEXP + "|" + PIPED_IDENTIFIER_REGEXP + ")";
@@ -885,6 +884,11 @@ public enum MagikGrammar implements GrammarRuleKey {
 
   static String syntaxErrorRegexp(final MagikKeyword keyword) {
     return "(?s).+?(?=(?i)" + keyword.getValue() + ")";
+  }
+
+  static String syntaxErrorRegexp(final MagikKeyword keyword, String extraRegexp) {
+    return "(?s).+?(?=(?i)" + keyword.getValue() + "|" + extraRegexp + ")";
+    //    return syntaxErrorRegexp(keyword) + extraRegexp;
   }
 
   static String syntaxErrorRegexp(final MagikPunctuator punctuator) {

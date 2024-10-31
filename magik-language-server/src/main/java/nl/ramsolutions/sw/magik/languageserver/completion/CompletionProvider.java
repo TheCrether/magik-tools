@@ -1,11 +1,16 @@
 package nl.ramsolutions.sw.magik.languageserver.completion;
 
 import com.sonar.sslr.api.AstNode;
+import com.sonar.sslr.api.Token;
+import com.sonar.sslr.api.Trivia;
 import edu.umd.cs.findbugs.annotations.CheckForNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.net.URI;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.regex.MatchResult;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import nl.ramsolutions.sw.MagikToolsProperties;
 import nl.ramsolutions.sw.magik.MagikTypedFile;
@@ -28,6 +33,7 @@ import nl.ramsolutions.sw.magik.api.MagikPunctuator;
 import nl.ramsolutions.sw.magik.languageserver.JSONUtility;
 import nl.ramsolutions.sw.magik.languageserver.Lsp4jConversion;
 import nl.ramsolutions.sw.magik.languageserver.hover.HoverProvider;
+import nl.ramsolutions.sw.magik.languageserver.semantictokens.MagikSemanticTokenWalker;
 import nl.ramsolutions.sw.magik.parser.MagikCommentExtractor;
 import org.eclipse.lsp4j.*;
 import org.eclipse.lsp4j.jsonrpc.CancelChecker;
@@ -43,6 +49,11 @@ public class CompletionProvider {
 
   private final MagikToolsProperties properties;
   private final CompletionHelper completionHelper;
+
+  private static final Pattern ERROR_PATTERN =
+      Pattern.compile("_(if|andif|and|elif|else|orif|or|then)");
+  private static final Pattern FOR_OVER_PATTERN =
+      Pattern.compile("_for\\s+" + MagikGrammar.SIMPLE_IDENTIFIER_REGEXP + "\\s+_over\\s+");
 
   private static final Set<String> SCOPE_ENTRIES_TO_REMOVE = Set.of("def_slotted_exemplar");
 
@@ -94,11 +105,13 @@ public class CompletionProvider {
   public List<CompletionItem> provideCompletions(
       final MagikTypedFile magikFile, final Position position, CancelChecker checker) {
     // Do our best to get a token value, and clean up the source while we're at it.
-    final Map.Entry<MagikTypedFile, String> usable = this.getUsableMagikFile(magikFile, position);
-    final MagikTypedFile newMagikFile = usable.getKey();
-    final String removedPart = usable.getValue();
+    final UsableMagikFileRecord usable = this.getUsableMagikFile(magikFile, position);
+    final MagikTypedFile newMagikFile = usable.magikFile;
+    final String removedPart = usable.cleanedToken;
+    final Position cleanedPosition = usable.newPosition;
     final Position newPosition =
-        new Position(position.getLine(), position.getCharacter() - removedPart.length());
+        new Position(
+            cleanedPosition.getLine(), cleanedPosition.getCharacter() - removedPart.length());
     final AstNode node = newMagikFile.getTopNode();
     final AstNode tokenNode = AstQuery.nodeAt(node, Lsp4jConversion.positionFromLsp4j(newPosition));
 
@@ -107,7 +120,7 @@ public class CompletionProvider {
     }
 
     // Ensure not in comment.
-    if (this.inComment(node, position)) {
+    if (this.inComment(node, newPosition)) {
       // TODO completion for @param, @slot etc
       return Collections.emptyList();
     }
@@ -123,7 +136,7 @@ public class CompletionProvider {
     }
 
     CompletionResponse response = new CompletionResponse();
-    completionHelper.setUriField(response, magikFile.getUri());
+    completionHelper.setUriField(response, newMagikFile.getUri());
     List<CompletionItem> completionItems = new ArrayList<>();
 
     AstNode methodInvocationNode = null, methodInvocationOnSlotNode = null;
@@ -149,7 +162,7 @@ public class CompletionProvider {
         searchedText = "";
       }
       completionItems =
-          this.provideSlotCompletion(response, newMagikFile, position, searchedText, checker);
+          this.provideSlotCompletion(response, newMagikFile, newPosition, searchedText, checker);
     } else if (tokenNode != null) {
       // Method completion: METHOD_INVOCATION
       if (methodInvocationOnSlotNode != null) {
@@ -167,11 +180,11 @@ public class CompletionProvider {
                 response, newMagikFile, tokenNode, removedPart, checker);
       } else {
         completionItems =
-            this.provideGlobalCompletion(response, newMagikFile, position, tokenNode, checker);
+            this.provideGlobalCompletion(response, newMagikFile, newPosition, tokenNode, checker);
       }
     } else if (!removedPart.equals(":")) {
       completionItems =
-          this.provideGlobalCompletion(response, newMagikFile, position, tokenNode, checker);
+          this.provideGlobalCompletion(response, newMagikFile, newPosition, tokenNode, checker);
     }
 
     if (checker.isCanceled()) {
@@ -691,24 +704,147 @@ public class CompletionProvider {
     return lineStr.charAt(character);
   }
 
-  private Map.Entry<MagikTypedFile, String> getUsableMagikFile(
+  private record UsableMagikFileRecord(
+      MagikTypedFile magikFile, String cleanedToken, Position newPosition) {}
+
+  private UsableMagikFileRecord getUsableMagikFile(
       final MagikTypedFile magikFile, final Position position) {
-    MagikTypedFile newMagikFile = magikFile;
+    nl.ramsolutions.sw.magik.Position nodePosition = Lsp4jConversion.positionFromLsp4j(position);
 
     final AstNode node = magikFile.getTopNode();
-    final AstNode tokenNode = AstQuery.nodeAt(node, Lsp4jConversion.positionFromLsp4j(position));
+    final AstNode tokenNode = AstQuery.nodeAt(node, nodePosition);
+
+    MagikTypedFile newMagikFile = magikFile;
     String cleanedToken = "";
+    Position cleanedPosition = position;
+
     if (tokenNode != null
         && tokenNode.getParent() != null
         && tokenNode.getParent().is(MagikGrammar.SYNTAX_ERROR)) {
-      // Clean it up a bit and try to re-parse.
       final String source = magikFile.getSource();
-      final String[] items = this.cleanSource(source, position);
-      final String cleanedSource = items[0];
-      cleanedToken = items[1];
       final URI uri = magikFile.getUri();
       final IDefinitionKeeper definitionKeeper = magikFile.getDefinitionKeeper();
-      newMagikFile = new MagikTypedFile(uri, cleanedSource, definitionKeeper);
+      final String[] lines = source.split("\n");
+      final String currentLine = lines[position.getLine()];
+      final Matcher forOverMatcher = FOR_OVER_PATTERN.matcher(currentLine);
+
+      final AstNode errorNode = tokenNode.getParent();
+      final Token errorToken = errorNode.getToken();
+      final int errorLineNo = errorToken.getLine();
+      final String[] errorLines = errorToken.getOriginalValue().split("\n");
+      final int erroringLinesBefore = nodePosition.getLine() - errorLineNo;
+
+      int column = nodePosition.getColumn();
+      int line = nodePosition.getLine();
+
+      if (errorNode.getParent() != null && errorNode.getParent().is(MagikGrammar.IF)) {
+        // clean if structure, only works for the condition part at the moment
+        final AstNode ifNode = errorNode.getParent();
+        int fromIndex = ifNode.getFirstChild().getFromIndex();
+        int toIndex = ifNode.getFirstChild().getToIndex();
+
+        final Token ifToken = ifNode.getToken();
+        if (ifToken.getLine() == line) {
+          column = nodePosition.getColumn() - ifToken.getOriginalValue().length() - 1;
+        }
+
+        line -= erroringLinesBefore;
+
+        for (int i = 0; i < erroringLinesBefore; i++) {
+          toIndex += errorLines[i].length();
+        }
+
+        final String cleanedSource = source.substring(0, fromIndex) + source.substring(toIndex + 1);
+        final MagikTypedFile tempMagikFile =
+            new MagikTypedFile(uri, cleanedSource, definitionKeeper);
+
+        final Position tempPosition =
+            Lsp4jConversion.positionToLsp4j(new nl.ramsolutions.sw.magik.Position(line, column));
+
+        UsableMagikFileRecord newCleaned = this.getUsableMagikFile(tempMagikFile, tempPosition);
+        newMagikFile = newCleaned.magikFile;
+        cleanedToken = newCleaned.cleanedToken;
+        cleanedPosition = tempPosition;
+      } else if (errorNode.getParent() != null && errorNode.getParent().is(MagikGrammar.LOOP)) {
+        final AstNode loopNode = errorNode.getParent();
+        final AstNode forNode =
+            AstQuery.getParentFromChain(loopNode, MagikGrammar.OVER, MagikGrammar.FOR);
+        final AstNode whileNode = AstQuery.getParentFromChain(loopNode, MagikGrammar.WHILE);
+        final Trivia iterTypeToken =
+            loopNode.getToken().getTrivia().stream()
+                .filter(
+                    (trivia ->
+                        trivia.isComment()
+                            && MagikSemanticTokenWalker.iterTypeRegex
+                                .matcher(trivia.getToken().getOriginalValue())
+                                .find()))
+                .findFirst()
+                .orElse(null);
+
+        int fromIndex = -1;
+        int endIndex = loopNode.getFirstChild().getToIndex();
+        int wrapperLine = -1;
+        if (forNode != null) {
+          fromIndex = forNode.getFromIndex();
+          wrapperLine = forNode.getToken().getLine();
+        } else if (whileNode != null) {
+          fromIndex = whileNode.getFromIndex();
+          wrapperLine = whileNode.getToken().getLine();
+        }
+        line -= (loopNode.getFirstChild().getToken().getLine() - wrapperLine);
+
+        if (iterTypeToken != null && forNode != null) {
+          final AstNode variables = forNode.getFirstChild(MagikGrammar.FOR_VARIABLES);
+
+          if (variables != null) {
+            String varDef =
+                "_local a << _unset # type: "
+                    + iterTypeToken.getToken().getOriginalValue().split(":")[1];
+            final String newSource =
+                source.substring(0, fromIndex) + varDef + source.substring(endIndex + 1);
+            final MagikTypedFile tempMagikFile =
+                new MagikTypedFile(uri, newSource, definitionKeeper);
+
+            final Position tempPosition =
+                Lsp4jConversion.positionToLsp4j(
+                    new nl.ramsolutions.sw.magik.Position(line, column));
+            UsableMagikFileRecord newCleaned = this.getUsableMagikFile(tempMagikFile, tempPosition);
+            newMagikFile = newCleaned.magikFile;
+            cleanedToken = newCleaned.cleanedToken;
+            cleanedPosition = tempPosition;
+          }
+        } else if (fromIndex != 1) {
+          final String newSource = source.substring(0, fromIndex) + source.substring(endIndex + 1);
+          final MagikTypedFile tempMagikFile = new MagikTypedFile(uri, newSource, definitionKeeper);
+
+          final Position tempPosition =
+              Lsp4jConversion.positionToLsp4j(new nl.ramsolutions.sw.magik.Position(line, column));
+          UsableMagikFileRecord newCleaned = this.getUsableMagikFile(tempMagikFile, tempPosition);
+          newMagikFile = newCleaned.magikFile;
+          cleanedToken = newCleaned.cleanedToken;
+          cleanedPosition = tempPosition;
+        }
+      } else if (forOverMatcher.find()) {
+        MatchResult toReplace = forOverMatcher.toMatchResult();
+        lines[position.getLine()] =
+            currentLine.substring(0, toReplace.start()) + currentLine.substring(toReplace.end());
+
+        final String newSource = String.join("\n", lines);
+        final MagikTypedFile tempMagikFile = new MagikTypedFile(uri, newSource, definitionKeeper);
+        final Position tempPosition =
+            new Position(position.getLine(), column - (toReplace.end() - toReplace.start()));
+
+        UsableMagikFileRecord newCleaned = this.getUsableMagikFile(tempMagikFile, tempPosition);
+        newMagikFile = newCleaned.magikFile;
+        cleanedToken = newCleaned.cleanedToken;
+        cleanedPosition = tempPosition;
+      } else {
+        // Clean it up a bit and try to re-parse.
+        final String[] items = this.cleanSource(source, position);
+        cleanedToken = items[1];
+        final String cleanedSource = items[0];
+        newMagikFile = new MagikTypedFile(uri, cleanedSource, definitionKeeper);
+      }
     } else if (tokenNode != null && tokenNode.getParent() != null) {
       AstNode parent = tokenNode.getParent();
       if (parent.getParent().is(MagikGrammar.METHOD_INVOCATION)) {
@@ -717,7 +853,7 @@ public class CompletionProvider {
       cleanedToken += tokenNode.getTokenValue();
     }
 
-    return Map.entry(newMagikFile, cleanedToken);
+    return new UsableMagikFileRecord(newMagikFile, cleanedToken, cleanedPosition);
   }
 
   private boolean shouldPrependPackage(TypeString typeString, String currentPackage) {

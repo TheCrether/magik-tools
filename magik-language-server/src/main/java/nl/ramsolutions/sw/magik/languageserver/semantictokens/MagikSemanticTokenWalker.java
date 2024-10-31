@@ -33,12 +33,12 @@ public class MagikSemanticTokenWalker extends MagikAstWalker {
   private static final String DEFAULT_PACKAGE = "user";
   private static final String TOPIC_DEPRECATED = "deprecated";
 
-  private static final Pattern typeRegex =
+  public static final Pattern typeRegex =
       Pattern.compile(
           "^#\\s*type: ?("
               + MagikGrammar.IDENTIFIER_REGEXP
               + ")"); // equivalent to the MagikGrammar.EXEMPLAR
-  private static final Pattern iterTypeRegex =
+  public static final Pattern iterTypeRegex =
       Pattern.compile("^#\\s*iter-type: ?(" + MagikGrammar.IDENTIFIER_REGEXP + ")");
 
   private static final List<String> MAGIK_MODIFIER_VALUES =
