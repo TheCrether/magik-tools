@@ -50,10 +50,10 @@ public class CompletionProvider {
   private final MagikToolsProperties properties;
   private final CompletionHelper completionHelper;
 
-  private static final Pattern ERROR_PATTERN =
-      Pattern.compile("_(if|andif|and|elif|else|orif|or|then)");
   private static final Pattern FOR_OVER_PATTERN =
       Pattern.compile("_for\\s+" + MagikGrammar.SIMPLE_IDENTIFIER_REGEXP + "\\s+_over\\s+");
+  private static final Pattern TYPE_DOC_PATTERN =
+      Pattern.compile("(@(param|slot|return|loop)\\s+\\{)([^}]*)}");
 
   private static final Set<String> SCOPE_ENTRIES_TO_REMOVE = Set.of("def_slotted_exemplar");
 
@@ -90,8 +90,9 @@ public class CompletionProvider {
    */
   public void setCapabilities(final ServerCapabilities capabilities) {
     final CompletionOptions completionOptions = new CompletionOptions();
-    completionOptions.setTriggerCharacters(List.of(".", "="));
+    completionOptions.setTriggerCharacters(List.of(".", "=", "{", "}"));
     completionOptions.setResolveProvider(true);
+
     capabilities.setCompletionProvider(completionOptions);
   }
 
@@ -119,12 +120,6 @@ public class CompletionProvider {
       LOGGER.trace("Current token: {}", removedPart);
     }
 
-    // Ensure not in comment.
-    if (this.inComment(node, newPosition)) {
-      // TODO completion for @param, @slot etc
-      return Collections.emptyList();
-    }
-
     if (checker.isCanceled()) {
       return Collections.emptyList();
     }
@@ -138,6 +133,20 @@ public class CompletionProvider {
     CompletionResponse response = new CompletionResponse();
     completionHelper.setUriField(response, newMagikFile.getUri());
     List<CompletionItem> completionItems = new ArrayList<>();
+
+    // Ensure not in comment.
+    if (this.inComment(node, newPosition)) {
+      List<CompletionItem> items =
+          this.provideCommentCompletions(response, newMagikFile, newPosition, checker);
+      if (checker.isCanceled()) {
+        return Collections.emptyList();
+      }
+
+      if (!items.isEmpty()) {
+        CompletionResponses.store(response);
+      }
+      return items;
+    }
 
     AstNode methodInvocationNode = null, methodInvocationOnSlotNode = null;
     if (tokenNode != null) {
@@ -264,6 +273,89 @@ public class CompletionProvider {
                     && nativePosition.getColumn() >= token.getColumn());
   }
 
+  private List<CompletionItem> provideCommentCompletions(
+      final CompletionResponse response,
+      final MagikTypedFile magikFile,
+      final Position position,
+      CancelChecker checker) {
+    if (checker.isCanceled()) {
+      return Collections.emptyList();
+    }
+
+    final nl.ramsolutions.sw.magik.Position nodePosition =
+        Lsp4jConversion.positionFromLsp4j(position);
+    final AstNode surroundingNode = AstQuery.nodeSurrounding(magikFile.getTopNode(), nodePosition);
+    if (surroundingNode == null
+        || surroundingNode.isNot(MagikGrammar.METHOD_DEFINITION, MagikGrammar.PROCEDURE_DEFINITION)
+        || checker.isCanceled()) {
+      return Collections.emptyList();
+    }
+
+    final AstNode body = surroundingNode.getFirstChild(MagikGrammar.BODY);
+    if (body == null || !body.getToken().hasTrivia() || checker.isCanceled()) {
+      return Collections.emptyList();
+    }
+
+    final Optional<Token> commentTokenOpt =
+        MagikCommentExtractor.extractComments(body)
+            .filter(
+                token ->
+                    nodePosition.getLine() == token.getLine()
+                        && nodePosition.getColumn() >= token.getColumn())
+            .findFirst();
+    if (commentTokenOpt.isEmpty() || checker.isCanceled()) {
+      return Collections.emptyList();
+    }
+
+    final Token commentToken = commentTokenOpt.get();
+    final String comment = commentToken.getOriginalValue();
+
+    final Matcher typeDocMatcher = TYPE_DOC_PATTERN.matcher(comment);
+    final Matcher typeMatcher = MagikSemanticTokenWalker.typeRegex.matcher(comment);
+    final Matcher iterTypeMatcher = MagikSemanticTokenWalker.iterTypeRegex.matcher(comment);
+
+    String currentType;
+    int start, end;
+
+    if (typeDocMatcher.find() && typeDocMatcher.groupCount() == 3) {
+      currentType = typeDocMatcher.group(3).trim();
+      start = typeDocMatcher.start(3);
+      end = typeDocMatcher.end(3);
+    } else if (typeMatcher.find()) {
+      currentType = typeMatcher.group(1);
+      start = typeMatcher.start(1);
+      end = typeMatcher.end(1);
+    } else if (iterTypeMatcher.find()) {
+      currentType = iterTypeMatcher.group(1);
+      start = iterTypeMatcher.start(1);
+      end = iterTypeMatcher.end(1);
+    } else if (comment.trim().endsWith("iter-type:") || comment.trim().endsWith("type:")) {
+      currentType = "";
+      start = comment.indexOf(':') + 1;
+      end = comment.length();
+    } else {
+      return Collections.emptyList();
+    }
+
+    if (checker.isCanceled()) {
+      return Collections.emptyList();
+    }
+
+    final int typeStart = start + commentToken.getColumn();
+    final int typeEnd = end + commentToken.getColumn();
+
+    if (!(typeStart <= nodePosition.getColumn() && nodePosition.getColumn() <= typeEnd)) {
+      return Collections.emptyList();
+    }
+
+    List<CompletionItem> items =
+        this.addExemplarCompletions(response, magikFile, body, checker, currentType);
+    items =
+        items.stream().filter(i -> i.getLabel().contains(currentType)).collect(Collectors.toList());
+
+    return items;
+  }
+
   /**
    * Provide global completion.
    *
@@ -279,18 +371,8 @@ public class CompletionProvider {
       final Position position,
       final @Nullable AstNode tokenNode,
       final CancelChecker checker) {
-    final List<MagikDefinition> definitions = response.getDefinitions();
-    final IDefinitionKeeper definitionKeeper = magikFile.getDefinitionKeeper();
-
     // Keyword entries.
     final List<CompletionItem> items = new ArrayList<>(this.provideKeywordCompletions());
-
-    String currentPackage = "sw";
-    if (tokenNode != null) {
-      PackageNodeHelper helper = new PackageNodeHelper(tokenNode);
-      currentPackage = helper.getCurrentPackage();
-    }
-    final String finalCurrentPackage = currentPackage;
 
     if (checker.isCanceled()) {
       return Collections.emptyList();
@@ -333,8 +415,35 @@ public class CompletionProvider {
       return Collections.emptyList();
     }
 
+    items.addAll(addExemplarCompletions(response, magikFile, tokenNode, checker, null));
+    return items;
+  }
+
+  private List<CompletionItem> addExemplarCompletions(
+      final CompletionResponse response,
+      final MagikTypedFile magikFile,
+      final @Nullable AstNode tokenNode,
+      final CancelChecker checker,
+      final @Nullable String filter) {
+    if (checker.isCanceled()) {
+      return Collections.emptyList();
+    }
+
+    final List<MagikDefinition> definitions = response.getDefinitions();
+    final IDefinitionKeeper definitionKeeper = magikFile.getDefinitionKeeper();
+    final List<CompletionItem> items = new ArrayList<>();
+
+    String currentPackage = "sw";
+    if (tokenNode != null) {
+      PackageNodeHelper helper = new PackageNodeHelper(tokenNode);
+      currentPackage = helper.getCurrentPackage();
+    }
+
+    final String finalCurrentPackage = currentPackage;
+
     // Global types.
-    final String identifierPart = tokenNode != null ? tokenNode.getTokenValue() : "";
+    final String identifierPart =
+        filter != null ? filter : tokenNode != null ? tokenNode.getTokenValue() : "";
     List<ExemplarDefinition> exemplarDefinitions =
         definitionKeeper.getExemplarDefinitions().stream()
             .filter(
@@ -352,6 +461,10 @@ public class CompletionProvider {
       definitions.add(exemplarDef);
 
       items.add(item);
+    }
+
+    if (checker.isCanceled()) {
+      return Collections.emptyList();
     }
 
     return items;
@@ -738,7 +851,7 @@ public class CompletionProvider {
       int line = nodePosition.getLine();
 
       if (errorNode.getParent() != null && errorNode.getParent().is(MagikGrammar.IF)) {
-        // clean if structure, only works for the condition part at the moment
+        // clean `_if` structure, only works for the condition part at the moment
         final AstNode ifNode = errorNode.getParent();
         int fromIndex = ifNode.getFirstChild().getFromIndex();
         int toIndex = ifNode.getFirstChild().getToIndex();
@@ -839,7 +952,7 @@ public class CompletionProvider {
         cleanedToken = newCleaned.cleanedToken;
         cleanedPosition = tempPosition;
       } else {
-        // Clean it up a bit and try to re-parse.
+        // Clean it up a bit and try to reparse.
         final String[] items = this.cleanSource(source, position);
         cleanedToken = items[1];
         final String cleanedSource = items[0];
@@ -862,10 +975,6 @@ public class CompletionProvider {
       return false;
     }
 
-    if (currentPackage.equals("user") && pakkage.equals("sw")) {
-      return false;
-    }
-
-    return true;
+    return !currentPackage.equals("user") || !pakkage.equals("sw");
   }
 }

@@ -1103,17 +1103,20 @@ public class MagikTextDocumentService implements TextDocumentService {
 
                               item.setInsertText(ruleText);
                               item.setKind(CompletionItemKind.Property);
-                              item.setTextEdit(
-                                  Either.forRight(
-                                      new InsertReplaceEdit(
-                                          item.getInsertText(),
-                                          toReplace,
-                                          new org.eclipse.lsp4j.Range(
-                                              new Position(lineNo, finalStartIndex1),
-                                              new Position(
-                                                  lineNo,
-                                                  finalStartIndex1
-                                                      + item.getInsertText().length())))));
+                              //                              item.setTextEdit(
+                              //                                  Either.forRight(
+                              //                                      new InsertReplaceEdit(
+                              //                                          item.getInsertText(),
+                              //                                          toReplace,
+                              //                                          new
+                              // org.eclipse.lsp4j.Range(
+                              //                                              new Position(lineNo,
+                              // finalStartIndex1),
+                              //                                              new Position(
+                              //                                                  lineNo,
+                              //                                                  finalStartIndex1
+                              //                                                      +
+                              // item.getInsertText().length())))));
                               // TODO find out why the completion items do not get rendered if the
                               // toReplaceStr is empty
                               item.setDocumentation(rule.description());
