@@ -18,11 +18,12 @@ public class DiagnosticsProvider {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(DiagnosticsProvider.class);
 
-  private final Set<URI> ignoredUris = new HashSet<>();
+  private final Set<URI> ignoredUris;
 
   private final MagikToolsProperties properties;
 
-  public DiagnosticsProvider(final MagikToolsProperties properties) {
+  public DiagnosticsProvider(Set<URI> ignoredUris, final MagikToolsProperties properties) {
+    this.ignoredUris = ignoredUris;
     this.properties = properties;
   }
 
@@ -55,8 +56,8 @@ public class DiagnosticsProvider {
         DiagnosticsProvider.getDiagnosticsFromLinter(magikFile, checker);
     diagnostics.addAll(diagnosticsLinter);
 
-    if (checker.isCanceled()) {
-      return List.of();
+    if (checker.isCanceled() || ignoredUris.contains(magikFile.getUri())) {
+      return Collections.emptyList();
     }
 
     // Typing diagnostics.
@@ -66,6 +67,10 @@ public class DiagnosticsProvider {
       final List<Diagnostic> diagnosticsTyping =
           DiagnosticsProvider.getDiagnosticsFromTyping(magikFile);
       diagnostics.addAll(diagnosticsTyping);
+    }
+
+    if (checker.isCanceled() || ignoredUris.contains(magikFile.getUri())) {
+      return Collections.emptyList();
     }
 
     return diagnostics;
@@ -96,21 +101,5 @@ public class DiagnosticsProvider {
     }
 
     return Collections.emptyList();
-  }
-
-  public void addIgnoredUri(final String uri) {
-    this.ignoredUris.add(URI.create(uri));
-  }
-
-  public void removeIgnoredUri(final String uri) {
-    this.ignoredUris.remove(URI.create(uri));
-  }
-
-  public boolean isIgnoredUri(final String uri) {
-    try {
-      return this.ignoredUris.contains(URI.create(uri));
-    } catch (RuntimeException e) { // for URISyntaxException
-      return false;
-    }
   }
 }

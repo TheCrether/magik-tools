@@ -1,8 +1,10 @@
 package nl.ramsolutions.sw.magik.languageserver.codeactions;
 
 import java.io.IOException;
+import java.net.URI;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Stream;
 import nl.ramsolutions.sw.MagikToolsProperties;
 import nl.ramsolutions.sw.magik.CodeAction;
@@ -19,12 +21,15 @@ public class CodeActionProvider {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(CodeActionProvider.class);
 
+  private final Set<URI> ignoredUris;
   private final MagikChecksCodeActionProvider checksCodeActionProvider;
   private final MagikTypedChecksCodeActionProvider typedChecksCodeActionProvider;
 
-  public CodeActionProvider(final MagikToolsProperties properties) {
-    this.checksCodeActionProvider = new MagikChecksCodeActionProvider(properties);
-    this.typedChecksCodeActionProvider = new MagikTypedChecksCodeActionProvider(properties);
+  public CodeActionProvider(Set<URI> ignoredUris, final MagikToolsProperties properties) {
+    this.ignoredUris = ignoredUris;
+    this.checksCodeActionProvider = new MagikChecksCodeActionProvider(ignoredUris, properties);
+    this.typedChecksCodeActionProvider =
+        new MagikTypedChecksCodeActionProvider(ignoredUris, properties);
   }
 
   /**
@@ -50,6 +55,10 @@ public class CodeActionProvider {
       final Range range,
       final CodeActionContext context,
       CancelChecker checker) {
+    if (ignoredUris.contains(magikFile.getUri())) {
+      return Collections.emptyList();
+    }
+
     try {
       return Stream.concat(
               this.checksCodeActionProvider.provideCodeActions(magikFile, range, checker).stream(),

@@ -1,9 +1,12 @@
 package nl.ramsolutions.sw.magik.languageserver.codeactions;
 
 import java.io.IOException;
+import java.net.URI;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map.Entry;
+import java.util.Set;
 import nl.ramsolutions.sw.MagikToolsProperties;
 import nl.ramsolutions.sw.magik.CodeAction;
 import nl.ramsolutions.sw.magik.MagikFile;
@@ -20,10 +23,12 @@ import org.eclipse.lsp4j.jsonrpc.CancelChecker;
 /** Provide {@link CodeAction}s for {@link MagikTypedCheck}s. */
 public class MagikTypedChecksCodeActionProvider {
 
+  private final Set<URI> ignoredUris;
   private final MagikToolsProperties properties;
 
-  MagikTypedChecksCodeActionProvider(final MagikToolsProperties properties) {
+  MagikTypedChecksCodeActionProvider(Set<URI> ignoredUris, final MagikToolsProperties properties) {
     this.properties = properties;
+    this.ignoredUris = ignoredUris;
   }
 
   /**
@@ -38,6 +43,10 @@ public class MagikTypedChecksCodeActionProvider {
   public List<CodeAction> provideCodeActions(
       final MagikTypedFile magikFile, final Range range, CancelChecker checker)
       throws ReflectiveOperationException, IOException {
+    if (ignoredUris.contains(magikFile.getUri())) {
+      return Collections.emptyList();
+    }
+
     final List<CodeAction> codeActions = new ArrayList<>();
     for (final Entry<Class<? extends MagikCheck>, List<Class<? extends MagikTypedCheckFixer>>>
         entry : CheckList.getFixers().entrySet()) {

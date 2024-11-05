@@ -2,8 +2,10 @@ package nl.ramsolutions.sw.magik.languageserver.formatting;
 
 import com.sonar.sslr.api.AstNode;
 import java.io.IOException;
+import java.net.URI;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import nl.ramsolutions.sw.magik.MagikFile;
 import nl.ramsolutions.sw.magik.api.MagikGrammar;
 import nl.ramsolutions.sw.magik.formatting.FormattingWalker;
@@ -18,6 +20,11 @@ import org.slf4j.LoggerFactory;
 public class FormattingProvider {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(FormattingProvider.class);
+  private final Set<URI> ignoredUris;
+
+  public FormattingProvider(Set<URI> ignoredUris) {
+    this.ignoredUris = ignoredUris;
+  }
 
   public void setCapabilities(final ServerCapabilities capabilities) {
     capabilities.setDocumentFormattingProvider(true);
@@ -29,10 +36,13 @@ public class FormattingProvider {
    * @param magikFile Magik file.
    * @param options Formatting options
    * @return {@link TextEdit}s.
-   * @throws IOException -
    */
   public List<TextEdit> provideFormatting(
       final MagikFile magikFile, final FormattingOptions options) {
+    if (ignoredUris.contains(magikFile.getUri())) {
+      return Collections.emptyList();
+    }
+
     final AstNode node = magikFile.getTopNode();
 
     final nl.ramsolutions.sw.magik.formatting.FormattingOptions magikToolsFormattingOptions =

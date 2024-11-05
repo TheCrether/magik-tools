@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentSkipListSet;
 import nl.ramsolutions.sw.ConfigurationReader;
 import nl.ramsolutions.sw.MagikToolsProperties;
 import nl.ramsolutions.sw.OpenedFile;
@@ -81,6 +82,8 @@ public class MagikTextDocumentService implements TextDocumentService {
   private final CallHierarchyProvider callHierarchyProvider;
   private final Map<TextDocumentIdentifier, OpenedFile> openedFiles = new HashMap<>();
 
+  private final Set<URI> ignoredUris = new ConcurrentSkipListSet<>();
+
   /**
    * Constructor.
    *
@@ -95,21 +98,21 @@ public class MagikTextDocumentService implements TextDocumentService {
     this.properties = properties;
     this.definitionKeeper = definitionKeeper;
 
-    this.diagnosticsProvider = new DiagnosticsProvider(this.properties);
+    this.diagnosticsProvider = new DiagnosticsProvider(this.ignoredUris, this.properties);
     this.hoverProvider = new HoverProvider(this.properties);
     this.implementationProvider = new ImplementationProvider(this.properties);
     this.signatureHelpProvider = new SignatureHelpProvider();
     this.definitionsProvider = new DefinitionsProvider(this.properties);
     this.referencesProvider = new ReferencesProvider(this.properties);
     this.completionProvider = new CompletionProvider(this.properties);
-    this.formattingProvider = new FormattingProvider();
+    this.formattingProvider = new FormattingProvider(this.ignoredUris);
     this.foldingRangeProvider = new FoldingRangeProvider();
     this.semanticTokenProvider = new SemanticTokenProvider();
     this.renameProvider = new RenameProvider();
     this.documentSymbolProvider = new DocumentSymbolProvider();
     this.typeHierarchyProvider = new TypeHierarchyProvider(this.definitionKeeper, this.properties);
     this.inlayHintProvider = new InlayHintProvider(this.properties);
-    this.codeActionProvider = new CodeActionProvider(this.properties);
+    this.codeActionProvider = new CodeActionProvider(this.ignoredUris, this.properties);
     this.selectionRangeProvider = new SelectionRangeProvider();
     this.callHierarchyProvider = new CallHierarchyProvider(this.definitionKeeper, this.properties);
   }
@@ -282,7 +285,7 @@ public class MagikTextDocumentService implements TextDocumentService {
     LOGGER.debug("didClose, uri: {}", textDocumentIdentifier.getUri());
 
     this.openedFiles.remove(textDocumentIdentifier);
-    this.diagnosticsProvider.removeIgnoredUri(textDocumentIdentifier.getUri());
+    this.removeIgnoredUri(textDocumentIdentifier.getUri());
 
     // Clear published diagnostics.
     final List<Diagnostic> diagnostics = Collections.emptyList();
@@ -327,7 +330,7 @@ public class MagikTextDocumentService implements TextDocumentService {
 
           DocumentDiagnosticReport report = null;
           if (openedFile instanceof MagikTypedFile magikFile) {
-            if (checker.isCanceled()) {
+            if (checker.isCanceled() || this.ignoredUris.contains(magikFile.getUri())) {
               return report;
             }
             final List<Diagnostic> diagnostics =
@@ -1234,16 +1237,16 @@ public class MagikTextDocumentService implements TextDocumentService {
     }
 
     LintIgnoreParams params = new Gson().fromJson(array.get(0), LintIgnoreParams.class);
-    LOGGER.trace("addLintIgnore, uri: {}", params.getUri());
+    LOGGER.debug("addLintIgnore, uri: {}", params.getUri());
 
     String uri = params.getUri();
 
     OpenedFile file = this.openedFiles.get(new TextDocumentIdentifier(uri));
     if (file instanceof MagikTypedFile typedFile) {
-      this.diagnosticsProvider.addIgnoredUri(uri);
+      this.addIgnoredUri(uri);
       this.publishDiagnostics(typedFile);
     }
-    return CompletableFuture.completedFuture(this.diagnosticsProvider.isIgnoredUri(uri));
+    return CompletableFuture.completedFuture(this.isIgnoredUri(uri));
   }
 
   @JsonRequest(value = "custom/removeLintIgnore")
@@ -1254,16 +1257,16 @@ public class MagikTextDocumentService implements TextDocumentService {
     }
 
     LintIgnoreParams params = new Gson().fromJson(array.get(0), LintIgnoreParams.class);
-    LOGGER.trace("removeLintIgnore, uri: {}", params.getUri());
+    LOGGER.debug("removeLintIgnore, uri: {}", params.getUri());
 
     final String uri = params.getUri();
     OpenedFile file = this.openedFiles.get(new TextDocumentIdentifier(uri));
     if (file instanceof MagikTypedFile typedFile) {
-      this.diagnosticsProvider.removeIgnoredUri(uri);
+      this.removeIgnoredUri(uri);
       this.publishDiagnostics(typedFile);
     }
 
-    return CompletableFuture.completedFuture(this.diagnosticsProvider.isIgnoredUri(uri));
+    return CompletableFuture.completedFuture(this.isIgnoredUri(uri));
   }
 
   @JsonRequest(value = "custom/isLintIgnored")
@@ -1274,10 +1277,10 @@ public class MagikTextDocumentService implements TextDocumentService {
     }
 
     LintIgnoreParams params = new Gson().fromJson(array.get(0), LintIgnoreParams.class);
-    LOGGER.trace("isLintIgnored, uri: {}", params.getUri());
+    LOGGER.debug("isLintIgnored, uri: {}", params.getUri());
     final String uri = params.getUri();
 
-    return CompletableFuture.completedFuture(this.diagnosticsProvider.isIgnoredUri(uri));
+    return CompletableFuture.completedFuture(this.isIgnoredUri(uri));
   }
 
   @JsonRequest(value = "custom/editorOptions")
@@ -1410,5 +1413,21 @@ public class MagikTextDocumentService implements TextDocumentService {
 
     return CompletableFuture.completedFuture(
         completionProvider.provideCompletionItem(magikFile, completionItem));
+  }
+
+  public void addIgnoredUri(final String uri) {
+    this.ignoredUris.add(URI.create(uri));
+  }
+
+  public void removeIgnoredUri(final String uri) {
+    this.ignoredUris.remove(URI.create(uri));
+  }
+
+  public boolean isIgnoredUri(final String uri) {
+    try {
+      return this.ignoredUris.contains(URI.create(uri));
+    } catch (RuntimeException e) { // for URISyntaxException
+      return false;
+    }
   }
 }

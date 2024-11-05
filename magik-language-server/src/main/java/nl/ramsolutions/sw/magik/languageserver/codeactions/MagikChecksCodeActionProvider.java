@@ -1,9 +1,11 @@
 package nl.ramsolutions.sw.magik.languageserver.codeactions;
 
 import java.io.IOException;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map.Entry;
+import java.util.Set;
 import nl.ramsolutions.sw.MagikToolsProperties;
 import nl.ramsolutions.sw.magik.CodeAction;
 import nl.ramsolutions.sw.magik.MagikFile;
@@ -19,9 +21,11 @@ import org.eclipse.lsp4j.jsonrpc.CancelChecker;
 /** Provide {@link CodeAction}s for {@link MagikCheck}s. */
 public class MagikChecksCodeActionProvider {
 
+  private final Set<URI> ignoredUris;
   final MagikToolsProperties properties;
 
-  MagikChecksCodeActionProvider(final MagikToolsProperties properties) {
+  MagikChecksCodeActionProvider(Set<URI> ignoredUris, final MagikToolsProperties properties) {
+    this.ignoredUris = ignoredUris;
     this.properties = properties;
   }
 

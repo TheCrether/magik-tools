@@ -3,6 +3,7 @@ package nl.ramsolutions.sw.magik.languageserver.formatting;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.net.URI;
+import java.util.Collections;
 import java.util.List;
 import nl.ramsolutions.sw.magik.MagikTypedFile;
 import nl.ramsolutions.sw.magik.analysis.definitions.DefinitionKeeper;
@@ -30,7 +31,7 @@ class FormattingProviderTest {
     final IDefinitionKeeper definitionKeeper = new DefinitionKeeper();
     final MagikTypedFile magikFile = new MagikTypedFile(DEFAULT_URI, code, definitionKeeper);
 
-    final FormattingProvider provider = new FormattingProvider();
+    final FormattingProvider provider = new FormattingProvider(Collections.emptySet());
     return provider.provideFormatting(magikFile, options);
   }
 
