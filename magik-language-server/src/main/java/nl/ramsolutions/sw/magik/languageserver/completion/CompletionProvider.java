@@ -284,20 +284,21 @@ public class CompletionProvider {
 
     final nl.ramsolutions.sw.magik.Position nodePosition =
         Lsp4jConversion.positionFromLsp4j(position);
-    final AstNode surroundingNode = AstQuery.nodeSurrounding(magikFile.getTopNode(), nodePosition);
-    if (surroundingNode == null
-        || surroundingNode.isNot(MagikGrammar.METHOD_DEFINITION, MagikGrammar.PROCEDURE_DEFINITION)
-        || checker.isCanceled()) {
+    AstNode surroundingNode = AstQuery.nodeSurrounding(magikFile.getTopNode(), nodePosition);
+    if (surroundingNode == null || checker.isCanceled()) {
       return Collections.emptyList();
     }
 
+    // if method body exists, get it for better performance
     final AstNode body = surroundingNode.getFirstChild(MagikGrammar.BODY);
-    if (body == null || !body.getToken().hasTrivia() || checker.isCanceled()) {
+    if (checker.isCanceled()) {
       return Collections.emptyList();
+    } else if (body != null) {
+      surroundingNode = body;
     }
 
     final Optional<Token> commentTokenOpt =
-        MagikCommentExtractor.extractComments(body)
+        MagikCommentExtractor.extractComments(surroundingNode)
             .filter(
                 token ->
                     nodePosition.getLine() == token.getLine()
