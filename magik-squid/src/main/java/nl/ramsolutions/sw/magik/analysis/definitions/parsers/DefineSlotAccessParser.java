@@ -4,16 +4,10 @@ import com.sonar.sslr.api.AstNode;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.net.URI;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import nl.ramsolutions.sw.magik.Location;
 import nl.ramsolutions.sw.magik.MagikFile;
-import nl.ramsolutions.sw.magik.analysis.definitions.MagikDefinition;
-import nl.ramsolutions.sw.magik.analysis.definitions.MethodDefinition;
-import nl.ramsolutions.sw.magik.analysis.definitions.ParameterDefinition;
+import nl.ramsolutions.sw.magik.analysis.definitions.*;
 import nl.ramsolutions.sw.magik.analysis.helpers.ArgumentsNodeHelper;
 import nl.ramsolutions.sw.magik.analysis.helpers.MethodInvocationNodeHelper;
 import nl.ramsolutions.sw.magik.analysis.helpers.PackageNodeHelper;
@@ -22,6 +16,7 @@ import nl.ramsolutions.sw.magik.analysis.typing.TypeString;
 import nl.ramsolutions.sw.magik.api.MagikGrammar;
 import nl.ramsolutions.sw.magik.api.MagikOperator;
 import nl.ramsolutions.sw.magik.parser.MagikCommentExtractor;
+import nl.ramsolutions.sw.magik.parser.TypeDocParser;
 import nl.ramsolutions.sw.moduledef.ModuleDefFile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -224,6 +219,7 @@ public class DefineSlotAccessParser {
     final String slotName = slotNameSymbol.substring(1);
     final String flavor =
         argument2Node != null ? argument2Node.getTokenValue() : FLAVOR_PUBLIC; // Default is public.
+
     final String flag;
     if (helper.isMethodInvocationOf(DefineSlotAccessParser.DEFINE_SLOT_EXTERNALLY_READABLE)) {
       flag = DefineSlotAccessParser.FLAG_READABLE;
@@ -235,10 +231,22 @@ public class DefineSlotAccessParser {
     } else {
       throw new IllegalStateException();
     }
+
     final TypeString exemplarName = TypeString.ofIdentifier(identifier, pakkage);
+    final TypeDocParser typeDocParser = new TypeDocParser(parentNode);
+    final TypeString slotType = typeDocParser.getReturnTypes().stream().findFirst().orElse(null);
+
     final List<MethodDefinition> methodDefinitions =
         this.generateSlotMethods(
-            timestamp, moduleName, statementNode, exemplarName, slotName, flag, flavor, doc);
+            timestamp,
+            moduleName,
+            statementNode,
+            exemplarName,
+            slotName,
+            flag,
+            flavor,
+            doc,
+            slotType);
     return List.copyOf(methodDefinitions);
   }
 
@@ -251,8 +259,13 @@ public class DefineSlotAccessParser {
       final String slotName,
       final String flag,
       final String flavor,
-      final String doc) {
+      final String doc,
+      @Nullable TypeString slotType) {
     final List<MethodDefinition> methodDefinitions = new ArrayList<>();
+
+    if (slotType == null) {
+      slotType = TypeString.UNDEFINED;
+    }
 
     // Figure location.
     final URI uri = definitionNode.getToken().getURI();
@@ -280,7 +293,7 @@ public class DefineSlotAccessParser {
               getParameters,
               null,
               Collections.emptySet(),
-              new ExpressionResultString(TypeString.UNDEFINED),
+              new ExpressionResultString(slotType),
               ExpressionResultString.EMPTY);
       methodDefinitions.add(getMethod);
     } else if (flag.equals(FLAG_WRITE) || flag.equals(FLAG_WRITABLE)) {
@@ -304,7 +317,7 @@ public class DefineSlotAccessParser {
               getParameters,
               null,
               Collections.emptySet(),
-              new ExpressionResultString(TypeString.UNDEFINED),
+              new ExpressionResultString(slotType),
               ExpressionResultString.EMPTY);
       methodDefinitions.add(getMethod);
 
@@ -325,7 +338,7 @@ public class DefineSlotAccessParser {
               definitionNode,
               "val",
               ParameterDefinition.Modifier.NONE,
-              TypeString.UNDEFINED);
+              slotType);
       final MethodDefinition setMethod =
           new MethodDefinition(
               location,
@@ -358,7 +371,7 @@ public class DefineSlotAccessParser {
               setParameters,
               assignmentParam,
               Collections.emptySet(),
-              new ExpressionResultString(TypeString.UNDEFINED),
+              new ExpressionResultString(slotType),
               ExpressionResultString.EMPTY);
       methodDefinitions.add(bootMethod);
     }
