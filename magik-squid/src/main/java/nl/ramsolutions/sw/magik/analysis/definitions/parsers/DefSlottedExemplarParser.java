@@ -222,7 +222,6 @@ public class DefSlottedExemplarParser extends BaseDefParser {
 
     if (flag.equals(FLAG_READ) || flag.equals(FLAG_READABLE)) {
       // get
-      final String getName = slotName;
       final Set<MethodDefinition.Modifier> getModifiers = new HashSet<>();
       getModifiers.add(MethodDefinition.Modifier.SLOT);
       if (!flavor.equals(FLAVOR_PUBLIC)) {
@@ -237,7 +236,7 @@ public class DefSlottedExemplarParser extends BaseDefParser {
               null,
               node,
               exemplarName,
-              getName,
+              slotName,
               getModifiers,
               getParameters,
               null,

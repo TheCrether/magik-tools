@@ -610,7 +610,11 @@ public class CompletionProvider {
       TypeString methodExemplarType = methodDef.getTypeName();
 
       CompletionItemLabelDetails labelDetails = new CompletionItemLabelDetails();
-      labelDetails.setDescription(methodExemplarType.getIdentifier());
+      ExpressionResultString returnTypes = methodDef.getReturnTypes();
+      if (!returnTypes.getTypes().stream()
+          .allMatch(retTypeStr -> retTypeStr.equals(TypeString.UNDEFINED))) {
+        labelDetails.setDescription(returnTypes.getFullString());
+      }
       item.setLabelDetails(labelDetails);
 
       String prefix = "";

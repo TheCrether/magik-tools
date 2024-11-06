@@ -34,6 +34,7 @@ public class DefineSlotAccessParser {
   private static final String FLAG_WRITE = ":write";
   private static final String FLAG_WRITABLE = ":writable";
   private static final String FLAVOR_PUBLIC = ":public";
+  private static final String FLAVOR_PRIVATE = ":private";
   private static final String FLAVOR_READ_ONLY = ":read_only";
 
   private final MagikFile magikFile;
@@ -185,6 +186,7 @@ public class DefineSlotAccessParser {
 
     final AstNode argument0Node = argumentsHelper.getArgument(0, MagikGrammar.SYMBOL);
     final AstNode argument1Node = argumentsHelper.getArgument(1, MagikGrammar.SYMBOL);
+    // TODO add support for _false (:public) and _true (:private)
     final AstNode argument2Node = argumentsHelper.getArgument(2, MagikGrammar.SYMBOL);
     if (argument0Node == null) {
       return Collections.emptyList();
@@ -271,39 +273,18 @@ public class DefineSlotAccessParser {
     final URI uri = definitionNode.getToken().getURI();
     final Location location = new Location(uri, definitionNode);
 
-    if (flag.equals(FLAG_READ) || flag.equals(FLAG_READABLE)) {
+    final Set<MethodDefinition.Modifier> defaultModifiers =
+        new HashSet<>(Set.of(MethodDefinition.Modifier.SLOT));
+    if (flavor.equals(FLAVOR_PRIVATE)) {
+      defaultModifiers.add(MethodDefinition.Modifier.PRIVATE);
+    }
+
+    if (flag.equals(FLAG_READ)
+        || flag.equals(FLAG_WRITE)
+        || flag.equals(FLAG_READABLE)
+        || flag.equals(FLAG_WRITABLE)) {
       // get
-      final String getName = slotName;
-      final Set<MethodDefinition.Modifier> getModifiers = new HashSet<>();
-      getModifiers.add(MethodDefinition.Modifier.SLOT);
-      if (!flavor.equals(FLAVOR_PUBLIC)) {
-        getModifiers.add(MethodDefinition.Modifier.PRIVATE);
-      }
-      final List<ParameterDefinition> getParameters = Collections.emptyList();
-      final MethodDefinition getMethod =
-          new MethodDefinition(
-              location,
-              timestamp,
-              moduleName,
-              doc,
-              definitionNode,
-              exemplarName,
-              getName,
-              getModifiers,
-              getParameters,
-              null,
-              Collections.emptySet(),
-              new ExpressionResultString(slotType),
-              ExpressionResultString.EMPTY);
-      methodDefinitions.add(getMethod);
-    } else if (flag.equals(FLAG_WRITE) || flag.equals(FLAG_WRITABLE)) {
-      // get
-      final Set<MethodDefinition.Modifier> getModifiers = new HashSet<>();
-      getModifiers.add(MethodDefinition.Modifier.SLOT);
-      if (!flavor.equals(FLAVOR_PUBLIC) && !flavor.equals(FLAVOR_READ_ONLY)) {
-        getModifiers.add(MethodDefinition.Modifier.PRIVATE);
-      }
-      final List<ParameterDefinition> getParameters = Collections.emptyList();
+      final Set<MethodDefinition.Modifier> getModifiers = new HashSet<>(defaultModifiers);
       final MethodDefinition getMethod =
           new MethodDefinition(
               location,
@@ -314,21 +295,22 @@ public class DefineSlotAccessParser {
               exemplarName,
               slotName,
               getModifiers,
-              getParameters,
+              Collections.emptyList(),
               null,
               Collections.emptySet(),
               new ExpressionResultString(slotType),
               ExpressionResultString.EMPTY);
       methodDefinitions.add(getMethod);
+    }
 
+    if (flag.equals(FLAG_WRITE) || flag.equals(FLAG_WRITABLE)) {
       // set
-      final String setName = slotName + MagikOperator.CHEVRON.getValue();
-      final Set<MethodDefinition.Modifier> setModifiers = new HashSet<>();
-      setModifiers.add(MethodDefinition.Modifier.SLOT);
-      if (!flavor.equals(FLAVOR_PUBLIC)) {
+      final String setName = slotName + " " + MagikOperator.CHEVRON.getValue();
+      final Set<MethodDefinition.Modifier> setModifiers = new HashSet<>(defaultModifiers);
+      if (flavor.equals(FLAVOR_READ_ONLY)) {
         setModifiers.add(MethodDefinition.Modifier.PRIVATE);
       }
-      final List<ParameterDefinition> setParameters = Collections.emptyList();
+
       final ParameterDefinition assignmentParam =
           new ParameterDefinition(
               location,
@@ -349,7 +331,7 @@ public class DefineSlotAccessParser {
               exemplarName,
               setName,
               setModifiers,
-              setParameters,
+              Collections.emptyList(),
               assignmentParam,
               Collections.emptySet(),
               new ExpressionResultString(TypeString.ofParameterRef("val")),
@@ -368,7 +350,7 @@ public class DefineSlotAccessParser {
               exemplarName,
               bootName,
               setModifiers,
-              setParameters,
+              Collections.emptyList(),
               assignmentParam,
               Collections.emptySet(),
               new ExpressionResultString(slotType),
