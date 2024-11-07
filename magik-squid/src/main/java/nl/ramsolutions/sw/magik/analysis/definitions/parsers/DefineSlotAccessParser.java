@@ -9,6 +9,7 @@ import nl.ramsolutions.sw.magik.Location;
 import nl.ramsolutions.sw.magik.MagikFile;
 import nl.ramsolutions.sw.magik.analysis.definitions.*;
 import nl.ramsolutions.sw.magik.analysis.helpers.ArgumentsNodeHelper;
+import nl.ramsolutions.sw.magik.analysis.helpers.FlagFlavor;
 import nl.ramsolutions.sw.magik.analysis.helpers.MethodInvocationNodeHelper;
 import nl.ramsolutions.sw.magik.analysis.helpers.PackageNodeHelper;
 import nl.ramsolutions.sw.magik.analysis.typing.ExpressionResultString;
@@ -29,13 +30,6 @@ public class DefineSlotAccessParser {
   private static final String DEFINE_SLOT_ACCESS = "define_slot_access()";
   private static final String DEFINE_SLOT_EXTERNALLY_READABLE = "define_slot_externally_readable()";
   private static final String DEFINE_SLOT_EXTERNALLY_WRITABLE = "define_slot_externally_writable()";
-  private static final String FLAG_READ = ":read";
-  private static final String FLAG_READABLE = ":readable";
-  private static final String FLAG_WRITE = ":write";
-  private static final String FLAG_WRITABLE = ":writable";
-  private static final String FLAVOR_PUBLIC = ":public";
-  private static final String FLAVOR_PRIVATE = ":private";
-  private static final String FLAVOR_READ_ONLY = ":read_only";
 
   private final MagikFile magikFile;
   private final AstNode node;
@@ -186,8 +180,8 @@ public class DefineSlotAccessParser {
 
     final AstNode argument0Node = argumentsHelper.getArgument(0, MagikGrammar.SYMBOL);
     final AstNode argument1Node = argumentsHelper.getArgument(1, MagikGrammar.SYMBOL);
-    // TODO add support for _false (:public) and _true (:private)
-    final AstNode argument2Node = argumentsHelper.getArgument(2, MagikGrammar.SYMBOL);
+    final AstNode argument2Node =
+        argumentsHelper.getArgument(2, MagikGrammar.SYMBOL, MagikGrammar.TRUE, MagikGrammar.FALSE);
     if (argument0Node == null) {
       return Collections.emptyList();
     }
@@ -220,14 +214,16 @@ public class DefineSlotAccessParser {
     final String slotNameSymbol = argument0Node.getTokenValue();
     final String slotName = slotNameSymbol.substring(1);
     final String flavor =
-        argument2Node != null ? argument2Node.getTokenValue() : FLAVOR_PUBLIC; // Default is public.
+        argument2Node != null
+            ? argument2Node.getTokenValue()
+            : FlagFlavor.FLAVOR_PUBLIC; // Default is public.
 
     final String flag;
     if (helper.isMethodInvocationOf(DefineSlotAccessParser.DEFINE_SLOT_EXTERNALLY_READABLE)) {
-      flag = DefineSlotAccessParser.FLAG_READABLE;
+      flag = FlagFlavor.FLAG_READABLE;
     } else if (helper.isMethodInvocationOf(
         DefineSlotAccessParser.DEFINE_SLOT_EXTERNALLY_WRITABLE)) {
-      flag = DefineSlotAccessParser.FLAG_WRITABLE;
+      flag = FlagFlavor.FLAG_WRITABLE;
     } else if (helper.isMethodInvocationOf(DefineSlotAccessParser.DEFINE_SLOT_ACCESS)) {
       flag = argument1Node.getTokenValue(); // NOSONAR: argument1Node cannot be null in this case.
     } else {
@@ -275,14 +271,11 @@ public class DefineSlotAccessParser {
 
     final Set<MethodDefinition.Modifier> defaultModifiers =
         new HashSet<>(Set.of(MethodDefinition.Modifier.SLOT));
-    if (flavor.equals(FLAVOR_PRIVATE)) {
+    if (FlagFlavor.isPrivate(flavor)) {
       defaultModifiers.add(MethodDefinition.Modifier.PRIVATE);
     }
 
-    if (flag.equals(FLAG_READ)
-        || flag.equals(FLAG_WRITE)
-        || flag.equals(FLAG_READABLE)
-        || flag.equals(FLAG_WRITABLE)) {
+    if (FlagFlavor.isReadable(flag) || FlagFlavor.isWritable(flag)) {
       // get
       final Set<MethodDefinition.Modifier> getModifiers = new HashSet<>(defaultModifiers);
       final MethodDefinition getMethod =
@@ -303,11 +296,11 @@ public class DefineSlotAccessParser {
       methodDefinitions.add(getMethod);
     }
 
-    if (flag.equals(FLAG_WRITE) || flag.equals(FLAG_WRITABLE)) {
+    if (FlagFlavor.isWritable(flag)) {
       // set
       final String setName = slotName + " " + MagikOperator.CHEVRON.getValue();
       final Set<MethodDefinition.Modifier> setModifiers = new HashSet<>(defaultModifiers);
-      if (flavor.equals(FLAVOR_READ_ONLY)) {
+      if (FlagFlavor.isReadOnly(flavor)) {
         setModifiers.add(MethodDefinition.Modifier.PRIVATE);
       }
 
@@ -334,7 +327,7 @@ public class DefineSlotAccessParser {
               Collections.emptyList(),
               assignmentParam,
               Collections.emptySet(),
-              new ExpressionResultString(TypeString.ofParameterRef("val")),
+              new ExpressionResultString(slotType),
               ExpressionResultString.EMPTY);
       methodDefinitions.add(setMethod);
 

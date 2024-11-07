@@ -15,6 +15,7 @@ import nl.ramsolutions.sw.magik.analysis.definitions.MagikDefinition;
 import nl.ramsolutions.sw.magik.analysis.definitions.MethodDefinition;
 import nl.ramsolutions.sw.magik.analysis.definitions.ParameterDefinition;
 import nl.ramsolutions.sw.magik.analysis.helpers.ArgumentsNodeHelper;
+import nl.ramsolutions.sw.magik.analysis.helpers.FlagFlavor;
 import nl.ramsolutions.sw.magik.analysis.helpers.MethodInvocationNodeHelper;
 import nl.ramsolutions.sw.magik.analysis.helpers.PackageNodeHelper;
 import nl.ramsolutions.sw.magik.analysis.typing.ExpressionResultString;
@@ -29,8 +30,6 @@ import nl.ramsolutions.sw.moduledef.ModuleDefFile;
 public class DefineSharedVariableParser {
 
   private static final String DEFINE_SHARED_VARIABLE = "define_shared_variable()";
-  private static final String FLAVOR_PUBLIC = ":public";
-  private static final String FLAVOR_READONLY = ":readonly";
 
   private final MagikFile magikFile;
   private final AstNode node;
@@ -160,12 +159,14 @@ public class DefineSharedVariableParser {
       final TypeString typeRef) {
     final List<MethodDefinition> methodDefinitions = new ArrayList<>();
 
-    // get
-    final Set<MethodDefinition.Modifier> getModifiers = new HashSet<>();
-    getModifiers.add(MethodDefinition.Modifier.SHARED_VARIABLE);
-    if (!flavor.equals(FLAVOR_READONLY) && !flavor.equals(FLAVOR_PUBLIC)) {
-      getModifiers.add(MethodDefinition.Modifier.PRIVATE);
+    final Set<MethodDefinition.Modifier> defaultModifiers =
+        new HashSet<>(Set.of(MethodDefinition.Modifier.SHARED_VARIABLE));
+    if (FlagFlavor.isPrivate(flavor)) {
+      defaultModifiers.add(MethodDefinition.Modifier.PRIVATE);
     }
+
+    // get
+    final Set<MethodDefinition.Modifier> getModifiers = new HashSet<>(defaultModifiers);
     final List<ParameterDefinition> getParameters = Collections.emptyList();
     final MethodDefinition getMethod =
         new MethodDefinition(
@@ -185,12 +186,12 @@ public class DefineSharedVariableParser {
     methodDefinitions.add(getMethod);
 
     // set
-    final String setName = variableName + MagikOperator.CHEVRON.getValue();
-    final Set<MethodDefinition.Modifier> setModifiers = new HashSet<>();
-    setModifiers.add(MethodDefinition.Modifier.SHARED_VARIABLE);
-    if (!flavor.equals(FLAVOR_PUBLIC)) {
+    final String setName = variableName + " " + MagikOperator.CHEVRON.getValue();
+    final Set<MethodDefinition.Modifier> setModifiers = new HashSet<>(defaultModifiers);
+    if (FlagFlavor.isReadOnly(flavor)) {
       setModifiers.add(MethodDefinition.Modifier.PRIVATE);
     }
+
     final List<ParameterDefinition> setParameters = Collections.emptyList();
     final ParameterDefinition assignmentParam =
         new ParameterDefinition(
@@ -220,7 +221,7 @@ public class DefineSharedVariableParser {
     methodDefinitions.add(setMethod);
 
     // boot
-    final String bootName = variableName + MagikOperator.BOOT_CHEVRON.getValue();
+    final String bootName = variableName + " " + MagikOperator.BOOT_CHEVRON.getValue();
     final MethodDefinition bootMethod =
         new MethodDefinition(
             location,

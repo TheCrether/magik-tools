@@ -216,7 +216,7 @@ public class MethodDefinition extends MagikDefinition implements ICallableDefini
     final String assignmentParameterName =
         this.assignmentParameter != null ? this.assignmentParameter.getName() : null;
     if (assignmentParameterName != null) {
-      builder.append(assignmentParameterName);
+      builder.append(" ").append(assignmentParameterName);
     }
 
     return builder.toString();

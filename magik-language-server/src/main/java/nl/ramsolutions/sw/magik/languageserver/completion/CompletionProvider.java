@@ -243,7 +243,11 @@ public class CompletionProvider {
       HoverProvider.buildTypeSignatureDoc(magikTypedFile, exemplarDef, docBuilder, this.properties);
     } else if (definition instanceof SlotDefinition slotDef) {
       // TODO implement correct documentation for SlotDefinitions here and in HoverProvider
-      docBuilder.append(slotDef.getDoc());
+      if (slotDef.getDoc() != null) {
+        docBuilder.append(slotDef.getDoc());
+      } else {
+        docBuilder.append("No documentation found");
+      }
     } else {
       docBuilder.append("No documentation found");
       LOGGER.warn(
@@ -706,11 +710,16 @@ public class CompletionProvider {
                   SlotDefinition slot = slots.get(i);
                   final String slotName = slot.getName();
 
-                  final String fullSlotName = typeString.getFullString() + "." + slot.getName();
                   final CompletionItem item = new CompletionItem(slotName);
                   item.setInsertText(slotName);
-                  item.setDetail(fullSlotName);
                   item.setKind(CompletionItemKind.Property);
+
+                  CompletionItemLabelDetails labelDetails = new CompletionItemLabelDetails();
+                  TypeString type = slot.getTypeName();
+                  if (!type.equals(TypeString.UNDEFINED)) {
+                    labelDetails.setDescription(type.getFullString());
+                  }
+                  item.setLabelDetails(labelDetails);
 
                   definitions.add(slot);
                   item.setData(
@@ -732,6 +741,15 @@ public class CompletionProvider {
    */
   private String buildMethodInvocationSnippet(MethodDefinition methodDef) {
     final String originalMethodName = methodDef.getMethodNameWithParameters();
+
+    if (methodDef.getModifiers().contains(MethodDefinition.Modifier.SLOT)) {
+      final int lastChevron = originalMethodName.lastIndexOf('<');
+      String insertText = originalMethodName.substring(0, lastChevron + 1);
+      insertText += " ${1:val}$0";
+
+      return insertText;
+    }
+
     if (!originalMethodName.endsWith(")")) {
       return originalMethodName;
     }

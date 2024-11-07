@@ -7,8 +7,8 @@ import nl.ramsolutions.sw.magik.analysis.typing.TypeString;
 import nl.ramsolutions.sw.magik.api.MagikGrammar;
 
 /**
- * <p>a helper to the {@link TypeString}s for an atom,
- * only works for simple atoms like numbers, _true, etc. where there are no generics involved
+ * a helper to the {@link TypeString}s for an atom, only works for simple atoms like numbers, _true,
+ * etc. where there are no generics involved
  *
  * <p>The list of supported atom types can be found in the constant {@link #ATOM_TYPES}
  */
@@ -17,21 +17,23 @@ public class AtomTypeStringHelper {
   private static final long BIGNUM_START = 1 << 29;
 
   // if a new simple atom type is added, add it here and in handleNode()
-  public static final MagikGrammar[] ATOM_TYPES = new MagikGrammar[]{
-    MagikGrammar.NUMBER,
-    MagikGrammar.SELF,
-    MagikGrammar.CLONE,
-    MagikGrammar.FALSE,
-    MagikGrammar.TRUE,
-    MagikGrammar.MAYBE,
-    MagikGrammar.UNSET,
-    MagikGrammar.CHARACTER,
-    MagikGrammar.REGEXP,
-    MagikGrammar.STRING,
-    MagikGrammar.SYMBOL,
-    MagikGrammar.GLOBAL_REF,
-    MagikGrammar.THISTHREAD,
-  };
+  public static final MagikGrammar[] ATOM_TYPES =
+      new MagikGrammar[] {
+        MagikGrammar.NUMBER,
+        MagikGrammar.SELF,
+        MagikGrammar.CLONE,
+        MagikGrammar.FALSE,
+        MagikGrammar.TRUE,
+        MagikGrammar.MAYBE,
+        MagikGrammar.UNSET,
+        MagikGrammar.CHARACTER,
+        MagikGrammar.REGEXP,
+        MagikGrammar.STRING,
+        MagikGrammar.SYMBOL,
+        MagikGrammar.GLOBAL_REF,
+        MagikGrammar.THISTHREAD,
+        MagikGrammar.SIMPLE_VECTOR
+      };
 
   @CheckForNull
   public static TypeString handleNode(AstNode node) {
@@ -55,6 +57,7 @@ public class AtomTypeStringHelper {
       case SYMBOL -> tSymbol(node);
       case GLOBAL_REF -> tGlobalRef(node);
       case THISTHREAD -> tThread(node);
+      case SIMPLE_VECTOR -> tSimpleVector(node);
       default -> TypeString.UNDEFINED;
     };
   }
@@ -119,7 +122,7 @@ public class AtomTypeStringHelper {
   }
 
   public static TypeString tString(AstNode node) {
-    return TypeString.SW_CHAR16_VECTOR_WITH_GENERICS;
+    return TypeString.SW_CHAR16_VECTOR;
   }
 
   public static TypeString tSymbol(AstNode node) {
@@ -132,5 +135,9 @@ public class AtomTypeStringHelper {
 
   public static TypeString tThread(AstNode node) {
     return TypeString.combine(TypeString.SW_HEAVY_THREAD, TypeString.SW_LIGHT_THREAD);
+  }
+
+  public static TypeString tSimpleVector(AstNode node) {
+    return TypeString.SW_SIMPLE_VECTOR;
   }
 }

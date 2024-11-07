@@ -1,7 +1,6 @@
 package nl.ramsolutions.sw.magik.analysis.typing;
 
 import edu.umd.cs.findbugs.annotations.CheckForNull;
-
 import java.net.URI;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -410,6 +409,47 @@ public class TypeStringResolver {
     return Stream.concat(
             typeString.getCombinedTypes().stream(), this.getAllAncestors(typeString).stream())
         .collect(Collectors.toUnmodifiableSet());
+  }
+
+  public void removeCachedForURI(URI uri, boolean includeSelf) {
+    this.typeCache.keySet().stream()
+        .parallel()
+        .forEach(
+            typeString -> {
+              final Set<ITypeStringDefinition> iTypeStringDefinitions =
+                  this.typeCache.get(typeString);
+              boolean containsWithUri =
+                  iTypeStringDefinitions.stream()
+                      .anyMatch(
+                          definition -> {
+                            if (definition instanceof MagikDefinition magikDef
+                                && magikDef.getLocation() != null) {
+                              return magikDef.getLocation().getUri().equals(uri);
+                            }
+
+                            return false;
+                          });
+
+              if (containsWithUri) {
+                this.typeCache.remove(typeString);
+              }
+            });
+
+    this.methodsCache.keySet().stream()
+        .parallel()
+        .forEach(
+            identifier -> {
+              Collection<MethodDefinition> methodDefinitions = this.methodsCache.get(identifier);
+              boolean containsWithUri =
+                  methodDefinitions.stream()
+                      .anyMatch(
+                          methodDef ->
+                              methodDef.getLocation() != null
+                                  && methodDef.getLocation().getUri().equals(uri));
+              if (containsWithUri) {
+                this.methodsCache.remove(identifier);
+              }
+            });
   }
 
   public void clearCache() {

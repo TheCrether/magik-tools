@@ -253,14 +253,15 @@ public class MagikTextDocumentService implements TextDocumentService {
       case "magik":
         {
           this.openedFiles.keySet().stream()
-            .filter(identifier -> !identifier.equals(realTextDocumentIdentifier))
-            .parallel()
-            .forEach(identifier -> {
-              OpenedFile file = this.openedFiles.get(identifier);
-              if (file instanceof MagikTypedFile magikTypedFile) {
-                magikTypedFile.getTypeStringResolver().clearCache();
-              }
-            });
+              .filter(identifier -> !identifier.equals(realTextDocumentIdentifier))
+              .parallel()
+              .forEach(
+                  identifier -> {
+                    OpenedFile file = this.openedFiles.get(identifier);
+                    if (file instanceof MagikTypedFile magikTypedFile) {
+                      magikTypedFile.getTypeStringResolver().clearCache();
+                    }
+                  });
           final MagikTypedFile magikFile =
               new MagikTypedFile(fileProperties, uri, text, this.definitionKeeper);
           openedFile = magikFile;
@@ -318,13 +319,21 @@ public class MagikTextDocumentService implements TextDocumentService {
 
     final TextDocumentIdentifier textDocumentIdentifier = params.getTextDocument();
     this.openedFiles.keySet().stream()
-      .parallel()
-      .forEach(identifier -> {
-        OpenedFile file = this.openedFiles.get(identifier);
-        if (file instanceof MagikTypedFile magikTypedFile) {
-          magikTypedFile.getTypeStringResolver().clearCache();
-        }
-      });
+        .parallel()
+        .forEach(
+            identifier -> {
+              OpenedFile file = this.openedFiles.get(identifier);
+              if (file instanceof MagikTypedFile magikTypedFile) {
+                magikTypedFile.getTypeStringResolver().clearCache();
+              }
+            });
+    //
+    //    OpenedFile openedFile = this.openedFiles.get(textDocumentIdentifier);
+    //    if (openedFile instanceof MagikTypedFile magikTypedFile) {
+    //      magikTypedFile.getTypeStringResolver().removeCachedForURI(magikTypedFile.getUri(),
+    // true);
+    //    }
+
     LOGGER.debug("didSave, uri: {}", textDocumentIdentifier.getUri());
     if (LOGGER_DURATION.isTraceEnabled()) {
       LOGGER_DURATION.trace(

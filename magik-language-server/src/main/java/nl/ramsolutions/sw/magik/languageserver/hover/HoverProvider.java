@@ -432,11 +432,26 @@ public class HoverProvider {
     final TypeString typeStr = SelfHelper.substituteSelf(resultTypeStr, node);
 
     final TypeStringResolver resolver = magikFile.getTypeStringResolver();
-    resolver.resolve(typeStr).stream()
-        .filter(ExemplarDefinition.class::isInstance)
-        .map(ExemplarDefinition.class::cast)
-        .forEach(
-            exemplarDef -> buildTypeSignatureDoc(magikFile, exemplarDef, builder, this.properties));
+    List<ExemplarDefinition> exemplarDefinitions =
+        resolver.resolve(typeStr).stream()
+            .filter(ExemplarDefinition.class::isInstance)
+            .map(ExemplarDefinition.class::cast)
+            .toList();
+
+    if (exemplarDefinitions.isEmpty()) {
+      String typeStringToDisplay =
+          typeStr.isUndefined() ? node.getTokenValue() : typeStr.getFullString();
+      appendCodeBlock(builder, true, false, formatTypeString(typeStringToDisplay));
+      builder.append(SEPARATOR);
+      builder
+          .append("Cannot find type definitions for ")
+          .append("`")
+          .append(typeStringToDisplay)
+          .append("`");
+    } else {
+      exemplarDefinitions.forEach(
+          exemplarDef -> buildTypeSignatureDoc(magikFile, exemplarDef, builder, this.properties));
+    }
   }
 
   private void buildProcDoc(

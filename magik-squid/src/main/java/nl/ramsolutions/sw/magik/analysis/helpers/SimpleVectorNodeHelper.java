@@ -51,7 +51,7 @@ public class SimpleVectorNodeHelper {
    * @return Node of given type.
    */
   @CheckForNull
-  public AstNode getNth(final int nth, final MagikGrammar type) {
+  public AstNode getNth(final int nth, final MagikGrammar... type) {
     final List<AstNode> expressionNodes = this.node.getChildren(MagikGrammar.EXPRESSION);
     if (nth >= expressionNodes.size()) {
       return null;
