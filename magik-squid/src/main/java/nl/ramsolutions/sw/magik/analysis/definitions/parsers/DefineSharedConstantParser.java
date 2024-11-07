@@ -3,16 +3,14 @@ package nl.ramsolutions.sw.magik.analysis.definitions.parsers;
 import com.sonar.sslr.api.AstNode;
 import java.net.URI;
 import java.time.Instant;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import nl.ramsolutions.sw.magik.Location;
 import nl.ramsolutions.sw.magik.MagikFile;
 import nl.ramsolutions.sw.magik.analysis.definitions.MagikDefinition;
 import nl.ramsolutions.sw.magik.analysis.definitions.MethodDefinition;
 import nl.ramsolutions.sw.magik.analysis.definitions.ParameterDefinition;
 import nl.ramsolutions.sw.magik.analysis.helpers.ArgumentsNodeHelper;
+import nl.ramsolutions.sw.magik.analysis.helpers.AtomTypeStringHelper;
 import nl.ramsolutions.sw.magik.analysis.helpers.MethodInvocationNodeHelper;
 import nl.ramsolutions.sw.magik.analysis.helpers.PackageNodeHelper;
 import nl.ramsolutions.sw.magik.analysis.typing.ExpressionResultString;
@@ -128,9 +126,26 @@ public class DefineSharedConstantParser {
 
     // Figure type doc.
     final TypeDocParser docParser = new TypeDocParser(parentNode);
-    final List<TypeString> returnTypeRefs = docParser.getReturnTypes();
-    final TypeString typeRef =
-        returnTypeRefs.isEmpty() ? TypeString.UNDEFINED : returnTypeRefs.get(0);
+    final List<TypeString> returnTypeRefs = new ArrayList<>(docParser.getReturnTypes());
+    if (returnTypeRefs.isEmpty()) {
+      returnTypeRefs.add(TypeString.UNDEFINED);
+    }
+
+    ExpressionResultString resultStr = new ExpressionResultString(returnTypeRefs);
+
+    final AstNode argument1Node =
+        argumentsHelper.getArgument(
+            1,
+          AtomTypeStringHelper.ATOM_TYPES
+        );
+    if (returnTypeRefs.size() == 1
+        && returnTypeRefs.get(0).equals(TypeString.UNDEFINED)
+        && argument1Node != null) {
+      TypeString arg1TypeString = AtomTypeStringHelper.handleNode(argument1Node);
+      if (arg1TypeString != null) {
+        resultStr = new ExpressionResultString(arg1TypeString);
+      }
+    }
 
     final String constantNameSymbol = argument0Node.getTokenValue();
     final String constantName = constantNameSymbol.substring(1);
@@ -156,7 +171,7 @@ public class DefineSharedConstantParser {
             parameters,
             null,
             Collections.emptySet(),
-            new ExpressionResultString(typeRef),
+            resultStr,
             ExpressionResultString.EMPTY);
     return List.of(methodDefinition);
   }

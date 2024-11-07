@@ -1,6 +1,8 @@
 package nl.ramsolutions.sw.magik.analysis.typing;
 
 import edu.umd.cs.findbugs.annotations.CheckForNull;
+
+import java.net.URI;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -13,6 +15,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import nl.ramsolutions.sw.magik.analysis.definitions.*;
@@ -23,9 +26,9 @@ public class TypeStringResolver {
   private static final String ALL_METHODS = "_all_methods";
 
   private final IDefinitionKeeper definitionKeeper;
-  private final Map<TypeString, Set<ITypeStringDefinition>> typeCache = new HashMap<>();
+  private final Map<TypeString, Set<ITypeStringDefinition>> typeCache = new ConcurrentHashMap<>();
   private final Map<Map.Entry<TypeString, String>, Collection<MethodDefinition>> methodsCache =
-      new HashMap<>();
+      new ConcurrentHashMap<>();
 
   public TypeStringResolver(final IDefinitionKeeper definitionKeeper) {
     this.definitionKeeper = definitionKeeper;
@@ -407,5 +410,10 @@ public class TypeStringResolver {
     return Stream.concat(
             typeString.getCombinedTypes().stream(), this.getAllAncestors(typeString).stream())
         .collect(Collectors.toUnmodifiableSet());
+  }
+
+  public void clearCache() {
+    this.typeCache.clear();
+    this.methodsCache.clear();
   }
 }

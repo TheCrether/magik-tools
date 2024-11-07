@@ -192,43 +192,45 @@ public class MagikFile extends OpenedFile {
 
       for (int i = 0; i < definitions.size(); i++) {
         if (!(definitions.get(i) instanceof MethodDefinition methodDef
-            && methodDef.getModifiers().contains(MethodDefinition.Modifier.SLOT)
             && !methodDef.getReturnTypes().equals(ExpressionResultString.UNDEFINED))) {
           continue;
         }
 
-        Optional<ExemplarDefinition> exemplarDefinitionOpt =
+        Set<MethodDefinition.Modifier> modifiers = methodDef.getModifiers();
+        if (modifiers.contains(MethodDefinition.Modifier.SLOT)) {
+          Optional<ExemplarDefinition> exemplarDefinitionOpt =
             exemplarDefinitions.stream()
-                .filter(exemplarDef -> exemplarDef.getTypeString().equals(methodDef.getTypeName()))
-                .findFirst();
-        if (exemplarDefinitionOpt.isEmpty()) {
-          continue;
-        }
+              .filter(exemplarDef -> exemplarDef.getTypeString().equals(methodDef.getTypeName()))
+              .findFirst();
+          if (exemplarDefinitionOpt.isEmpty()) {
+            continue;
+          }
 
-        final ExemplarDefinition exemplarDefinition = exemplarDefinitionOpt.get();
-        SlotDefinition slot =
+          final ExemplarDefinition exemplarDefinition = exemplarDefinitionOpt.get();
+          SlotDefinition slot =
             exemplarDefinition.getSlot(methodDef.getMethodNameWithoutParentheses());
-        if (slot != null && !slot.getTypeName().equals(TypeString.UNDEFINED)) {
-          definitions.set(
+          if (slot != null && !slot.getTypeName().equals(TypeString.UNDEFINED)) {
+            definitions.set(
               i,
               new MethodDefinition(
-                  methodDef.getLocation(),
-                  methodDef.getTimestamp(),
-                  methodDef.getModuleName(),
-                  methodDef.getDoc(),
-                  methodDef.getNode(),
-                  methodDef.getTypeName(),
-                  methodDef.getMethodName(),
-                  methodDef.getModifiers(),
-                  methodDef.getParameters(),
-                  methodDef.getAssignmentParameter(),
-                  methodDef.getTopics(),
-                  new ExpressionResultString(slot.getTypeName()),
-                  methodDef.getLoopTypes(),
-                  methodDef.getUsedGlobals(),
-                  methodDef.getUsedMethods(),
-                  methodDef.getUsedSlots(),
-                  methodDef.getUsedConditions()));
+                methodDef.getLocation(),
+                methodDef.getTimestamp(),
+                methodDef.getModuleName(),
+                methodDef.getDoc(),
+                methodDef.getNode(),
+                methodDef.getTypeName(),
+                methodDef.getMethodName(),
+                modifiers,
+                methodDef.getParameters(),
+                methodDef.getAssignmentParameter(),
+                methodDef.getTopics(),
+                new ExpressionResultString(slot.getTypeName()),
+                methodDef.getLoopTypes(),
+                methodDef.getUsedGlobals(),
+                methodDef.getUsedMethods(),
+                methodDef.getUsedSlots(),
+                methodDef.getUsedConditions()));
+          }
         }
       }
 

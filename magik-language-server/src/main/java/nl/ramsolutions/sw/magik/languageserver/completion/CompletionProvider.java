@@ -573,6 +573,16 @@ public class CompletionProvider {
         new ArrayList<>(
             resolver.getMethodDefinitions(finalTypeStr).stream()
                 .filter(methodDef -> methodDef.getMethodName().contains(methodNamePart))
+                .filter(
+                    methodDef -> {
+                      if (!isSelfInvocation) {
+                        return !methodDef
+                            .getModifiers()
+                            .contains(MethodDefinition.Modifier.PRIVATE);
+                      }
+
+                      return true;
+                    })
                 .toList());
 
     final List<MethodDefinition> dbFields =
@@ -601,8 +611,16 @@ public class CompletionProvider {
       item.setInsertTextFormat(InsertTextFormat.Snippet);
       item.setInsertText(this.buildMethodInvocationSnippet(methodDef));
       item.setFilterText(methodDef.getMethodNameWithoutParentheses());
-      if (methodDef.getModifiers().contains(MethodDefinition.Modifier.DB_TYPE)) {
+
+      Set<MethodDefinition.Modifier> modifiers = methodDef.getModifiers();
+      if (modifiers.contains(MethodDefinition.Modifier.DB_TYPE)) {
         item.setKind(CompletionItemKind.Field);
+      } else if (modifiers.contains(MethodDefinition.Modifier.SHARED_CONSTANT)) {
+        item.setKind(CompletionItemKind.Constant);
+      } else if (modifiers.contains(MethodDefinition.Modifier.SLOT)) {
+        item.setKind(CompletionItemKind.Property);
+      } else if (modifiers.contains(MethodDefinition.Modifier.SHARED_VARIABLE)) {
+        item.setKind(CompletionItemKind.EnumMember);
       } else {
         item.setKind(CompletionItemKind.Method);
       }
