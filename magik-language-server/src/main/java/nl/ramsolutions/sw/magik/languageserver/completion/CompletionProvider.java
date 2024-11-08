@@ -240,7 +240,8 @@ public class CompletionProvider {
     if (definition instanceof MethodDefinition methodDef) {
       HoverProvider.buildMethodSignatureDoc(methodDef, docBuilder, this.properties);
     } else if (definition instanceof ExemplarDefinition exemplarDef) {
-      HoverProvider.buildTypeSignatureDoc(magikTypedFile, exemplarDef, docBuilder, this.properties);
+      HoverProvider.buildTypeSignatureDoc(
+          exemplarDef.getTypeString(), magikTypedFile, exemplarDef, docBuilder, this.properties);
     } else if (definition instanceof SlotDefinition slotDef) {
       // TODO implement correct documentation for SlotDefinitions here and in HoverProvider
       if (slotDef.getDoc() != null) {
@@ -569,7 +570,7 @@ public class CompletionProvider {
     }
 
     final String methodNamePart = tokenValue.startsWith(".") ? tokenValue.substring(1) : tokenValue;
-    final TypeString finalTypeStr = typeStr;
+    final TypeString finalTypeStr = typeStr.getWithoutGenerics();
     final List<MagikDefinition> definitions = response.getDefinitions();
 
     // Convert all known methods to CompletionItems.
@@ -639,7 +640,7 @@ public class CompletionProvider {
       }
       item.setLabelDetails(labelDetails);
 
-      String prefix = "";
+      String prefix = "$";
       if (!finalTypeStr.equals(TypeString.SW_OBJECT)) {
         if (methodExemplarType.equals(finalTypeStr)) {
           prefix = " ";
@@ -653,7 +654,7 @@ public class CompletionProvider {
       if (methodDef.getMethodName().startsWith("new") && isExemplarInvocation) {
         item.setSortText(" ".repeat(3) + prefix + item.getLabel());
       } else {
-        item.setSortText(prefix.repeat(2) + item.getLabel());
+        item.setSortText(prefix.repeat(3) + item.getLabel());
       }
 
       definitions.add(methodDef);

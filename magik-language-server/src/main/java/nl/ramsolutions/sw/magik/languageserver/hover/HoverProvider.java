@@ -433,7 +433,7 @@ public class HoverProvider {
 
     final TypeStringResolver resolver = magikFile.getTypeStringResolver();
     List<ExemplarDefinition> exemplarDefinitions =
-        resolver.resolve(typeStr).stream()
+        resolver.resolve(typeStr.getWithoutGenerics()).stream()
             .filter(ExemplarDefinition.class::isInstance)
             .map(ExemplarDefinition.class::cast)
             .toList();
@@ -450,7 +450,8 @@ public class HoverProvider {
           .append("`");
     } else {
       exemplarDefinitions.forEach(
-          exemplarDef -> buildTypeSignatureDoc(magikFile, exemplarDef, builder, this.properties));
+          exemplarDef ->
+              buildTypeSignatureDoc(typeStr, magikFile, exemplarDef, builder, this.properties));
     }
   }
 
@@ -586,14 +587,14 @@ public class HoverProvider {
   }
 
   public static void buildTypeSignatureDoc(
+      final TypeString displayTypeString,
       final MagikTypedFile magikFile,
       final ExemplarDefinition exemplarDef,
       final StringBuilder builder,
       final MagikToolsProperties properties) {
 
     // type name
-    final TypeString typeStr = exemplarDef.getTypeString();
-    appendCodeBlock(builder, true, false, formatTypeString(typeStr));
+    appendCodeBlock(builder, true, false, formatTypeString(displayTypeString));
 
     builder.append(SEPARATOR);
 
@@ -634,7 +635,7 @@ public class HoverProvider {
     }
 
     final TypeStringResolver resolver = magikFile.getTypeStringResolver();
-    if (!resolver.getParents(typeStr).isEmpty()) {
+    if (!resolver.getParents(exemplarDef.getTypeString()).isEmpty()) {
       builder.append("### Supers\n");
       addSuperDoc(magikFile, exemplarDef, builder, 0);
       builder.append(SECTION_END);

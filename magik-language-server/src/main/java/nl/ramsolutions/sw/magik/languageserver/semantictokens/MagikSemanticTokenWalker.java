@@ -33,13 +33,8 @@ public class MagikSemanticTokenWalker extends MagikAstWalker {
   private static final String DEFAULT_PACKAGE = "user";
   private static final String TOPIC_DEPRECATED = "deprecated";
 
-  public static final Pattern typeRegex =
-      Pattern.compile(
-          "^#\\s*type: ?("
-              + MagikGrammar.IDENTIFIER_REGEXP
-              + ")"); // equivalent to the MagikGrammar.EXEMPLAR
-  public static final Pattern iterTypeRegex =
-      Pattern.compile("^#\\s*iter-type: ?(" + MagikGrammar.IDENTIFIER_REGEXP + ")");
+  public static final Pattern typeRegex = Pattern.compile("^#\\s*type:\\s*(.*)$");
+  public static final Pattern iterTypeRegex = Pattern.compile("^#\\s*iter-type:\\s*?(.*)$");
 
   private static final List<String> MAGIK_MODIFIER_VALUES =
       List.of(
@@ -217,16 +212,25 @@ public class MagikSemanticTokenWalker extends MagikAstWalker {
         originalValue = iterTypeRegexMatcher.group(0);
       }
 
+      TypeString parsedTypeString = null;
+      if (type != null) {
+        parsedTypeString = TypeStringParser.parseTypeString(type);
+      }
+      if (parsedTypeString != null) {
+        parsedTypeString = parsedTypeString.getWithoutGenerics();
+      }
+
       final AstNode node = this.magikFile.getTopNode();
       // TODO find better way to get token in front of comment
       AstNode currentNode =
           AstQuery.nodeAt(node, new Position(token.getLine(), token.getColumn() - 4));
-      if (type != null && currentNode != null) {
+      if (parsedTypeString != null && currentNode != null) {
         PackageNodeHelper helper = new PackageNodeHelper(currentNode);
+        final TypeString typeWithPackage =
+            TypeString.ofIdentifier(parsedTypeString.getIdentifier(), helper.getCurrentPackage());
+
         Collection<ITypeStringDefinition> definitions =
-            this.magikFile
-                .getTypeStringResolver()
-                .resolve(TypeString.ofIdentifier(type, helper.getCurrentPackage()));
+            this.magikFile.getTypeStringResolver().resolve(typeWithPackage);
 
         if (!definitions.isEmpty()) {
           Token exemplarToken =
