@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.net.URI;
 import java.util.Collections;
 import java.util.List;
+import nl.ramsolutions.sw.MagikToolsProperties;
 import nl.ramsolutions.sw.magik.MagikTypedFile;
 import nl.ramsolutions.sw.magik.analysis.definitions.DefinitionKeeper;
 import nl.ramsolutions.sw.magik.analysis.definitions.IDefinitionKeeper;
@@ -32,7 +33,7 @@ class FormattingProviderTest {
     final MagikTypedFile magikFile = new MagikTypedFile(DEFAULT_URI, code, definitionKeeper);
 
     final FormattingProvider provider = new FormattingProvider(Collections.emptySet());
-    return provider.provideFormatting(magikFile, options);
+    return provider.provideFormatting(magikFile, options, new MagikToolsProperties());
   }
 
   // region: Whitespace

@@ -34,7 +34,7 @@ public class MagikSemanticTokenWalker extends MagikAstWalker {
   private static final String TOPIC_DEPRECATED = "deprecated";
 
   public static final Pattern typeRegex = Pattern.compile("^#\\s*type:\\s*(.*)$");
-  public static final Pattern iterTypeRegex = Pattern.compile("^#\\s*iter-type:\\s*?(.*)$");
+  public static final Pattern iterTypeRegex = Pattern.compile("^#\\s*iter-type:\\s*(.*)$");
 
   private static final List<String> MAGIK_MODIFIER_VALUES =
       List.of(

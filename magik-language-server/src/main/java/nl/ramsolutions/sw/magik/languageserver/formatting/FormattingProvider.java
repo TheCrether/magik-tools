@@ -6,9 +6,11 @@ import java.net.URI;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+import nl.ramsolutions.sw.MagikToolsProperties;
 import nl.ramsolutions.sw.magik.MagikFile;
 import nl.ramsolutions.sw.magik.api.MagikGrammar;
 import nl.ramsolutions.sw.magik.formatting.FormattingWalker;
+import nl.ramsolutions.sw.magik.formatting.MagikFormattingSettings;
 import nl.ramsolutions.sw.magik.languageserver.Lsp4jConversion;
 import org.eclipse.lsp4j.FormattingOptions;
 import org.eclipse.lsp4j.ServerCapabilities;
@@ -38,15 +40,20 @@ public class FormattingProvider {
    * @return {@link TextEdit}s.
    */
   public List<TextEdit> provideFormatting(
-      final MagikFile magikFile, final FormattingOptions options) {
+      final MagikFile magikFile,
+      final FormattingOptions options,
+      MagikToolsProperties toolsProperties) {
     if (ignoredUris.contains(magikFile.getUri())) {
       return Collections.emptyList();
     }
 
     final AstNode node = magikFile.getTopNode();
 
+    final MagikFormattingSettings settings = new MagikFormattingSettings(toolsProperties);
+
     final nl.ramsolutions.sw.magik.formatting.FormattingOptions magikToolsFormattingOptions =
         Lsp4jConversion.formattingOptionsFromLsp4j(options);
+    magikToolsFormattingOptions.setSpacedBraces(settings.getSpacedBraces());
     try {
       final FormattingWalker walker = new FormattingWalker(magikToolsFormattingOptions);
       walker.walkAst(node);

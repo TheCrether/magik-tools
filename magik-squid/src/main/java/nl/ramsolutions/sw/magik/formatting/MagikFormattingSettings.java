@@ -13,6 +13,9 @@ public class MagikFormattingSettings {
       "magik.formatting.trimTrailingWhitespace";
   public static final String KEY_MAGIK_FORMATTING_TRIM_FINAL_NEWLINES =
       "magik.formatting.trimFinalNewlines";
+  public static final String KEY_MAGIK_FORMATTING_SPACED_BRACES = "magik.formatting.spacedBraces";
+  public static final String KEY_MAGIK_FORMATTING_BRACES_ON_NEWLINE =
+      "magik.formatting.bracesOnNewline";
 
   private final MagikToolsProperties properties;
 
@@ -61,5 +64,13 @@ public class MagikFormattingSettings {
 
     final int indentWidth = this.getIndentWidth();
     return String.valueOf(indentChar).repeat(indentWidth);
+  }
+
+  public boolean getSpacedBraces() {
+    return this.properties.getPropertyBoolean(KEY_MAGIK_FORMATTING_SPACED_BRACES, true);
+  }
+
+  public boolean getBracesOnNewline() {
+    return this.properties.getPropertyBoolean(KEY_MAGIK_FORMATTING_BRACES_ON_NEWLINE, false);
   }
 }

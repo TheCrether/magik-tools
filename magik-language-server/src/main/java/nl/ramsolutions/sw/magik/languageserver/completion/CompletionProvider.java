@@ -297,19 +297,36 @@ public class CompletionProvider {
 
     // if method body exists, get it for better performance
     final AstNode body = surroundingNode.getFirstChild(MagikGrammar.BODY);
+
+    // trivia gets assigned to _endmethod if body is empty
+    final AstNode endMethodNode = surroundingNode.getLastChild();
     if (checker.isCanceled()) {
       return Collections.emptyList();
-    } else if (body != null) {
+    } else if (body != null && body.hasChildren()) {
       surroundingNode = body;
+    } else if (body != null && !body.hasChildren()) {
+      if (endMethodNode != null && endMethodNode.getTokenValue().equals("_endmethod")) {
+        surroundingNode = endMethodNode;
+      }
     }
 
-    final Optional<Token> commentTokenOpt =
+    Optional<Token> commentTokenOpt =
         MagikCommentExtractor.extractComments(surroundingNode)
             .filter(
                 token ->
                     nodePosition.getLine() == token.getLine()
                         && nodePosition.getColumn() >= token.getColumn())
             .findFirst();
+    if (commentTokenOpt.isEmpty() && endMethodNode != null && surroundingNode != endMethodNode) {
+      surroundingNode = endMethodNode;
+      commentTokenOpt =
+          MagikCommentExtractor.extractComments(surroundingNode)
+              .filter(
+                  token ->
+                      nodePosition.getLine() == token.getLine()
+                          && nodePosition.getColumn() >= token.getColumn())
+              .findFirst();
+    }
     if (commentTokenOpt.isEmpty() || checker.isCanceled()) {
       return Collections.emptyList();
     }
@@ -467,6 +484,12 @@ public class CompletionProvider {
           completionHelper.getCompletionData(response.getId(), start + i, magikFile.getUri()));
       definitions.add(exemplarDef);
 
+      Set<String> topics = exemplarDef.getTopics();
+      if (topics.contains(TOPIC_DEPRECATED) || topics.contains(TOPIC_RESTRICTED)) {
+        item.setTags(List.of(CompletionItemTag.Deprecated));
+        item.setSortText("$$" + item.getLabel());
+      }
+
       items.add(item);
     }
 
@@ -489,10 +512,6 @@ public class CompletionProvider {
     }
 
     item.setKind(CompletionItemKind.Class);
-    Set<String> topics = exemplarDef.getTopics();
-    if (topics.contains(TOPIC_DEPRECATED) || topics.contains(TOPIC_RESTRICTED)) {
-      item.setTags(List.of(CompletionItemTag.Deprecated));
-    }
 
     return item;
   }
@@ -639,6 +658,8 @@ public class CompletionProvider {
       if (!returnTypes.getTypes().stream()
           .allMatch(retTypeStr -> retTypeStr.equals(TypeString.UNDEFINED))) {
         labelDetails.setDescription(returnTypes.getFullString());
+      } else {
+        labelDetails.setDetail(" on " + methodDef.getTypeName().getFullString());
       }
       item.setLabelDetails(labelDetails);
 
@@ -663,9 +684,12 @@ public class CompletionProvider {
       item.setData(completionHelper.getCompletionData(response.getId(), i, magikFile.getUri()));
 
       Set<String> topics = methodDef.getTopics();
+      String additionalPrefix = " ";
       if (topics.contains(TOPIC_DEPRECATED) || topics.contains(TOPIC_RESTRICTED)) {
         item.setTags(List.of(CompletionItemTag.Deprecated));
+        additionalPrefix = "$";
       }
+      item.setSortText(additionalPrefix.repeat(3) + item.getSortText());
 
       completionItems.add(item);
     }

@@ -62,38 +62,50 @@ public class MagikChecksConfiguration {
               .filter(Objects::nonNull)
               .map(
                   ruleProperty -> {
-                    final String propertyKey = MagikChecksConfiguration.propertyKey(ruleProperty);
-                    final String configKey = checkKey + "." + propertyKey;
-                    if (!this.properties.hasProperty(configKey)) {
+                    final String originalPropertyKey =
+                        MagikChecksConfiguration.propertyKey(ruleProperty);
+                    final String parameterKey = checkKey + "." + originalPropertyKey;
+                    final String vscConfigKey =
+                        "magik."
+                            + MagikCheckHolder.toCamelCase(checkKey)
+                            + "."
+                            + MagikCheckHolder.toCamelCase(originalPropertyKey);
+                    String propertyKey = null;
+                    if (this.properties.hasProperty(parameterKey)) {
+                      propertyKey = parameterKey;
+                    } else if (this.properties.hasProperty(vscConfigKey)) {
+                      propertyKey = vscConfigKey;
+                    }
+                    if (propertyKey == null) {
                       return null;
                     }
 
                     // Store parameter.
                     final String description = ruleProperty.description();
                     final MagikCheckHolder.Parameter parameter;
+                    Object configValue;
+
                     if (ruleProperty.type().equals("INTEGER")) {
-                      final Integer configValue = this.properties.getPropertyInteger(configKey);
-                      parameter =
-                          new MagikCheckHolder.Parameter(configKey, description, configValue);
+                      configValue = this.properties.getPropertyInteger(propertyKey);
                     } else if (ruleProperty.type().equals("STRING")) {
-                      final String configValue = this.properties.getPropertyString(configKey);
-                      parameter =
-                          new MagikCheckHolder.Parameter(configKey, description, configValue);
+                      configValue = this.properties.getPropertyString(propertyKey);
                     } else if (ruleProperty.type().equals("BOOLEAN")) {
-                      final Boolean configValue = this.properties.getPropertyBoolean(configKey);
-                      parameter =
-                          new MagikCheckHolder.Parameter(configKey, description, configValue);
+                      configValue = this.properties.getPropertyBoolean(propertyKey);
                     } else {
                       throw new IllegalStateException(
                           "Unknown type for property: " + ruleProperty.type());
                     }
+
+                    parameter =
+                        new MagikCheckHolder.Parameter(parameterKey, description, configValue);
 
                     return parameter;
                   })
               .filter(Objects::nonNull)
               .collect(Collectors.toSet());
 
-      final MagikCheckHolder holder = new MagikCheckHolder(checkClass, parameters, checkEnabled);
+      final MagikCheckHolder holder =
+          new MagikCheckHolder(checkClass, parameters, checkEnabled, properties);
       holders.add(holder);
     }
     return holders;

@@ -3,11 +3,12 @@ package nl.ramsolutions.sw.magik.formatting;
 /** Formatting options for {@link FormattingStrategy}. */
 public class FormattingOptions {
 
-  private final int tabSize;
-  private final boolean insertSpaces;
-  private final boolean insertFinalNewline;
-  private final boolean trimTrailingWhitespace;
-  private final boolean trimFinalNewlines;
+  private int tabSize;
+  private boolean insertSpaces;
+  private boolean insertFinalNewline;
+  private boolean trimTrailingWhitespace;
+  private boolean trimFinalNewlines;
+  private boolean spacedBraces = true;
 
   public FormattingOptions(
       final int tabSize,
@@ -40,5 +41,33 @@ public class FormattingOptions {
 
   public boolean isTrimFinalNewlines() {
     return this.trimFinalNewlines;
+  }
+
+  public void setTabSize(int tabSize) {
+    this.tabSize = tabSize;
+  }
+
+  public void setInsertSpaces(boolean insertSpaces) {
+    this.insertSpaces = insertSpaces;
+  }
+
+  public void setInsertFinalNewline(boolean insertFinalNewline) {
+    this.insertFinalNewline = insertFinalNewline;
+  }
+
+  public void setTrimTrailingWhitespace(boolean trimTrailingWhitespace) {
+    this.trimTrailingWhitespace = trimTrailingWhitespace;
+  }
+
+  public void setTrimFinalNewlines(boolean trimFinalNewlines) {
+    this.trimFinalNewlines = trimFinalNewlines;
+  }
+
+  public boolean isSpacedBraces() {
+    return spacedBraces;
+  }
+
+  public void setSpacedBraces(boolean spacedBraces) {
+    this.spacedBraces = spacedBraces;
   }
 }

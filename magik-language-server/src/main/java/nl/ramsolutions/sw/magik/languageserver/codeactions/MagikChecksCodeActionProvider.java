@@ -56,6 +56,7 @@ public class MagikChecksCodeActionProvider {
 
         final MagikCheckFixer fixer =
             (MagikCheckFixer) fixerClass.getDeclaredConstructor().newInstance();
+        fixer.setProperties(this.properties);
         List<CodeAction> fixerCodeActions = fixer.provideCodeActions(magikFile, range);
         codeActions.addAll(fixerCodeActions);
       }

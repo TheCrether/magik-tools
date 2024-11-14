@@ -10,6 +10,7 @@ import java.io.InputStreamReader;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import nl.ramsolutions.sw.MagikToolsProperties;
 import org.sonar.check.Rule;
 
 /** MagicCheck holder/factory. */
@@ -53,6 +54,7 @@ public class MagikCheckHolder {
   private final Set<Parameter> parameters;
   private final boolean enabled;
   private MagikCheckMetadata metadata;
+  private final MagikToolsProperties properties;
 
   /**
    * Constructor.
@@ -64,10 +66,12 @@ public class MagikCheckHolder {
   public MagikCheckHolder(
       final Class<? extends MagikCheck> checkClass,
       final Set<Parameter> parameters,
-      final boolean enabled) {
+      final boolean enabled,
+      MagikToolsProperties properties) {
     this.checkClass = checkClass;
     this.parameters = parameters;
     this.enabled = enabled;
+    this.properties = properties;
     this.metadata = null;
   }
 
@@ -183,6 +187,20 @@ public class MagikCheckHolder {
       return stringKebab.substring(1);
     }
     return stringKebab;
+  }
+
+  /**
+   * Utility method to convert kebab case to camcel case.
+   *
+   * @param string String in camel case.
+   * @return String in kebab case.
+   */
+  public static String toCamelCase(String string) {
+    final Pattern patern = Pattern.compile("[-_]([a-z])");
+    final Matcher matcher = patern.matcher(string);
+    final String stringCamel =
+        matcher.replaceAll(matchResult -> matchResult.group(1).toUpperCase());
+    return stringCamel.substring(0, 1).toLowerCase() + stringCamel.substring(1);
   }
 
   @Override

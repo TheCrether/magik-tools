@@ -693,7 +693,7 @@ public class MagikTextDocumentService implements TextDocumentService {
           }
 
           final List<TextEdit> textEdits =
-              this.formattingProvider.provideFormatting(magikFile, options);
+              this.formattingProvider.provideFormatting(magikFile, options, this.properties);
           if (LOGGER_DURATION.isTraceEnabled()) {
             LOGGER_DURATION.trace(
                 "Duration: {} formatting, uri: {}",

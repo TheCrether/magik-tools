@@ -4,9 +4,11 @@ import com.sonar.sslr.api.AstNode;
 import com.sonar.sslr.api.GenericTokenType;
 import com.sonar.sslr.api.Token;
 import edu.umd.cs.findbugs.annotations.CheckForNull;
-import java.util.Collections;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import nl.ramsolutions.sw.magik.TextEdit;
 import nl.ramsolutions.sw.magik.api.MagikGrammar;
 import nl.ramsolutions.sw.magik.api.MagikKeyword;
@@ -14,54 +16,60 @@ import nl.ramsolutions.sw.magik.api.MagikPunctuator;
 
 /** Standard formatting strategy. */
 class StandardFormattingStrategy extends FormattingStrategy {
+  private static final Pattern TYPE_DOC_PATTERN =
+      Pattern.compile("([^#]*)(##+)\\s*(@(param|slot|return|loop))\\s*(\\{([^}]*)})?\\s*(.*)");
+  public static final Pattern INLINE_TYPE_PATTERN =
+      Pattern.compile("^#\\s*((iter-)?type):\\s*(.*)$");
 
-  private static final List<String> KEYWORDS =
-      Collections.unmodifiableList(List.of(MagikKeyword.keywordValues()));
+  private static final List<String> KEYWORDS = List.of(MagikKeyword.keywordValues());
 
   // We cannot base indenting purely on AstNodes (BODY/PARAMETERS/ARGUMENTS/SIMPLE_VECTOR/...),
   // as bodies and tokens don't play that well together.
   // Tokens surround the AstNodes, e.g.: '(', pre PARAMETERS, post PARAMETERS, ')', or
   // '_method', '...', pre BODY, ..., post BODY, '# comment', '_endmethod'.
   private static final Set<String> INDENT_INCREASE =
-      Collections.unmodifiableSet(
-          Set.of(
-              // MagikPunctuator.PAREN_L.getValue(),
-              MagikPunctuator.BRACE_L.getValue(),
-              MagikPunctuator.SQUARE_L.getValue(),
-              MagikKeyword.PROC.getValue(),
-              MagikKeyword.METHOD.getValue(),
-              MagikKeyword.BLOCK.getValue(),
-              MagikKeyword.TRY.getValue(),
-              MagikKeyword.WHEN.getValue(),
-              MagikKeyword.PROTECT.getValue(),
-              MagikKeyword.PROTECTION.getValue(),
-              MagikKeyword.CATCH.getValue(),
-              MagikKeyword.LOCK.getValue(),
-              MagikKeyword.THEN.getValue(),
-              MagikKeyword.ELSE.getValue(),
-              MagikKeyword.LOOP.getValue(),
-              MagikKeyword.FINALLY.getValue()));
+      Set.of(
+          // MagikPunctuator.PAREN_L.getValue(),
+          MagikPunctuator.BRACE_L.getValue(),
+          MagikPunctuator.SQUARE_L.getValue(),
+          MagikKeyword.PROC.getValue(),
+          MagikKeyword.METHOD.getValue(),
+          MagikKeyword.BLOCK.getValue(),
+          MagikKeyword.TRY.getValue(),
+          MagikKeyword.WHEN.getValue(),
+          MagikKeyword.PROTECT.getValue(),
+          MagikKeyword.PROTECTION.getValue(),
+          MagikKeyword.CATCH.getValue(),
+          MagikKeyword.LOCK.getValue(),
+          MagikKeyword.THEN.getValue(),
+          MagikKeyword.ELSE.getValue(),
+          MagikKeyword.LOOP.getValue(),
+          MagikKeyword.FINALLY.getValue());
 
   private static final Set<String> INDENT_DECREASE =
-      Collections.unmodifiableSet(
-          Set.of(
-              // MagikPunctuator.PAREN_R.getValue(),
-              MagikPunctuator.BRACE_R.getValue(),
-              MagikPunctuator.SQUARE_R.getValue(),
-              MagikKeyword.ENDPROC.getValue(),
-              MagikKeyword.ENDMETHOD.getValue(),
-              MagikKeyword.ENDBLOCK.getValue(),
-              MagikKeyword.ENDTRY.getValue(),
-              MagikKeyword.WHEN.getValue(),
-              MagikKeyword.PROTECTION.getValue(),
-              MagikKeyword.ENDPROTECT.getValue(),
-              MagikKeyword.ENDCATCH.getValue(),
-              MagikKeyword.ENDLOCK.getValue(),
-              MagikKeyword.ELSE.getValue(),
-              MagikKeyword.ELIF.getValue(),
-              MagikKeyword.ENDIF.getValue(),
-              MagikKeyword.ENDLOOP.getValue(),
-              MagikKeyword.FINALLY.getValue()));
+      Set.of(
+          // MagikPunctuator.PAREN_R.getValue(),
+          MagikPunctuator.BRACE_R.getValue(),
+          MagikPunctuator.SQUARE_R.getValue(),
+          MagikKeyword.ENDPROC.getValue(),
+          MagikKeyword.ENDMETHOD.getValue(),
+          MagikKeyword.ENDBLOCK.getValue(),
+          MagikKeyword.ENDTRY.getValue(),
+          MagikKeyword.WHEN.getValue(),
+          MagikKeyword.PROTECTION.getValue(),
+          MagikKeyword.ENDPROTECT.getValue(),
+          MagikKeyword.ENDCATCH.getValue(),
+          MagikKeyword.ENDLOCK.getValue(),
+          MagikKeyword.ELSE.getValue(),
+          MagikKeyword.ELIF.getValue(),
+          MagikKeyword.ENDIF.getValue(),
+          MagikKeyword.ENDLOOP.getValue(),
+          MagikKeyword.FINALLY.getValue());
+
+  private static final Set<String> SPACED_BRACES_L =
+      Set.of(MagikPunctuator.BRACE_L.getValue(), MagikPunctuator.PAREN_L.getValue());
+  private static final Set<String> SPACED_BRACES_R =
+      Set.of(MagikPunctuator.BRACE_R.getValue(), MagikPunctuator.PAREN_R.getValue());
 
   private int indent;
   private AstNode currentNode;
@@ -95,7 +103,7 @@ class StandardFormattingStrategy extends FormattingStrategy {
   TextEdit walkToken(final Token token) {
     this.trackIndentPre(token);
 
-    TextEdit textEdit = null;
+    TextEdit textEdit;
     if (this.lastTextToken != null) {
       final boolean isOnNewline = this.lastTextToken.getLine() != token.getLine();
       if (isOnNewline) {
@@ -108,8 +116,72 @@ class StandardFormattingStrategy extends FormattingStrategy {
       textEdit = this.editNoWhitespaceBefore(token);
     }
 
+    if (token.getType().equals(GenericTokenType.COMMENT)) {
+      textEdit = this.validateComment(token, textEdit);
+    }
+
     this.trackIndentPost(token);
     return textEdit;
+  }
+
+  private @Nullable TextEdit validateComment(Token token, @Nullable TextEdit textEdit) {
+    TextEdit newTextEdit = textEdit;
+    String commentValue = token.getValue();
+    final boolean isSpacedBraces = this.options.isSpacedBraces();
+
+    if (textEdit != null) {
+      commentValue = textEdit.getNewText();
+    }
+
+    if (commentValue.trim().startsWith("##")) {
+      Matcher matcher = TYPE_DOC_PATTERN.matcher(commentValue);
+      if (!matcher.find()) {
+        return newTextEdit;
+      }
+
+      if (matcher.groupCount() < 7) {
+        return newTextEdit;
+      }
+
+      String type = matcher.group(6);
+      if (type == null) {
+        return newTextEdit;
+      }
+
+      final StringBuilder builder = new StringBuilder();
+
+      builder
+          .append(matcher.group(1))
+          .append(matcher.group(2))
+          .append(" ")
+          .append(matcher.group(3))
+          .append(" ");
+
+      builder.append("{");
+      if (isSpacedBraces) {
+        builder.append(" ");
+      }
+      builder.append(type.trim());
+      if (isSpacedBraces) {
+        builder.append(" ");
+      }
+      builder.append("} ").append(matcher.group(7));
+
+      newTextEdit = this.editToken(token, builder.toString());
+    } else {
+      Matcher matcher = INLINE_TYPE_PATTERN.matcher(commentValue);
+      if (!matcher.find()) {
+        return textEdit;
+      }
+
+      if (matcher.groupCount() < 3) {
+        return textEdit;
+      }
+
+      newTextEdit = this.editToken(token, "# " + matcher.group(1) + ": " + matcher.group(3));
+    }
+
+    return newTextEdit;
   }
 
   private TextEdit validateWhitespacingBefore(final Token token) {
@@ -128,6 +200,16 @@ class StandardFormattingStrategy extends FormattingStrategy {
 
   private boolean requireWhitespaceBefore(final Token token) {
     final String tokenValue = token.getOriginalValue().toLowerCase();
+
+    final boolean bracesSpacing =
+        this.options.isSpacedBraces()
+            && (SPACED_BRACES_R.contains(tokenValue)
+                || SPACED_BRACES_L.contains(this.lastTextToken.getValue()));
+
+    if (bracesSpacing) {
+      return true;
+    }
+
     return this.lastTextToken != null // Don't string keywords: _if _not, _method obj, obj _andif..
         && this.lastTextToken.getLine() == token.getLine()
         && (KEYWORDS.contains(this.lastTextToken.getOriginalValue().toLowerCase())
@@ -136,28 +218,34 @@ class StandardFormattingStrategy extends FormattingStrategy {
             || "^<<".equals(tokenValue))
         && !".".equals(tokenValue)
         && !",".equals(tokenValue)
-        && !")".equals(tokenValue)
-        && !"}".equals(tokenValue)
         && !"]".equals(tokenValue)
-        && !"(".equals(this.lastToken.getValue())
-        && !"{".equals(this.lastToken.getValue())
-        && !"[".equals(this.lastToken.getValue());
+        && !"[".equals(this.lastTextToken.getValue());
   }
 
   private boolean requireNoWhitespaceBefore(final Token token) {
     final String tokenValue = token.getOriginalValue();
-    return token.getType() != GenericTokenType.COMMENT
-        && (")".equals(tokenValue)
-            || "}".equals(tokenValue)
-            || "]".equals(tokenValue)
-            || ",".equals(tokenValue)
-            || this.nodeIsSlot()
-            || this.lastTokenIs("@", "(", "{", "[")
-            || this.currentNode.is(MagikGrammar.ARGUMENTS)
-            || this.currentNode.is(MagikGrammar.PARAMETERS)
-            || this.nodeIsMethodDefinition()
-            || this.nodeIsInvocation()
-            || this.nodeIsUnaryExpression());
+
+    if (token.getType() == GenericTokenType.COMMENT) {
+      return false;
+    }
+
+    final boolean bracesSpacing =
+        !this.options.isSpacedBraces()
+            && (SPACED_BRACES_R.contains(tokenValue)
+                || SPACED_BRACES_L.contains(this.lastTextToken.getValue()));
+    if (bracesSpacing) {
+      return true;
+    }
+
+    return "]".equals(tokenValue)
+        || ",".equals(tokenValue)
+        || this.nodeIsSlot()
+        || this.lastTokenIs("@", "(", "{", "[")
+        || this.currentNode.is(MagikGrammar.ARGUMENTS)
+        || this.currentNode.is(MagikGrammar.PARAMETERS)
+        || this.nodeIsMethodDefinition()
+        || this.nodeIsInvocation()
+        || this.nodeIsUnaryExpression();
   }
 
   private boolean lastTokenIs(final String... values) {
@@ -175,10 +263,18 @@ class StandardFormattingStrategy extends FormattingStrategy {
   }
 
   private boolean nodeIsSlot() {
+    if (this.currentNode == null || this.currentNode.getParent() == null) {
+      return false;
+    }
+
     return this.currentNode.getParent().is(MagikGrammar.SLOT);
   }
 
   private boolean nodeIsMethodDefinition() {
+    if (this.currentNode == null || this.currentNode.getParent() == null) {
+      return false;
+    }
+
     return this.currentNode.is(MagikGrammar.METHOD_DEFINITION)
         || this.currentNode
             .getParent()
@@ -189,6 +285,10 @@ class StandardFormattingStrategy extends FormattingStrategy {
   }
 
   private boolean nodeIsInvocation() {
+    if (this.currentNode == null || this.currentNode.getParent() == null) {
+      return false;
+    }
+
     return this.currentNode.is(MagikGrammar.PROCEDURE_INVOCATION, MagikGrammar.METHOD_INVOCATION)
         || this.currentNode.is(MagikGrammar.IDENTIFIER)
             && this.currentNode.getParent().is(MagikGrammar.METHOD_INVOCATION);
