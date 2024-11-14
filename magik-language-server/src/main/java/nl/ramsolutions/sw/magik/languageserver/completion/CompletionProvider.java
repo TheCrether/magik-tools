@@ -46,6 +46,7 @@ public class CompletionProvider {
   private static final Logger LOGGER = LoggerFactory.getLogger(CompletionProvider.class);
   private static final Set<Character> REMOVAL_STOP_CHARS = new HashSet<>();
   private static final String TOPIC_DEPRECATED = "deprecated";
+  private static final String TOPIC_RESTRICTED = "restricted";
 
   private final MagikToolsProperties properties;
   private final CompletionHelper completionHelper;
@@ -488,7 +489,8 @@ public class CompletionProvider {
     }
 
     item.setKind(CompletionItemKind.Class);
-    if (exemplarDef.getTopics().contains(TOPIC_DEPRECATED)) {
+    Set<String> topics = exemplarDef.getTopics();
+    if (topics.contains(TOPIC_DEPRECATED) || topics.contains(TOPIC_RESTRICTED)) {
       item.setTags(List.of(CompletionItemTag.Deprecated));
     }
 
@@ -660,7 +662,8 @@ public class CompletionProvider {
       definitions.add(methodDef);
       item.setData(completionHelper.getCompletionData(response.getId(), i, magikFile.getUri()));
 
-      if (methodDef.getTopics().contains(TOPIC_DEPRECATED)) {
+      Set<String> topics = methodDef.getTopics();
+      if (topics.contains(TOPIC_DEPRECATED) || topics.contains(TOPIC_RESTRICTED)) {
         item.setTags(List.of(CompletionItemTag.Deprecated));
       }
 
