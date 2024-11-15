@@ -53,7 +53,7 @@ public class DiagnosticsProvider {
 
     // Linter diagnostics.
     final List<Diagnostic> diagnosticsLinter =
-        DiagnosticsProvider.getDiagnosticsFromLinter(magikFile, checker);
+        DiagnosticsProvider.getDiagnosticsFromLinter(magikFile, this.properties, checker);
     diagnostics.addAll(diagnosticsLinter);
 
     if (checker.isCanceled() || ignoredUris.contains(magikFile.getUri())) {
@@ -77,10 +77,18 @@ public class DiagnosticsProvider {
   }
 
   private static List<Diagnostic> getDiagnosticsFromLinter(
-      final MagikTypedFile magikFile, CancelChecker checker) {
+      final MagikTypedFile magikFile,
+      final MagikToolsProperties globalProperties,
+      CancelChecker checker) {
     final MagikToolsProperties magikFileProperties = magikFile.getProperties();
+
+    final MagikToolsProperties properties = new MagikToolsProperties();
+    properties.putAll(globalProperties);
+    properties.putAll(magikFileProperties);
+
     final MagikChecksDiagnosticsProvider lintProvider =
-        new MagikChecksDiagnosticsProvider(magikFileProperties);
+        new MagikChecksDiagnosticsProvider(properties);
+
     try {
       return lintProvider.getDiagnostics(magikFile, checker);
     } catch (final IOException exception) {

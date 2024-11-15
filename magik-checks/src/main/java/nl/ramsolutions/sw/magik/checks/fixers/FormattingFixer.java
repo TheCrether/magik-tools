@@ -29,9 +29,10 @@ public class FormattingFixer extends MagikCheckFixer {
     }
 
     final MagikToolsProperties fileProperties = magikFile.getProperties();
-    final MagikFormattingSettings settings = new MagikFormattingSettings(fileProperties);
-    final MagikFormattingSettings globalSettings =
-        new MagikFormattingSettings(this.getProperties());
+    final MagikToolsProperties properties =
+        MagikToolsProperties.merge(this.getProperties(), fileProperties);
+
+    final MagikFormattingSettings settings = new MagikFormattingSettings(properties);
 
     final FormattingOptions formattingOptions =
         new FormattingOptions(
@@ -40,8 +41,8 @@ public class FormattingFixer extends MagikCheckFixer {
             settings.insertFinalNewline(),
             settings.trimTrailingWhitespace(),
             settings.trimFinalNewlines());
-    formattingOptions.setSpacedBraces(globalSettings.getSpacedBraces());
-    formattingOptions.setSpacedBracesOnEmpty(globalSettings.getSpacesBracesOnEmpty());
+    formattingOptions.setSpacedBraces(settings.getSpacedBraces());
+    formattingOptions.setSpacedBracesOnEmpty(settings.getSpacesBracesOnEmpty());
 
     FormattingWalker walker;
     try {

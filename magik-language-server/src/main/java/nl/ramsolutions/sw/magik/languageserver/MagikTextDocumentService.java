@@ -215,11 +215,15 @@ public class MagikTextDocumentService implements TextDocumentService {
     // Read relevant properties.
     final String uriStr = textDocumentIdentifier.getUri();
     final URI uri = URI.create(uriStr);
-    final MagikToolsProperties fileProperties;
+    MagikToolsProperties fileProperties = null;
     try {
       fileProperties = ConfigurationReader.readProperties(uri, properties);
     } catch (final IOException exception) {
-      throw new IllegalStateException(exception);
+      LOGGER.error(
+          "didChange, could not find properties file: {} for uri '{}'",
+          uriStr,
+          textDocumentIdentifier.getUri());
+      //      throw new IllegalStateException(exception);
     }
 
     // Update file contents.
@@ -262,6 +266,10 @@ public class MagikTextDocumentService implements TextDocumentService {
                       magikTypedFile.getTypeStringResolver().clearCache();
                     }
                   });
+          if (existingOpenedFile instanceof MagikTypedFile existingMagikTypedFile
+              && fileProperties == null) {
+            fileProperties = existingMagikTypedFile.getProperties();
+          }
           final MagikTypedFile magikFile =
               new MagikTypedFile(fileProperties, uri, text, this.definitionKeeper);
           openedFile = magikFile;
@@ -378,17 +386,6 @@ public class MagikTextDocumentService implements TextDocumentService {
           }
           return report;
         });
-  }
-
-  private void publishDiagnostics(final MagikTypedFile magikFile) {
-    final List<Diagnostic> diagnostics =
-        this.diagnosticsProvider.provideDiagnostics(magikFile, new NullCancelChecker());
-
-    // Publish to client.
-    final String uri = magikFile.getUri().toString();
-    final PublishDiagnosticsParams publishParams = new PublishDiagnosticsParams(uri, diagnostics);
-    final LanguageClient languageClient = this.languageServer.getLanguageClient();
-    languageClient.publishDiagnostics(publishParams);
   }
 
   @Override
@@ -1273,7 +1270,7 @@ public class MagikTextDocumentService implements TextDocumentService {
     OpenedFile file = this.openedFiles.get(new TextDocumentIdentifier(uri));
     if (file instanceof MagikTypedFile typedFile) {
       this.addIgnoredUri(uri);
-      this.publishDiagnostics(typedFile);
+      this.languageServer.getLanguageClient().refreshDiagnostics();
     }
     return CompletableFuture.completedFuture(this.isIgnoredUri(uri));
   }
@@ -1292,7 +1289,7 @@ public class MagikTextDocumentService implements TextDocumentService {
     OpenedFile file = this.openedFiles.get(new TextDocumentIdentifier(uri));
     if (file instanceof MagikTypedFile typedFile) {
       this.removeIgnoredUri(uri);
-      this.publishDiagnostics(typedFile);
+      this.languageServer.getLanguageClient().refreshDiagnostics();
     }
 
     return CompletableFuture.completedFuture(this.isIgnoredUri(uri));

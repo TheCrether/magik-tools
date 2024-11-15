@@ -190,7 +190,7 @@ public class MagikCheckHolder {
   }
 
   /**
-   * Utility method to convert kebab case to camcel case.
+   * Utility method to convert kebab case to camel case.
    *
    * @param string String in camel case.
    * @return String in kebab case.

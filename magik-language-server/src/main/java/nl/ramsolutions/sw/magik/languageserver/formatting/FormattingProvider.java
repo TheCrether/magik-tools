@@ -49,7 +49,9 @@ public class FormattingProvider {
 
     final AstNode node = magikFile.getTopNode();
 
-    final MagikFormattingSettings settings = new MagikFormattingSettings(toolsProperties);
+    final MagikToolsProperties properties =
+        MagikToolsProperties.merge(toolsProperties, magikFile.getProperties());
+    final MagikFormattingSettings settings = new MagikFormattingSettings(properties);
 
     final nl.ramsolutions.sw.magik.formatting.FormattingOptions magikToolsFormattingOptions =
         Lsp4jConversion.formattingOptionsFromLsp4j(options);

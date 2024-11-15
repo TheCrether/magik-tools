@@ -113,6 +113,9 @@ public class MagikWorkspaceService implements WorkspaceService {
 
       this.runIndexersInBackground();
     }
+
+    this.languageServer.getLanguageClient().refreshDiagnostics();
+    this.languageServer.getLanguageClient().refreshSemanticTokens();
   }
 
   private <T> boolean collectionsDiffers(Collection<T> collection1, Collection<T> collection2) {
@@ -362,6 +365,8 @@ public class MagikWorkspaceService implements WorkspaceService {
           progressParams.setValue(Either.forLeft(end));
           languageClient.notifyProgress(progressParams);
           LOGGER.trace("Done indexing workspace in background");
+          this.languageServer.getLanguageClient().refreshSemanticTokens();
+          this.languageServer.getLanguageClient().refreshDiagnostics();
         });
   }
 

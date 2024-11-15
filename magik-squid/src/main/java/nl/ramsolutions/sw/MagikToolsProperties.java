@@ -370,6 +370,10 @@ public class MagikToolsProperties {
     return (List<T>) values;
   }
 
+  public Set<Object> keySet() {
+    return this.properties.keySet();
+  }
+
   /**
    * Merge two sets of properties.
    *

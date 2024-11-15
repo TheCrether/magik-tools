@@ -139,7 +139,9 @@ public class MagikWorkspaceFolder {
     final Collection<FileEvent> fileEvents =
         this.buildFileEventsForDifferences(
             indexableFiles, filteredDefinitionKeeper.getProductDefinitions());
-    LOGGER.debug("Product/module file event count: {}", fileEvents.size());
+    if (LOGGER.isTraceEnabled()) {
+      LOGGER.trace("Product/module file event count: {}", fileEvents.size());
+    }
     for (final FileEvent fileEvent : fileEvents) {
       this.productIndexer.handleFileEvent(fileEvent);
     }
@@ -156,7 +158,9 @@ public class MagikWorkspaceFolder {
     final Collection<FileEvent> fileEvents =
         this.buildFileEventsForDifferences(
             indexableFiles, filteredDefinitionKeeper.getModuleDefinitions());
-    LOGGER.debug("Product/module file event count: {}", fileEvents.size());
+    if (LOGGER.isTraceEnabled()) {
+      LOGGER.trace("Product/module file event count: {}", fileEvents.size());
+    }
     for (final FileEvent fileEvent : fileEvents) {
       this.moduleIndexer.handleFileEvent(fileEvent);
     }
@@ -174,7 +178,9 @@ public class MagikWorkspaceFolder {
         this.buildFileEventsForDifferences(
             indexableFiles, filteredDefinitionKeeper.getMagikFileDefinitions());
 
-    LOGGER.debug("Magik file event count: {}", fileEvents.size());
+    if (LOGGER.isTraceEnabled()) {
+      LOGGER.trace("Magik file event count: {}", fileEvents.size());
+    }
     for (final FileEvent fileEvent : fileEvents) {
       this.magikIndexer.handleFileEvent(fileEvent);
     }

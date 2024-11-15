@@ -4,13 +4,14 @@ package nl.ramsolutions.sw.magik.formatting;
 public class FormattingOptions {
 
   public static final boolean DEFAULT_SPACED_BRACES = true;
-  public static final boolean DEFAULT_SPACED_BRACES_ON_EMPTY = true;
+  public static final boolean DEFAULT_SPACED_BRACES_ON_EMPTY = false;
   public static final boolean DEFAULT_BRACES_ON_NEWLINE = false;
   public static final boolean DEFAULT_TRIM_FINAL_NEWLINES = true;
   public static final boolean DEFAULT_TRIM_TRAILING_WHITESPACE = true;
   public static final boolean DEFAULT_INSERT_FINAL_NEWLINE = true;
   public static final int DEFAULT_INDENT_WIDTH = 4;
-  public static final String DEFAULT_INDENT_CHAR = "tab";
+  public static final String TAB_INDENT_VALUE = "tab";
+  public static final String DEFAULT_INDENT_CHAR = TAB_INDENT_VALUE;
 
   private int tabSize;
   private boolean insertSpaces;
