@@ -14,6 +14,8 @@ public class MagikFormattingSettings {
   public static final String KEY_MAGIK_FORMATTING_TRIM_FINAL_NEWLINES =
       "magik.formatting.trimFinalNewlines";
   public static final String KEY_MAGIK_FORMATTING_SPACED_BRACES = "magik.formatting.spacedBraces";
+  public static final String KEY_MAGIK_FORMATTING_SPACED_BRACES_ON_EMPTY =
+      "magik.formatting.spacedBracesOnEmpty";
   public static final String KEY_MAGIK_FORMATTING_BRACES_ON_NEWLINE =
       "magik.formatting.bracesOnNewline";
 
@@ -27,10 +29,13 @@ public class MagikFormattingSettings {
   /**
    * Get the indent character. Defaults to tab.
    *
-   * @return
+   * @return the indent character
    */
   public char getIndentChar() {
-    return this.properties.getPropertyString(KEY_MAGIK_FORMATTING_INDENT_CHAR, "tab").equals("tab")
+    return this.properties
+            .getPropertyString(
+                KEY_MAGIK_FORMATTING_INDENT_CHAR, FormattingOptions.DEFAULT_INDENT_CHAR)
+            .equals(FormattingOptions.DEFAULT_INDENT_CHAR)
         ? '\t'
         : ' ';
   }
@@ -38,22 +43,27 @@ public class MagikFormattingSettings {
   /**
    * Get the indent width.
    *
-   * @return
+   * @return the indent width
    */
   public int getIndentWidth() {
-    return this.properties.getPropertyInteger(KEY_MAGIK_FORMATTING_INDENT_WIDTH, 4);
+    return this.properties.getPropertyInteger(
+        KEY_MAGIK_FORMATTING_INDENT_WIDTH, FormattingOptions.DEFAULT_INDENT_WIDTH);
   }
 
   public boolean insertFinalNewline() {
-    return this.properties.getPropertyBoolean(KEY_MAGIK_FORMATTING_INSERT_FINAL_NEWLINE, true);
+    return this.properties.getPropertyBoolean(
+        KEY_MAGIK_FORMATTING_INSERT_FINAL_NEWLINE, FormattingOptions.DEFAULT_INSERT_FINAL_NEWLINE);
   }
 
   public boolean trimTrailingWhitespace() {
-    return this.properties.getPropertyBoolean(KEY_MAGIK_FORMATTING_TRIM_TRAILING_WHITESPACE, true);
+    return this.properties.getPropertyBoolean(
+        KEY_MAGIK_FORMATTING_TRIM_TRAILING_WHITESPACE,
+        FormattingOptions.DEFAULT_TRIM_TRAILING_WHITESPACE);
   }
 
   public boolean trimFinalNewlines() {
-    return this.properties.getPropertyBoolean(KEY_MAGIK_FORMATTING_TRIM_FINAL_NEWLINES, true);
+    return this.properties.getPropertyBoolean(
+        KEY_MAGIK_FORMATTING_TRIM_FINAL_NEWLINES, FormattingOptions.DEFAULT_TRIM_FINAL_NEWLINES);
   }
 
   public String getIndent() {
@@ -67,10 +77,18 @@ public class MagikFormattingSettings {
   }
 
   public boolean getSpacedBraces() {
-    return this.properties.getPropertyBoolean(KEY_MAGIK_FORMATTING_SPACED_BRACES, true);
+    return this.properties.getPropertyBoolean(
+        KEY_MAGIK_FORMATTING_SPACED_BRACES, FormattingOptions.DEFAULT_SPACED_BRACES);
   }
 
   public boolean getBracesOnNewline() {
-    return this.properties.getPropertyBoolean(KEY_MAGIK_FORMATTING_BRACES_ON_NEWLINE, false);
+    return this.properties.getPropertyBoolean(
+        KEY_MAGIK_FORMATTING_BRACES_ON_NEWLINE, FormattingOptions.DEFAULT_BRACES_ON_NEWLINE);
+  }
+
+  public boolean getSpacesBracesOnEmpty() {
+    return this.properties.getPropertyBoolean(
+        KEY_MAGIK_FORMATTING_SPACED_BRACES_ON_EMPTY,
+        FormattingOptions.DEFAULT_SPACED_BRACES_ON_EMPTY);
   }
 }

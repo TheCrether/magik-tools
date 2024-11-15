@@ -3,12 +3,22 @@ package nl.ramsolutions.sw.magik.formatting;
 /** Formatting options for {@link FormattingStrategy}. */
 public class FormattingOptions {
 
+  public static final boolean DEFAULT_SPACED_BRACES = true;
+  public static final boolean DEFAULT_SPACED_BRACES_ON_EMPTY = true;
+  public static final boolean DEFAULT_BRACES_ON_NEWLINE = false;
+  public static final boolean DEFAULT_TRIM_FINAL_NEWLINES = true;
+  public static final boolean DEFAULT_TRIM_TRAILING_WHITESPACE = true;
+  public static final boolean DEFAULT_INSERT_FINAL_NEWLINE = true;
+  public static final int DEFAULT_INDENT_WIDTH = 4;
+  public static final String DEFAULT_INDENT_CHAR = "tab";
+
   private int tabSize;
   private boolean insertSpaces;
   private boolean insertFinalNewline;
   private boolean trimTrailingWhitespace;
   private boolean trimFinalNewlines;
-  private boolean spacedBraces = true;
+  private boolean spacedBraces = DEFAULT_SPACED_BRACES;
+  private boolean spacedBracesOnEmpty = DEFAULT_SPACED_BRACES_ON_EMPTY;
 
   public FormattingOptions(
       final int tabSize,
@@ -69,5 +79,13 @@ public class FormattingOptions {
 
   public void setSpacedBraces(boolean spacedBraces) {
     this.spacedBraces = spacedBraces;
+  }
+
+  public boolean isSpacedBracesOnEmpty() {
+    return spacedBracesOnEmpty;
+  }
+
+  public void setSpacedBracesOnEmpty(boolean spacedBracesOnEmpty) {
+    this.spacedBracesOnEmpty = spacedBracesOnEmpty;
   }
 }

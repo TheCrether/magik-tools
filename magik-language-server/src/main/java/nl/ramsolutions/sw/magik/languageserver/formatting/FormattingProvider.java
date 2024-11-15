@@ -54,6 +54,7 @@ public class FormattingProvider {
     final nl.ramsolutions.sw.magik.formatting.FormattingOptions magikToolsFormattingOptions =
         Lsp4jConversion.formattingOptionsFromLsp4j(options);
     magikToolsFormattingOptions.setSpacedBraces(settings.getSpacedBraces());
+    magikToolsFormattingOptions.setSpacedBracesOnEmpty(settings.getSpacesBracesOnEmpty());
     try {
       final FormattingWalker walker = new FormattingWalker(magikToolsFormattingOptions);
       walker.walkAst(node);

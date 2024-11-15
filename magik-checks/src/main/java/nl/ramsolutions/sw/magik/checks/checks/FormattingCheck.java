@@ -8,8 +8,7 @@ import nl.ramsolutions.sw.magik.MagikFile;
 import nl.ramsolutions.sw.magik.api.MagikGrammar;
 import nl.ramsolutions.sw.magik.api.MagikPunctuator;
 import nl.ramsolutions.sw.magik.checks.MagikCheck;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import nl.ramsolutions.sw.magik.formatting.FormattingOptions;
 import org.sonar.check.Rule;
 import org.sonar.check.RuleProperty;
 
@@ -17,28 +16,25 @@ import org.sonar.check.RuleProperty;
 // TODO: Can we use FormattingWalker here?
 @Rule(key = FormattingCheck.CHECK_KEY)
 public class FormattingCheck extends MagikCheck {
-
-  private static final Logger LOGGER = LoggerFactory.getLogger(FormattingCheck.class);
-
   @SuppressWarnings("checkstyle:JavadocVariable")
   public static final String CHECK_KEY = "Formatting";
 
   private static final String MESSAGE = "Improper formatting: %s.";
 
-  private static final String DEFAULT_INDENT_CHARACTER = "tab";
-  private static final int DEFAULT_TAB_WIDTH = 4;
-  private static final boolean DEFAULT_SPACED_BRACES = false;
+  private static final String DEFAULT_INDENT_CHARACTER = FormattingOptions.DEFAULT_INDENT_CHAR;
+  private static final int DEFAULT_TAB_WIDTH = FormattingOptions.DEFAULT_INDENT_WIDTH;
+  private static final boolean DEFAULT_SPACED_BRACES = FormattingOptions.DEFAULT_SPACED_BRACES;
+  private static final boolean DEFAULT_SPACED_BRACES_ON_EMPTY =
+      FormattingOptions.DEFAULT_SPACED_BRACES_ON_EMPTY;
 
   private static final Set<String> AUGMENTED_ASSIGNMENT_TOKENS =
       Set.of(
           "_is", "_isnt", "_andif", "_and", "_orif", "_or", "_xor", "_div", "_mod", "_cf", "+", "-",
           "*", "/", "**", "=", "~=");
-  private static final Set<String> SPACED_BRACES_TOKENS =
-      Set.of(
-          MagikPunctuator.BRACE_L.getValue(),
-          MagikPunctuator.BRACE_R.getValue(),
-          MagikPunctuator.PAREN_L.getValue(),
-          MagikPunctuator.PAREN_R.getValue());
+  private static final Set<String> SPACED_BRACES_L =
+      Set.of(MagikPunctuator.BRACE_L.getValue(), MagikPunctuator.PAREN_L.getValue());
+  private static final Set<String> SPACED_BRACES_R =
+      Set.of(MagikPunctuator.BRACE_R.getValue(), MagikPunctuator.PAREN_R.getValue());
 
   /** The character used for indentation (tab/space). */
   @RuleProperty(
@@ -64,6 +60,13 @@ public class FormattingCheck extends MagikCheck {
       defaultValue = "" + DEFAULT_SPACED_BRACES,
       type = "BOOLEAN")
   public Boolean spacedBraces = DEFAULT_SPACED_BRACES;
+
+  @RuleProperty(
+      key = "spaced braces on empty",
+      description = "Whether empty braces should have whitespace inside ((), {})",
+      defaultValue = "" + DEFAULT_SPACED_BRACES_ON_EMPTY,
+      type = "BOOLEAN")
+  public Boolean spacedBracesOnEmpty = DEFAULT_SPACED_BRACES_ON_EMPTY;
 
   private String[] lines;
   private Token previousToken;
@@ -352,8 +355,15 @@ public class FormattingCheck extends MagikCheck {
 
   private void visitTokenBracketOpen(final Token token) {
     String value = token.getValue();
-    if (SPACED_BRACES_TOKENS.contains(value)) {
-      if (spacedBraces) {
+    if (SPACED_BRACES_L.contains(value)) {
+      boolean nextBraceR =
+          this.nextToken != null && SPACED_BRACES_R.contains(this.nextToken.getValue());
+
+      if (nextBraceR && this.spacedBraces && this.spacedBracesOnEmpty) {
+        this.requireWhitespaceAfter(token);
+      } else if (nextBraceR && this.spacedBraces) {
+        this.requireNonWhitespaceAfter(token);
+      } else if (spacedBraces) {
         this.requireWhitespaceAfter(token);
       } else {
         this.requireNonWhitespaceAfter(token);
@@ -363,8 +373,15 @@ public class FormattingCheck extends MagikCheck {
 
   private void visitTokenBracketClose(final Token token) {
     String value = token.getValue();
-    if (SPACED_BRACES_TOKENS.contains(value)) {
-      if (spacedBraces) {
+    if (SPACED_BRACES_R.contains(value)) {
+      boolean prevBraceL =
+          this.previousToken != null && SPACED_BRACES_L.contains(this.previousToken.getValue());
+
+      if (prevBraceL && this.spacedBraces && this.spacedBracesOnEmpty) {
+        this.requireWhitespaceBefore(token);
+      } else if (prevBraceL && this.spacedBraces) {
+        this.requireNonWhitespaceBefore(token);
+      } else if (spacedBraces) {
         this.requireWhitespaceBefore(token);
       } else {
         this.requireNonWhitespaceBefore(token);
