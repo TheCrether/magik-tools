@@ -690,7 +690,8 @@ public class CompletionProvider {
 
       Set<String> topics = methodDef.getTopics();
       String additionalPrefix = " ";
-      if (topics.contains(TOPIC_DEPRECATED) || topics.contains(TOPIC_RESTRICTED)) {
+      if (topics.contains(TOPIC_DEPRECATED)
+          || (topics.contains(TOPIC_RESTRICTED) && !isSelfInvocation)) {
         item.setTags(List.of(CompletionItemTag.Deprecated));
         additionalPrefix = "$";
       }
