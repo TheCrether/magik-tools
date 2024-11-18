@@ -5,6 +5,7 @@ import com.sonar.sslr.api.AstNode;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.List;
+import nl.ramsolutions.sw.IDefinition;
 import nl.ramsolutions.sw.magik.Location;
 import nl.ramsolutions.sw.magik.PathMapping;
 import nl.ramsolutions.sw.magik.analysis.definitions.MagikDefinition;
@@ -40,8 +41,9 @@ public abstract class DefinitionDeserializer<T> extends BaseDeserializer<T> {
     }
 
     @Override
-    public MagikDefinition getWithoutNode() {
-      return null;
+    public IDefinition getBareDefinition() {
+      return new DeserializedDefinition(
+          this.getLocation(), this.getTimestamp(), this.getModuleName(), this.getDoc(), null);
     }
   }
 

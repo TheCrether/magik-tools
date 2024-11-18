@@ -23,6 +23,7 @@ import nl.ramsolutions.sw.magik.analysis.scope.GlobalScope;
 import nl.ramsolutions.sw.magik.analysis.scope.Scope;
 import nl.ramsolutions.sw.magik.analysis.scope.ScopeEntry;
 import nl.ramsolutions.sw.magik.analysis.typing.ExpressionResultString;
+import nl.ramsolutions.sw.magik.analysis.typing.SelfHelper;
 import nl.ramsolutions.sw.magik.analysis.typing.TypeString;
 import nl.ramsolutions.sw.magik.analysis.typing.TypeStringResolver;
 import nl.ramsolutions.sw.magik.analysis.typing.reasoner.LocalTypeReasonerState;
@@ -111,11 +112,22 @@ public class CompletionProvider {
     final MagikTypedFile newMagikFile = usable.magikFile;
     final String removedPart = usable.cleanedToken;
     final Position cleanedPosition = usable.newPosition;
-    final Position newPosition =
-        new Position(
-            cleanedPosition.getLine(), cleanedPosition.getCharacter() - removedPart.length());
+    final nl.ramsolutions.sw.magik.Position newPosition =
+        Lsp4jConversion.positionFromLsp4j(
+            new Position(
+                cleanedPosition.getLine(), cleanedPosition.getCharacter() - removedPart.length()));
     final AstNode node = newMagikFile.getTopNode();
-    final AstNode tokenNode = AstQuery.nodeAt(node, Lsp4jConversion.positionFromLsp4j(newPosition));
+
+    final AstNode tokenNodeAt = AstQuery.nodeAt(node, newPosition);
+    final AstNode tokenNodeBefore = AstQuery.nodeBefore(node, newPosition);
+    final Token tokenBefore = tokenNodeBefore != null ? tokenNodeBefore.getToken() : null;
+    final nl.ramsolutions.sw.magik.Position tokenBeforePosition =
+        tokenBefore != null ? nl.ramsolutions.sw.magik.Position.fromTokenStart(tokenBefore) : null;
+    final int tokenBeforeLine = tokenBeforePosition != null ? tokenBeforePosition.getLine() : -1;
+    final AstNode tokenNode =
+        tokenNodeAt != null
+            ? tokenNodeAt
+            : tokenBeforeLine == newPosition.getLine() ? tokenNodeBefore : null;
 
     if (LOGGER.isTraceEnabled()) {
       LOGGER.trace("Current token: {}", removedPart);
@@ -151,10 +163,12 @@ public class CompletionProvider {
 
     AstNode methodInvocationNode = null, methodInvocationOnSlotNode = null;
     if (tokenNode != null) {
-
       methodInvocationNode =
           AstQuery.getParentFromChain(
-              tokenNode, MagikGrammar.IDENTIFIER, MagikGrammar.METHOD_INVOCATION);
+              tokenNode,
+              MagikGrammar.IDENTIFIER,
+              MagikGrammar.METHOD_NAME,
+              MagikGrammar.METHOD_INVOCATION);
       methodInvocationOnSlotNode =
           AstQuery.getParentFromChain(
               tokenNode, MagikGrammar.IDENTIFIER, MagikGrammar.SLOT, MagikGrammar.ATOM);
@@ -269,28 +283,23 @@ public class CompletionProvider {
    * @param position Position in file.
    * @return Returns
    */
-  private boolean inComment(final AstNode node, final Position position) {
-    final nl.ramsolutions.sw.magik.Position nativePosition =
-        Lsp4jConversion.positionFromLsp4j(position);
+  private boolean inComment(final AstNode node, final nl.ramsolutions.sw.magik.Position position) {
     return MagikCommentExtractor.extractComments(node)
         .anyMatch(
             token ->
-                nativePosition.getLine() == token.getLine()
-                    && nativePosition.getColumn() >= token.getColumn());
+                position.getLine() == token.getLine() && position.getColumn() >= token.getColumn());
   }
 
   private List<CompletionItem> provideCommentCompletions(
       final CompletionResponse response,
       final MagikTypedFile magikFile,
-      final Position position,
+      final nl.ramsolutions.sw.magik.Position position,
       CancelChecker checker) {
     if (checker.isCanceled()) {
       return Collections.emptyList();
     }
 
-    final nl.ramsolutions.sw.magik.Position nodePosition =
-        Lsp4jConversion.positionFromLsp4j(position);
-    AstNode surroundingNode = AstQuery.nodeSurrounding(magikFile.getTopNode(), nodePosition);
+    AstNode surroundingNode = AstQuery.nodeSurrounding(magikFile.getTopNode(), position);
     if (surroundingNode == null || checker.isCanceled()) {
       return Collections.emptyList();
     }
@@ -314,8 +323,8 @@ public class CompletionProvider {
         MagikCommentExtractor.extractComments(surroundingNode)
             .filter(
                 token ->
-                    nodePosition.getLine() == token.getLine()
-                        && nodePosition.getColumn() >= token.getColumn())
+                    position.getLine() == token.getLine()
+                        && position.getColumn() >= token.getColumn())
             .findFirst();
     if (commentTokenOpt.isEmpty() && endMethodNode != null && surroundingNode != endMethodNode) {
       surroundingNode = endMethodNode;
@@ -323,8 +332,8 @@ public class CompletionProvider {
           MagikCommentExtractor.extractComments(surroundingNode)
               .filter(
                   token ->
-                      nodePosition.getLine() == token.getLine()
-                          && nodePosition.getColumn() >= token.getColumn())
+                      position.getLine() == token.getLine()
+                          && position.getColumn() >= token.getColumn())
               .findFirst();
     }
     if (commentTokenOpt.isEmpty() || checker.isCanceled()) {
@@ -368,7 +377,7 @@ public class CompletionProvider {
     final int typeStart = start + commentToken.getColumn();
     final int typeEnd = end + commentToken.getColumn();
 
-    if (!(typeStart <= nodePosition.getColumn() && nodePosition.getColumn() <= typeEnd)) {
+    if (!(typeStart <= position.getColumn() && position.getColumn() <= typeEnd)) {
       return Collections.emptyList();
     }
 
@@ -392,7 +401,7 @@ public class CompletionProvider {
   private List<CompletionItem> provideGlobalCompletion(
       final CompletionResponse response,
       final MagikTypedFile magikFile,
-      final Position position,
+      final nl.ramsolutions.sw.magik.Position position,
       final @Nullable AstNode tokenNode,
       final CancelChecker checker) {
     // Keyword entries.
@@ -404,8 +413,7 @@ public class CompletionProvider {
 
     // Scope entries.
     final AstNode topNode = magikFile.getTopNode();
-    AstNode scopeNode =
-        AstQuery.nodeSurrounding(topNode, Lsp4jConversion.positionFromLsp4j(position));
+    AstNode scopeNode = AstQuery.nodeSurrounding(topNode, position);
     if (scopeNode != null) {
       if (scopeNode.getFirstChild(MagikGrammar.BODY) != null) {
         scopeNode = scopeNode.getFirstChild(MagikGrammar.BODY);
@@ -419,7 +427,7 @@ public class CompletionProvider {
                 scopeEntry -> {
                   final AstNode definingNode = scopeEntry.getDefinitionNode();
                   final Range range = new Range(definingNode);
-                  return Lsp4jConversion.positionFromLsp4j(position).isAfterRange(range)
+                  return position.isAfterRange(range)
                       && !SCOPE_ENTRIES_TO_REMOVE.contains(scopeEntry.getIdentifier());
                 })
             .map(
@@ -532,26 +540,29 @@ public class CompletionProvider {
       final CancelChecker checker) {
     // Token -->
     // - parent: any --> parent: ATOM
-    // - parent: IDENTIFIER --> parent: METHOD_INVOCATION --> previous sibling: ATOM
-    // - parent: IDENTIFIER --> parent: METHOD_INVOCATION --> previous sibling: METHOD_INVOCATION
+    // - parent: IDENTIFIER --> parent: METHOD_NAME -> parent: METHOD_INVOCATION --> previous
+    // sibling: ATOM
+    // - parent: IDENTIFIER --> parent: METHOD_NAME -> parent: METHOD_INVOCATION --> previous
+    // sibling: METHOD_INVOCATION
     final AstNode node = tokenNode.getParent();
     final AstNode parentNode = node.getParent();
+    final AstNode parentParentNode = parentNode.getParent();
     final AstNode wantedNode;
     if (parentNode != null && parentNode.is(MagikGrammar.ATOM)) {
       // Asking the ATOM node.
       wantedNode = parentNode;
-    } else if (parentNode != null
-        && (parentNode.is(MagikGrammar.METHOD_INVOCATION)
-            || parentNode.is(MagikGrammar.PROCEDURE_INVOCATION))) {
+    } else if (parentParentNode != null
+        && (parentParentNode.is(MagikGrammar.METHOD_INVOCATION)
+            || parentParentNode.is(MagikGrammar.PROCEDURE_INVOCATION))) {
       // Asking the previous invocation.
-      wantedNode = parentNode.getPreviousSibling();
+      wantedNode = parentParentNode.getPreviousSibling();
     } else {
       return Collections.emptyList();
     }
 
     final LocalTypeReasonerState reasonerState = magikFile.getTypeReasonerState();
     final ExpressionResultString result = reasonerState.getNodeType(wantedNode);
-    TypeString typeStr = result.get(0, TypeString.UNDEFINED);
+    final TypeString typeStrSelf = result.get(0, TypeString.UNDEFINED);
 
     final TypeStringResolver resolver = magikFile.getTypeStringResolver();
 
@@ -574,13 +585,8 @@ public class CompletionProvider {
                 .stream()
                 .anyMatch(def -> def instanceof ExemplarDefinition);
 
-    final boolean isSelfInvocation =
-        typeStr.getCombinedTypes().stream().anyMatch(type -> type == TypeString.SELF);
-    if (isSelfInvocation) {
-      final AstNode methodDefNode = tokenNode.getFirstAncestor(MagikGrammar.METHOD_DEFINITION);
-      final MethodDefinitionNodeHelper helper = new MethodDefinitionNodeHelper(methodDefNode);
-      typeStr = helper.getTypeString();
-    }
+    final boolean isSelfInvocation = typeStrSelf.isSelf();
+    final TypeString typeStr = SelfHelper.substituteSelf(typeStrSelf, wantedNode);
 
     if (checker.isCanceled()) {
       return Collections.emptyList();
@@ -594,7 +600,6 @@ public class CompletionProvider {
     final TypeString finalTypeStr = typeStr.getWithoutGenerics();
     final List<MagikDefinition> definitions = response.getDefinitions();
 
-    // Convert all known methods to CompletionItems.
     final List<MethodDefinition> filteredMethods =
         new ArrayList<>(
             resolver.getMethodDefinitions(finalTypeStr).stream()
@@ -699,15 +704,14 @@ public class CompletionProvider {
   private List<CompletionItem> provideSlotCompletion(
       final CompletionResponse response,
       final MagikTypedFile magikFile,
-      final Position position,
+      final nl.ramsolutions.sw.magik.Position position,
       final String tokenValue,
       final CancelChecker checker) {
     List<CompletionItem> completionItems = new ArrayList<>();
     List<MagikDefinition> definitions = response.getDefinitions();
 
     final AstNode topNode = magikFile.getTopNode();
-    AstNode scopeNode =
-        AstQuery.nodeSurrounding(topNode, Lsp4jConversion.positionFromLsp4j(position));
+    AstNode scopeNode = AstQuery.nodeSurrounding(topNode, position);
 
     if (scopeNode == null) {
       return completionItems;
@@ -995,7 +999,7 @@ public class CompletionProvider {
             cleanedToken = newCleaned.cleanedToken;
             cleanedPosition = tempPosition;
           }
-        } else if (fromIndex != 1) {
+        } else if (fromIndex > -1) {
           final String newSource = source.substring(0, fromIndex) + source.substring(endIndex + 1);
           final MagikTypedFile tempMagikFile = new MagikTypedFile(uri, newSource, definitionKeeper);
 

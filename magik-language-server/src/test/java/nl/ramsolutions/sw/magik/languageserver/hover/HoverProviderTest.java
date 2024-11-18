@@ -2,7 +2,6 @@ package nl.ramsolutions.sw.magik.languageserver.hover;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.net.URI;
 import java.util.Collections;
 import nl.ramsolutions.sw.MagikToolsProperties;
 import nl.ramsolutions.sw.magik.MagikTypedFile;
@@ -23,11 +22,10 @@ import org.junit.jupiter.api.Test;
 @SuppressWarnings("checkstyle:MagicNumber")
 class HoverProviderTest {
 
-  private static final URI DEFAULT_URI = URI.create("memory://source.magik");
-
   private Hover provideHover(
       final String code, final Position position, final IDefinitionKeeper definitionKeeper) {
-    final MagikTypedFile magikFile = new MagikTypedFile(DEFAULT_URI, code, definitionKeeper);
+    final MagikTypedFile magikFile =
+        new MagikTypedFile(MagikTypedFile.DEFAULT_URI, code, definitionKeeper);
     final HoverProvider provider = new HoverProvider(new MagikToolsProperties());
     return provider.provideHover(magikFile, position);
   }

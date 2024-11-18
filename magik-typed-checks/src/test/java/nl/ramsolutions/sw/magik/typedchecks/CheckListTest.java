@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.IOException;
 import java.util.Collections;
+import nl.ramsolutions.sw.MagikToolsProperties;
 import nl.ramsolutions.sw.magik.checks.MagikCheck;
 import nl.ramsolutions.sw.magik.checks.MagikCheckHolder;
 import nl.ramsolutions.sw.magik.checks.MagikCheckMetadata;
@@ -16,7 +17,8 @@ class CheckListTest {
   void testAllChecksHaveAJsonFile() throws IOException {
     for (Class<? extends MagikCheck> checkClass : CheckList.getChecks()) {
       final MagikCheckHolder holder =
-          new MagikCheckHolder(checkClass, Collections.emptySet(), true);
+          new MagikCheckHolder(
+              checkClass, Collections.emptySet(), true, new MagikToolsProperties());
       final MagikCheckMetadata metadata = holder.getMetadata();
       assertThat(metadata).isNotNull();
     }

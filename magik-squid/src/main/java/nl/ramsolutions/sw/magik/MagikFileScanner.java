@@ -29,8 +29,8 @@ public final class MagikFileScanner {
   public Stream<Path> getFiles(final Path fromPath) throws IOException {
     return Files.walk(fromPath)
         .filter(Files::isRegularFile)
-        .filter(this::notIgnored)
         .filter(this::isMagikFile)
+        .filter(this::notIgnored)
         .filter(this::sizeOk);
   }
 

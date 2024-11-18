@@ -8,6 +8,20 @@
 - Index `MagikFileDefinitions`, to prevent needing to re-index magik files without `MagikDefinitions`.
 - Refactor `MagikFileScanner` & friends to be shared.
 - Add `magik-typed-lint` to check magik typing from CLI/during CI.
+- Fix not indexing `module.def` files.
+- Rename SwChar16VectorEvaluateInvocationCheck to SwChar16VectorEvaluateInvocationTypedCheck.
+- Make tab width configurable for LineLengthCheck.
+- Extend VariableNamingCheck to also check for a maximum of chars and make minLength/maxLength configurable.
+- Add NestingDepthCheck to test if a method/procedure/if-statement/loop-statement does not exceed the maximum nesting depth.
+- Support renaming of methods, in case the type of the object the method is called on can be determined.
+- Add SimplifyIf check to Sonar way profile.
+- Add UnsafeEvaluateInvocation check to Sonar way profile.
+- Speed up looking for definitions based on path.
+- Fix UseValueCompare check to handle other notations for numbers + handle floats.
+- Fix magik-lint/magik-typed-lint not using located configuration file when showing checks.
+- Make check properties more descriptive by adding `max-` if needed.
+- Fix WarnedCallCheck and ForbiddenCallCheck to handle method invocations.
+- Several fixes.
 
 0.10.1 (2024-08-14)
 
