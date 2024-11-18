@@ -24,6 +24,10 @@ public class UnsafeEvaluateInvocationCheck extends MagikCheck {
     }
 
     final AstNode methodNameNode = helper.getMethodNameNode();
+    if (methodNameNode == null) {
+      return;
+    }
+
     this.addIssue(methodNameNode, MESSAGE);
   }
 }

@@ -25,7 +25,7 @@ public class ForbiddenCallCheck extends MagikCheck {
   /** List of forbidden calls, separated by ','. */
   @RuleProperty(
       key = "forbidden calls",
-      defaultValue = "" + DEFAULT_FORBIDDEN_CALLS,
+      defaultValue = DEFAULT_FORBIDDEN_CALLS,
       description = "List of forbidden calls, separated by ','",
       type = "STRING")
   @SuppressWarnings("checkstyle:VisibilityModifier")
@@ -46,6 +46,10 @@ public class ForbiddenCallCheck extends MagikCheck {
     }
 
     final AstNode methodNameNode = helper.getMethodNameNode();
+    if (methodNameNode == null) {
+      return;
+    }
+
     final String message = String.format(MESSAGE, methodName);
     this.addIssue(methodNameNode, message);
   }

@@ -35,13 +35,16 @@ public class MagikChecksConfiguration {
   /**
    * Get {@link MagikCheck}s, each contained by a {@link MagikCheckHolder}.
    *
-   * @return
+   * @return the magik check holders that are enabled
    */
   public List<MagikCheckHolder> getAllChecks() {
     final List<String> disabled = this.properties.getPropertyList(KEY_DISABLED_CHECKS);
     if (disabled.contains("all")) {
       return Collections.emptyList();
     }
+
+    final List<String> disableds = this.properties.getPropertyList(KEY_DISABLED_CHECKS);
+    final List<String> enableds = this.properties.getPropertyList(KEY_ENABLED_CHECKS);
 
     final List<MagikCheckHolder> holders = new ArrayList<>();
 

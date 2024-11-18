@@ -28,7 +28,7 @@ public class ForbiddenInheritanceCheck extends MagikCheck {
   /** Forbidden parents to inherit from, separated by ','. */
   @RuleProperty(
       key = "forbidden parents",
-      defaultValue = "" + DEFAULT_FORBIDDEN_PARENTS,
+      defaultValue = DEFAULT_FORBIDDEN_PARENTS,
       description = "Forbidden parents to inherit from, separated by ','",
       type = "STRING")
   @SuppressWarnings("checkstyle:VisibilityModifier")
@@ -44,6 +44,7 @@ public class ForbiddenInheritanceCheck extends MagikCheck {
     magikFile.getMagikDefinitions().stream()
         .filter(ExemplarDefinition.class::isInstance)
         .filter(this::isForbiddenParent)
+        .filter(def -> def.getNode() != null)
         .forEach(definition -> this.addIssue(definition.getNode(), "Forbidden parent"));
   }
 

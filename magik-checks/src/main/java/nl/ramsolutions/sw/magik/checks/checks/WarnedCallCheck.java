@@ -24,7 +24,7 @@ public class WarnedCallCheck extends MagikCheck {
   /** List of Warned calls, separated by ','. */
   @RuleProperty(
       key = "warned calls",
-      defaultValue = "" + DEFAULT_WARNED_CALLS,
+      defaultValue = DEFAULT_WARNED_CALLS,
       description = "List of Warned calls, separated by ','",
       type = "STRING")
   @SuppressWarnings("checkstyle:VisibilityModifier")
@@ -43,6 +43,10 @@ public class WarnedCallCheck extends MagikCheck {
     }
 
     final AstNode methodNameNode = helper.getMethodNameNode();
+    if (methodNameNode == null) {
+      return;
+    }
+
     final String message = String.format(MESSAGE, methodName);
     this.addIssue(methodNameNode, message);
   }
