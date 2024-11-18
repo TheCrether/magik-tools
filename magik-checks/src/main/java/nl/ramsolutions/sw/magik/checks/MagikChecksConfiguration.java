@@ -43,17 +43,19 @@ public class MagikChecksConfiguration {
       return Collections.emptyList();
     }
 
-    final List<String> enabled = this.properties.getPropertyList(KEY_ENABLED_CHECKS);
-    final List<Class<? extends MagikCheck>> disabledByDefault =
-        CheckList.getDisabledByDefaultChecks();
-
     final List<MagikCheckHolder> holders = new ArrayList<>();
 
     for (final Class<? extends MagikCheck> checkClass : this.checkClasses) {
       final String checkKey = MagikChecksConfiguration.checkKey(checkClass);
-      final boolean checkEnabled =
-          enabled.contains(checkKey)
-              || (!disabled.contains(checkKey) && !disabledByDefault.contains(checkClass));
+      final boolean checkEnabled;
+      if (enableds.contains(checkKey)) {
+        checkEnabled = true;
+      } else if (disableds.contains(checkKey) || disableds.contains("all")) {
+        checkEnabled = false;
+      } else {
+        // No explicit configuration, use default state
+        checkEnabled = checkClass.getAnnotation(DisabledByDefault.class) == null;
+      }
 
       // Gather parameters from MagikCheck, value from config.
       final Set<MagikCheckHolder.Parameter> parameters =
@@ -83,18 +85,15 @@ public class MagikChecksConfiguration {
                     // Store parameter.
                     final String description = ruleProperty.description();
                     final MagikCheckHolder.Parameter parameter;
-                    Object configValue;
-
-                    if (ruleProperty.type().equals("INTEGER")) {
-                      configValue = this.properties.getPropertyInteger(propertyKey);
-                    } else if (ruleProperty.type().equals("STRING")) {
-                      configValue = this.properties.getPropertyString(propertyKey);
-                    } else if (ruleProperty.type().equals("BOOLEAN")) {
-                      configValue = this.properties.getPropertyBoolean(propertyKey);
-                    } else {
-                      throw new IllegalStateException(
-                          "Unknown type for property: " + ruleProperty.type());
-                    }
+                    Object configValue =
+                        switch (ruleProperty.type()) {
+                          case "INTEGER" -> this.properties.getPropertyInteger(propertyKey);
+                          case "STRING" -> this.properties.getPropertyString(propertyKey);
+                          case "BOOLEAN" -> this.properties.getPropertyBoolean(propertyKey);
+                          default ->
+                              throw new IllegalStateException(
+                                  "Unknown type for property: " + ruleProperty.type());
+                        };
 
                     parameter =
                         new MagikCheckHolder.Parameter(parameterKey, description, configValue);
