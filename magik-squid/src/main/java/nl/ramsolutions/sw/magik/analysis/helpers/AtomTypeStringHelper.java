@@ -5,6 +5,7 @@ import com.sonar.sslr.api.AstNodeType;
 import edu.umd.cs.findbugs.annotations.CheckForNull;
 import nl.ramsolutions.sw.magik.analysis.typing.TypeString;
 import nl.ramsolutions.sw.magik.api.MagikGrammar;
+import nl.ramsolutions.sw.magik.api.MagikNumberParser;
 
 /**
  * a helper to the {@link TypeString}s for an atom, only works for simple atoms like numbers, _true,
@@ -65,25 +66,17 @@ public class AtomTypeStringHelper {
   @CheckForNull
   public static TypeString tNumber(AstNode node) {
     final String tokenValue = node.getTokenValue();
-
-    // Parsable by Long?
-    try {
-      long value = Long.parseLong(tokenValue);
-      if (value > BIGNUM_START) {
-        return TypeString.SW_BIGNUM;
-      } else {
+    final Number number = MagikNumberParser.parseMagikNumberSafe(tokenValue);
+    if (number instanceof final Integer numberInt) {
+      if (numberInt < BIGNUM_START) {
         return TypeString.SW_INTEGER;
+      } else {
+        return TypeString.SW_BIGNUM;
       }
-    } catch (NumberFormatException ex) {
-      // pass
-    }
-
-    // Parsable by Float?
-    try {
-      Float.parseFloat(tokenValue);
+    } else if (number instanceof Long) {
+      return TypeString.SW_BIGNUM;
+    } else if (number instanceof Double) {
       return TypeString.SW_FLOAT;
-    } catch (NumberFormatException ex) {
-      // pass
     }
 
     return null;

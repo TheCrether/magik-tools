@@ -4,6 +4,7 @@ import com.sonar.sslr.api.AstNode;
 import java.util.Arrays;
 import java.util.Set;
 import java.util.stream.Collectors;
+import nl.ramsolutions.sw.magik.analysis.helpers.MethodInvocationNodeHelper;
 import nl.ramsolutions.sw.magik.api.MagikGrammar;
 import nl.ramsolutions.sw.magik.checks.MagikCheck;
 import org.sonar.check.Rule;
@@ -16,14 +17,14 @@ public class WarnedCallCheck extends MagikCheck {
   @SuppressWarnings("checkstyle:JavadocVariable")
   public static final String CHECK_KEY = "WarnedCall";
 
-  private static final String MESSAGE = "Call is warned.";
+  private static final String MESSAGE = "Call '%s' is warned.";
   private static final String DEFAULT_WARNED_CALLS =
       "write(),sw:write(),remex(),sw:remex(),remove_exemplar(),sw:remove_exemplar()";
 
   /** List of Warned calls, separated by ','. */
   @RuleProperty(
       key = "warned calls",
-      defaultValue = "" + DEFAULT_WARNED_CALLS,
+      defaultValue = DEFAULT_WARNED_CALLS,
       description = "List of Warned calls, separated by ','",
       type = "STRING")
   @SuppressWarnings("checkstyle:VisibilityModifier")
@@ -35,17 +36,19 @@ public class WarnedCallCheck extends MagikCheck {
 
   @Override
   protected void walkPreMethodInvocation(final AstNode node) {
-    final AstNode identifierNode = node.getFirstChild(MagikGrammar.IDENTIFIER);
-    if (identifierNode == null) {
+    final MethodInvocationNodeHelper helper = new MethodInvocationNodeHelper(node);
+    final String methodName = helper.getMethodName();
+    if (!this.getWarnedCalls().contains("." + methodName)) {
       return;
     }
 
-    final String identifier = "." + identifierNode.getTokenValue();
-    if (!this.getWarnedCalls().contains(identifier)) {
+    final AstNode methodNameNode = helper.getMethodNameNode();
+    if (methodNameNode == null) {
       return;
     }
 
-    this.addIssue(node, MESSAGE);
+    final String message = String.format(MESSAGE, methodName);
+    this.addIssue(methodNameNode, message);
   }
 
   @Override
@@ -60,7 +63,7 @@ public class WarnedCallCheck extends MagikCheck {
       return;
     }
 
-    final AstNode procNode = node.getPreviousSibling();
-    this.addIssue(procNode, MESSAGE);
+    final String message = String.format(MESSAGE, identifier);
+    this.addIssue(parentNode, message);
   }
 }

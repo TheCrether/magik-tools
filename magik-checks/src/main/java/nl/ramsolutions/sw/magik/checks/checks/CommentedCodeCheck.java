@@ -25,7 +25,6 @@ public class CommentedCodeCheck extends MagikCheck {
   public static final String CHECK_KEY = "CommentedCode";
 
   private static final String MESSAGE = "Remove commented code.";
-
   private static final int DEFAULT_MIN_LINES = 3;
 
   /** Minimum number of lines before flagging. */
@@ -43,12 +42,11 @@ public class CommentedCodeCheck extends MagikCheck {
     commentBlocks.entrySet().stream()
         .map(Map.Entry::getValue)
         .map(
-            tokens -> {
-              // Filter blank comments.
-              return tokens.stream()
-                  .filter(token -> !token.getValue().trim().equals("#"))
-                  .collect(Collectors.toList());
-            })
+            tokens ->
+                // Filter blank comments.
+                tokens.stream()
+                    .filter(token -> !token.getValue().trim().equals("#"))
+                    .collect(Collectors.toList()))
         .filter(tokens -> tokens.size() >= minLines)
         .filter(
             tokens -> {

@@ -244,7 +244,7 @@ public final class Main {
       }
       properties = new MagikToolsProperties(path);
     } else {
-      final Path currentWorkingPath = Path.of("");
+      final Path currentWorkingPath = Path.of(".");
       final Path path = ConfigurationLocator.locateConfiguration(currentWorkingPath);
       properties =
           path != null ? new MagikToolsProperties(path) : MagikToolsProperties.DEFAULT_PROPERTIES;
@@ -269,7 +269,7 @@ public final class Main {
     // Help.
     if (commandLine.hasOption(OPTION_HELP) || commandLine.getArgs().length == 0) {
       final HelpFormatter formatter = new HelpFormatter();
-      formatter.printHelp("magik-lint", Main.OPTIONS);
+      formatter.printHelp("magik-typed-lint", Main.OPTIONS);
 
       System.exit(0);
     }

@@ -56,10 +56,10 @@ public class MethodDefinitionDeserializer extends DefinitionDeserializer<MethodD
 
     ExpressionResultString loopTypes = get(context, node, "loop", ExpressionResultString.class);
 
-    Set<GlobalUsage> usedGlobals = getSet(context, node, "u_globals", GlobalUsage.class);
-    Set<MethodUsage> usedMethods = getSet(context, node, "u_methods", MethodUsage.class);
-    Set<SlotUsage> usedSlots = getSet(context, node, "u_slots", SlotUsage.class);
-    Set<ConditionUsage> usedConditions = getSet(context, node, "u_conds", ConditionUsage.class);
+    List<GlobalUsage> usedGlobals = getList(context, node, "u_globals", GlobalUsage.class);
+    List<MethodUsage> usedMethods = getList(context, node, "u_methods", MethodUsage.class);
+    List<SlotUsage> usedSlots = getList(context, node, "u_slots", SlotUsage.class);
+    List<ConditionUsage> usedConditions = getList(context, node, "u_conds", ConditionUsage.class);
 
     return new MethodDefinition(
         loc,

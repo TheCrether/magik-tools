@@ -68,6 +68,7 @@
     <versions-maven-plugin.version>2.8.1</versions-maven-plugin.version>
     <spotbugs-maven-plugin.version>4.8.3.1</spotbugs-maven-plugin.version>
     <spotbugs.version>4.8.3</spotbugs.version>
+    <com.github.marschall-memoryfilesystem.version>2.8.1</com.github.marschall-memoryfilesystem.version>
 
     <!-- JaCoCo thresholds. Increase gradually as you add tests. -->
     <jacoco.unit-tests.limit.instruction-ratio>0%</jacoco.unit-tests.limit.instruction-ratio>
@@ -223,6 +224,12 @@
         <groupId>org.assertj</groupId>
         <artifactId>assertj-core</artifactId>
         <version>${assertj.version}</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>com.github.marschall</groupId>
+        <artifactId>memoryfilesystem</artifactId>
+        <version>${com.github.marschall-memoryfilesystem.version}</version>
         <scope>test</scope>
       </dependency>
     </dependencies>
@@ -431,11 +438,10 @@
                     </limit>
                   </limits>
                   <excludes>
-                    <exclude>nl.ramsolutions.sw.productdef.ProductDefinition.equals(java.lang.Object)</exclude>
-                    <exclude>nl.ramsolutions.sw.moduledef.analysis.ModuleDefAstWalker.*</exclude>
-                    <exclude>nl.ramsolutions.sw.productdef.analysis.ProductDefAstWalker.*</exclude>
                     <exclude>nl.ramsolutions.sw.magik.analysis.MagikAstWalker.*</exclude>
                     <exclude>nl.ramsolutions.sw.magik.analysis.definitions.BinaryOperatorDefinition.equals(java.lang.Object)</exclude>
+                    <exclude>nl.ramsolutions.sw.magik.analysis.definitions.DefinitionKeeper.add(nl.ramsolutions.sw.IDefinition)</exclude>
+                    <exclude>nl.ramsolutions.sw.magik.analysis.definitions.DefinitionKeeper.remove(nl.ramsolutions.sw.IDefinition)</exclude>
                     <exclude>nl.ramsolutions.sw.magik.analysis.definitions.ExemplarDefinition.equals(java.lang.Object)</exclude>
                     <exclude>nl.ramsolutions.sw.magik.analysis.definitions.MethodDefinition.equals(java.lang.Object)</exclude>
                     <exclude>nl.ramsolutions.sw.magik.analysis.definitions.MethodDefinitionParser.parseDefinitions()</exclude>
@@ -444,6 +450,7 @@
                     <exclude>nl.ramsolutions.sw.magik.analysis.definitions.parsers.MethodDefinitionParser.parseDefinitions()</exclude>
                     <exclude>nl.ramsolutions.sw.magik.analysis.typing.ClassInfoDefinitionReader.parseClassInfo(java.lang.String, java.io.InputStreamReader)</exclude>
                     <exclude>nl.ramsolutions.sw.magik.analysis.typing.reasoner.ConditionalBodyHandler.handleConditionalExpression(com.sonar.sslr.api.AstNode)</exclude>
+                    <exclude>nl.ramsolutions.sw.magik.api.MagikNumberParser.parseMagikNumber(java.lang.String)</exclude>
                     <exclude>nl.ramsolutions.sw.magik.checks.checks.FormattingCheck.handleToken()</exclude>
                     <exclude>nl.ramsolutions.sw.magik.debugadapter.ThreadManager.stackTrace(long)</exclude>
                     <exclude>nl.ramsolutions.sw.magik.debugadapter.ThreadManager.step(long, nl.ramsolutions.sw.magik.debugadapter.slap.StepType)</exclude>
@@ -459,6 +466,9 @@
                     <exclude>nl.ramsolutions.sw.magik.parser.MagikWhitespaceTriviaAdder.createWhitespaceTokens(com.sonar.sslr.api.Token, com.sonar.sslr.api.Token)</exclude>
                     <exclude>nl.ramsolutions.sw.magik.typedchecks.fixers.TypeDocReturnTypeFixer.lambda$5(nl.ramsolutions.sw.magik.analysis.definitions.MethodDefinition, java.lang.String, java.util.Map.Entry)</exclude>
                     <exclude>nl.ramsolutions.sw.magik.typedchecks.fixers.TypeDocReturnTypeFixer.lambda$extractReturnTypeCodeActions$2(nl.ramsolutions.sw.magik.analysis.definitions.MethodDefinition, java.lang.String, java.util.Map.Entry)</exclude>
+                    <exclude>nl.ramsolutions.sw.moduledef.analysis.ModuleDefAstWalker.*</exclude>
+                    <exclude>nl.ramsolutions.sw.productdef.ProductDefinition.equals(java.lang.Object)</exclude>
+                    <exclude>nl.ramsolutions.sw.productdef.analysis.ProductDefAstWalker.*</exclude>
                   </excludes>
                 </rule>
               </rules>

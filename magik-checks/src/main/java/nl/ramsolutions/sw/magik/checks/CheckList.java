@@ -19,6 +19,7 @@ import nl.ramsolutions.sw.magik.checks.checks.LineLengthCheck;
 import nl.ramsolutions.sw.magik.checks.checks.LocalImportProcedureCheck;
 import nl.ramsolutions.sw.magik.checks.checks.MethodComplexityCheck;
 import nl.ramsolutions.sw.magik.checks.checks.MethodLineCountCheck;
+import nl.ramsolutions.sw.magik.checks.checks.NestingDepthCheck;
 import nl.ramsolutions.sw.magik.checks.checks.NoSelfUseCheck;
 import nl.ramsolutions.sw.magik.checks.checks.NoStatementAfterBodyExitCheck;
 import nl.ramsolutions.sw.magik.checks.checks.ParameterCountCheck;
@@ -78,6 +79,7 @@ public final class CheckList {
         LocalImportProcedureCheck.class,
         MethodComplexityCheck.class,
         MethodLineCountCheck.class,
+        NestingDepthCheck.class,
         NoSelfUseCheck.class,
         NoStatementAfterBodyExitCheck.class,
         ParameterCountCheck.class,
@@ -107,16 +109,5 @@ public final class CheckList {
   public static Map<Class<? extends MagikCheck>, List<Class<? extends MagikCheckFixer>>>
       getFixers() {
     return Map.of(FormattingCheck.class, List.of(FormattingFixer.class));
-  }
-
-  /**
-   * Get {@link MagikCheck}s which are disabled by default.
-   *
-   * @return List of {@link MagikCheck}s.
-   */
-  public static List<Class<? extends MagikCheck>> getDisabledByDefaultChecks() {
-    return getChecks().stream()
-        .filter(checkClass -> checkClass.getAnnotation(DisabledByDefault.class) != null)
-        .toList();
   }
 }
