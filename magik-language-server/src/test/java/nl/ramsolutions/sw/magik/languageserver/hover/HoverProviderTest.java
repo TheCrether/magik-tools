@@ -184,7 +184,9 @@ class HoverProviderTest {
 
     // Hover and test.
     final Hover hover = this.provideHover(code, position, definitionKeeper);
-    assertThat(hover).isNull();
+    assertThat(hover.getContents().getRight()).isNotNull();
+    assertThat(hover.getContents().getRight().getKind()).isEqualTo(MarkupKind.MARKDOWN);
+    assertThat(hover.getContents().getRight().getValue()).contains(HoverProvider.TYPE_NOT_FOUND);
   }
 
   @Test

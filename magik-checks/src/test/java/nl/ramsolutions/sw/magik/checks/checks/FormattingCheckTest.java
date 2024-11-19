@@ -100,7 +100,7 @@ class FormattingCheckTest extends MagikCheckTestBase {
   }
 
   @Test
-  void tetSpaceIndentLineStartWithTabs() {
+  void testSpaceIndentLineStartWithTabs() {
     final FormattingCheck check = new FormattingCheck();
     check.indentCharacter = "space";
     final String code = "\tprint(a)";
@@ -159,4 +159,6 @@ class FormattingCheckTest extends MagikCheckTestBase {
     final List<MagikIssue> issues = this.runCheck(code, check);
     assertThat(issues).isEmpty();
   }
+
+  // TODO tests with bracesAround set to true
 }

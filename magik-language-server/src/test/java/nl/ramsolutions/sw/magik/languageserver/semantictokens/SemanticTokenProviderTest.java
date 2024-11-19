@@ -34,7 +34,7 @@ class SemanticTokenProviderTest {
     final String code = ":string";
     final SemanticTokens semanticTokens = this.getSemanticTokens(code);
     assertThat(semanticTokens.getData())
-        .containsExactly(0, 0, ":string".length(), SemanticToken.Type.STRING.getTokenType(), 0);
+        .containsExactly(0, 0, ":string".length(), SemanticToken.Type.TYPE.getTokenType(), 0);
   }
 
   @Test

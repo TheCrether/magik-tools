@@ -31,6 +31,8 @@ import org.slf4j.LoggerFactory;
 /** Hover provider. */
 public class HoverProvider {
 
+  public static final String TYPE_NOT_FOUND = "Cannot find type definitions for";
+
   private static final Logger LOGGER = LoggerFactory.getLogger(HoverProvider.class);
 
   private static final String NBSP_NBSP = "&nbsp;&nbsp;";
@@ -444,11 +446,7 @@ public class HoverProvider {
           typeStr.isUndefined() ? node.getTokenValue() : typeStr.getFullString();
       appendCodeBlock(builder, true, false, formatTypeString(typeStringToDisplay));
       builder.append(SEPARATOR);
-      builder
-          .append("Cannot find type definitions for ")
-          .append("`")
-          .append(typeStringToDisplay)
-          .append("`");
+      builder.append(TYPE_NOT_FOUND).append("`").append(typeStringToDisplay).append("`");
     } else {
       exemplarDefinitions.forEach(
           exemplarDef ->

@@ -148,7 +148,7 @@ public class DefineSharedConstantParser {
                 MagikGrammar.EXPRESSION,
                 MagikGrammar.POSTFIX_EXPRESSION,
                 MagikGrammar.METHOD_INVOCATION,
-                MagikGrammar.IDENTIFIER);
+                MagikGrammar.METHOD_NAME);
 
         if (methodIdentifier != null) {
           String exemplarName = methodIdentifier.getParent().getParent().getTokenValue();

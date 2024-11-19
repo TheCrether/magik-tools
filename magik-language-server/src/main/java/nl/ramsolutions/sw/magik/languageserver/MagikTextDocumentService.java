@@ -1182,7 +1182,8 @@ public class MagikTextDocumentService implements TextDocumentService {
                                             "Type: `"
                                                 + property.type()
                                                 + "` Default: `"
-                                                + property.defaultValue();
+                                                + property.defaultValue()
+                                                + "`";
                                         item.setDetail(builder);
 
                                         item.setDocumentation(

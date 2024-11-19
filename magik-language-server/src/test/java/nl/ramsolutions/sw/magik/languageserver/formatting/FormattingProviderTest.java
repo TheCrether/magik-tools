@@ -26,6 +26,11 @@ class FormattingProviderTest {
   }
 
   private List<TextEdit> getEdits(final String code, final FormattingOptions options) {
+    return this.getEdits(code, options, new MagikToolsProperties());
+  }
+
+  private List<TextEdit> getEdits(
+      final String code, final FormattingOptions options, MagikToolsProperties properties) {
     final IDefinitionKeeper definitionKeeper = new DefinitionKeeper();
     final MagikTypedFile magikFile =
         new MagikTypedFile(MagikTypedFile.DEFAULT_URI, code, definitionKeeper);

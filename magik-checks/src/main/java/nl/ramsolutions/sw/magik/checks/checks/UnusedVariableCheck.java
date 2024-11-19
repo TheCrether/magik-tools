@@ -61,7 +61,14 @@ public class UnusedVariableCheck extends MagikCheck {
     final AstNode forVariablesNode =
         AstQuery.getParentFromChain(
             identifierNode, MagikGrammar.IDENTIFIERS_WITH_GATHER, MagikGrammar.FOR_VARIABLES);
-    return variableDefMultiNode != null || forVariablesNode != null;
+    final int forVariablesSize =
+        forVariablesNode == null
+            ? 0
+            : forVariablesNode
+                .getFirstChild(MagikGrammar.IDENTIFIERS_WITH_GATHER)
+                .getChildren(MagikGrammar.IDENTIFIER)
+                .size();
+    return variableDefMultiNode != null || (forVariablesNode != null && forVariablesSize > 1);
   }
 
   private boolean isPartOfMultiAssignment(final AstNode identifierNode) {

@@ -65,6 +65,7 @@ class LineLengthCheckTest extends MagikCheckTestBase {
   void testExpandTab() {
     final LineLengthCheck check = new LineLengthCheck();
     check.maxLineLength = 40;
+    check.tabWidth = 8;
     // 5 tabs * 8 chars/tab = 40 chars
     final String code = "" + "\t\t\t\t\tprint(a)\n";
     final List<MagikIssue> issues = this.runCheck(code, check);

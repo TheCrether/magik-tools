@@ -306,7 +306,7 @@ public class DefineSlotAccessParser {
 
       final ParameterDefinition assignmentParam =
           new ParameterDefinition(
-              location,
+              null,
               timestamp,
               moduleName,
               null,
@@ -332,7 +332,7 @@ public class DefineSlotAccessParser {
       methodDefinitions.add(setMethod);
 
       // boot
-      final String bootName = slotName + MagikOperator.BOOT_CHEVRON.getValue();
+      final String bootName = slotName + " " + MagikOperator.BOOT_CHEVRON.getValue();
       final MethodDefinition bootMethod =
           new MethodDefinition(
               location,

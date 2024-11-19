@@ -87,9 +87,7 @@ public class VariableNamingCheck extends MagikCheck {
     final List<String> whitelistItems = this.getWhitelistItems();
     return whitelistItems.contains(strippedIdentifier)
         || (strippedIdentifier.length() >= this.minLength
-            && this.minLength > 0
-            && strippedIdentifier.length() <= this.maxLength
-            && this.maxLength >= this.minLength);
+            && strippedIdentifier.length() <= this.maxLength);
   }
 
   private List<String> getWhitelistItems() {

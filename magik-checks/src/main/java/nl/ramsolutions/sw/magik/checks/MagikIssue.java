@@ -99,4 +99,17 @@ public class MagikIssue {
   public MagikCheck check() {
     return this.check;
   }
+
+  @Override
+  public String toString() {
+    return "MagikIssue{"
+        + "location="
+        + location
+        + ", message='"
+        + message
+        + '\''
+        + ", check="
+        + check
+        + '}';
+  }
 }

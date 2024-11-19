@@ -13,7 +13,7 @@ public class NestingDepthCheck extends MagikCheck {
   @SuppressWarnings("checkstyle:JavadocVariable")
   public static final String CHECK_KEY = "NestingDepth";
 
-  private static final int DEFAULT_MAX_NESTING_DEPTH = 3;
+  private static final int DEFAULT_MAX_NESTING_DEPTH = 4;
   private static final boolean DEFAULT_COUNT_EARLY_RETURN_AS_NESTING_DEPTH = true;
   private static final String MESSAGE = "The nesting depth is greater than permitted (%s).";
 

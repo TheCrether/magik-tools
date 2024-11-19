@@ -72,6 +72,7 @@ public class FormattingCheck extends MagikCheck {
   private Token previousToken;
   private Token currentToken;
   private Token nextToken;
+  private boolean inPragma = false;
 
   @Override
   protected void walkPreMagik(final AstNode node) {
@@ -91,7 +92,11 @@ public class FormattingCheck extends MagikCheck {
         indentChar == '\t' ? "Line must start with tabs" : "Line must start with spaces";
     for (final String line : this.lines) {
       final Matcher matcher = pattern.matcher(line);
-      if (matcher.matches()) {
+      if (matcher.find()) {
+        if ((indentChar == '\t' && !line.startsWith(" "))
+            || (indentChar == ' ' && !line.startsWith("\t"))) {
+          return;
+        }
         final String message = String.format(MESSAGE, msg);
         final String group1 = matcher.group(1);
         final String group = group1 != null ? group1 : matcher.group(2);
@@ -104,21 +109,11 @@ public class FormattingCheck extends MagikCheck {
   }
 
   @Override
-  protected void walkPrePragma(AstNode node) {
-    // do nothing
-  }
-
-  @Override
-  protected void walkPostPragma(AstNode node) {
-    // do nothing
-  }
-
-  @Override
   protected void walkChildren(AstNode node) {
-    if (node.is(MagikGrammar.PRAGMA) || node.is(MagikGrammar.PRAGMA_PARAM)) {
-      // Don't care about pragma
-      return;
-    }
+    this.inPragma =
+        node.is(MagikGrammar.PRAGMA)
+            || node.is(MagikGrammar.PRAGMA_PARAM)
+            || node.getFirstAncestor(MagikGrammar.PRAGMA, MagikGrammar.PRAGMA_PARAM) != null;
 
     super.walkChildren(node);
   }
@@ -153,6 +148,10 @@ public class FormattingCheck extends MagikCheck {
     }
 
     this.requireMaxNewlines(this.currentToken);
+
+    if (this.inPragma) {
+      return;
+    }
 
     final String value = this.currentToken.getValue();
     switch (value) {
@@ -234,7 +233,7 @@ public class FormattingCheck extends MagikCheck {
     final String line = this.getLineFor(token);
     int prevColumn = token.getColumn() - 1;
     // Special case: `% `, cheat by getting the `%`.
-    if (this.previousToken.getValue().equals("% ")) {
+    if (this.previousToken.getValue().equals("% ") && !this.spacedBraces) {
       prevColumn -= 1;
     }
     if (prevColumn < 0) {
@@ -428,7 +427,7 @@ public class FormattingCheck extends MagikCheck {
   }
 
   private char getIndentChar() {
-    if (this.indentCharacter.equals(DEFAULT_INDENT_CHARACTER)) {
+    if (this.indentCharacter.equals(FormattingOptions.TAB_INDENT_VALUE)) {
       return '\t';
     }
 

@@ -64,6 +64,6 @@ class VariableNamingCheckTest extends MagikCheckTestBase {
     final MagikCheck check = new VariableNamingCheck();
     final String code = "_local (l_i, l_r) << (1, 2)";
     final List<MagikIssue> issues = this.runCheck(code, check);
-    assertThat(issues).hasSize(2);
+    assertThat(issues).hasSize(1);
   }
 }

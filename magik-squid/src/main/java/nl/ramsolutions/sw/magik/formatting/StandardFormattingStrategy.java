@@ -201,18 +201,19 @@ class StandardFormattingStrategy extends FormattingStrategy {
   private boolean requireWhitespaceBefore(final Token token) {
     final String tokenValue = token.getOriginalValue().toLowerCase();
 
-    if (SPACED_BRACES_R.contains(tokenValue)
-        && SPACED_BRACES_L.contains(this.lastTextToken.getValue())) {
-      return this.options.isSpacedBracesOnEmpty() && this.options.isSpacedBraces();
+    final boolean prevBraceL =
+        SPACED_BRACES_R.contains(tokenValue)
+            && SPACED_BRACES_L.contains(this.lastTextToken.getValue());
+    if (prevBraceL && this.options.isSpacedBraces() && this.options.isSpacedBracesOnEmpty()) {
+      return true;
     }
 
-    final boolean bracesSpacing =
-        this.options.isSpacedBraces()
-            && (SPACED_BRACES_R.contains(tokenValue)
-                || SPACED_BRACES_L.contains(this.lastTextToken.getValue()));
+    final boolean braces =
+        SPACED_BRACES_R.contains(tokenValue)
+            || SPACED_BRACES_L.contains(this.lastTextToken.getValue());
 
-    if (bracesSpacing) {
-      return true;
+    if (braces) {
+      return this.options.isSpacedBraces();
     }
 
     return this.lastTextToken != null // Don't string keywords: _if _not, _method obj, obj _andif..

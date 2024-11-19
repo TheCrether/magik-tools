@@ -3,7 +3,7 @@ package nl.ramsolutions.sw.magik.formatting;
 /** Formatting options for {@link FormattingStrategy}. */
 public class FormattingOptions {
 
-  public static final boolean DEFAULT_SPACED_BRACES = true;
+  public static final boolean DEFAULT_SPACED_BRACES = false;
   public static final boolean DEFAULT_SPACED_BRACES_ON_EMPTY = false;
   public static final boolean DEFAULT_BRACES_ON_NEWLINE = false;
   public static final boolean DEFAULT_TRIM_FINAL_NEWLINES = true;

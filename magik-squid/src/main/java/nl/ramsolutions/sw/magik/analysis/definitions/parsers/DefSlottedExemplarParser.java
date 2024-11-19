@@ -267,7 +267,7 @@ public class DefSlottedExemplarParser extends BaseDefParser {
       final List<ParameterDefinition> setParameters = Collections.emptyList();
       final ParameterDefinition assignmentParam =
           new ParameterDefinition(
-              location,
+              null,
               timestamp,
               moduleName,
               null,
