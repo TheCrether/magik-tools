@@ -52,7 +52,6 @@ public class MagikWorkspaceService implements WorkspaceService {
    *
    * @param languageServer Owner language server.
    * @param definitionKeeper {@link IDefinitionKeeper} used for definition storage.
-   * @throws IOException If an error occurs.
    */
   public MagikWorkspaceService(
       final MagikLanguageServer languageServer,
@@ -191,8 +190,12 @@ public class MagikWorkspaceService implements WorkspaceService {
               try {
                 JsonDefinitionReader.readTypes(
                     path, this.definitionKeeper, lspSettings.getPathMappings());
-              } catch (final IOException exception) {
-                LOGGER.error(exception.getMessage(), exception);
+              } catch (final Exception exception) {
+                LOGGER.error(
+                    "error reading type db '{}', error: {}",
+                    path,
+                    exception.getMessage(),
+                    exception);
               }
             });
 

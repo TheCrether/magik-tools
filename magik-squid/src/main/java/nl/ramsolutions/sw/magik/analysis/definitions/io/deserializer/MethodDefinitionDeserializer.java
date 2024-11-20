@@ -1,10 +1,10 @@
 package nl.ramsolutions.sw.magik.analysis.definitions.io.deserializer;
 
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonNode;
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
-import java.io.IOException;
+import java.lang.reflect.Type;
 import java.util.List;
 import java.util.Set;
 import nl.ramsolutions.sw.magik.Location;
@@ -19,51 +19,52 @@ public class MethodDefinitionDeserializer extends DefinitionDeserializer<MethodD
   }
 
   @Override
-  public MethodDefinition deserialize(JsonParser jp, DeserializationContext context)
-      throws JsonParseException, IOException {
-    JsonNode node = jp.readValueAsTree();
+  public MethodDefinition deserialize(
+      JsonElement json, Type typeOfT, JsonDeserializationContext context)
+      throws JsonParseException {
+    JsonObject obj = json.getAsJsonObject();
 
-    MagikDefinition base = getDefinition(node);
+    MagikDefinition base = getDefinition(obj);
 
-    TypeString typeName = getTypeString(context, node, "type_n");
-    String methodName = getStringField(node, "m_name");
+    TypeString typeName = getTypeString(context, obj, "type_n");
+    String methodName = getStringField(obj, "m_name");
 
-    Location loc = base.getLocation();
-    if (loc != null) {
-      MagikDefinition parsed = getParsedDefinition(loc, methodName, MethodDefinition.class);
+    Location location = base.getLocation();
+    if (location != null) {
+      MagikDefinition parsed = getParsedDefinition(location, methodName, MethodDefinition.class);
       if (parsed != null) {
-        loc = parsed.getLocation();
+        location = parsed.getLocation();
       }
     }
 
     Set<MethodDefinition.Modifier> modifiers =
-        getSet(context, node, "mods", MethodDefinition.Modifier.class);
+        getSet(context, obj, "mods", MethodDefinition.Modifier.class);
     List<ParameterDefinition> parameters =
-        getList(context, node, "params", ParameterDefinition.class);
+        getList(context, obj, "params", ParameterDefinition.class);
 
     ParameterDefinition assignmentParameter =
-        get(context, node, "a_param", ParameterDefinition.class);
+        get(context, obj, "a_param", ParameterDefinition.class);
 
-    Set<String> topics = getSet(context, node, "top", String.class);
+    Set<String> topics = getSet(context, obj, "top", String.class);
 
     // if no return type is defined check for new* or init*
     //   -> assume the method returns an object of the same exemplar
-    ExpressionResultString returnTypes = get(context, node, "ret", ExpressionResultString.class);
+    ExpressionResultString returnTypes = get(context, obj, "ret", ExpressionResultString.class);
     if ((methodName.startsWith("new") || methodName.startsWith("init"))
         && returnTypes.equals(ExpressionResultString.UNDEFINED)) {
       returnTypes = new ExpressionResultString(typeName);
     }
 
-    ExpressionResultString loopTypes = get(context, node, "loop", ExpressionResultString.class);
+    ExpressionResultString loopTypes = get(context, obj, "loop", ExpressionResultString.class);
 
-    List<GlobalUsage> usedGlobals = getList(context, node, "u_globals", GlobalUsage.class);
-    List<MethodUsage> usedMethods = getList(context, node, "u_methods", MethodUsage.class);
-    List<SlotUsage> usedSlots = getList(context, node, "u_slots", SlotUsage.class);
-    List<ConditionUsage> usedConditions = getList(context, node, "u_conds", ConditionUsage.class);
+    List<GlobalUsage> usedGlobals = getList(context, obj, "u_globals", GlobalUsage.class);
+    List<MethodUsage> usedMethods = getList(context, obj, "u_methods", MethodUsage.class);
+    List<SlotUsage> usedSlots = getList(context, obj, "u_slots", SlotUsage.class);
+    List<ConditionUsage> usedConditions = getList(context, obj, "u_conds", ConditionUsage.class);
 
     return new MethodDefinition(
-        loc,
-        getTimestamp(loc),
+        location,
+        getTimestamp(location),
         base.getModuleName(),
         base.getDoc(),
         base.getNode(),

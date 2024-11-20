@@ -36,7 +36,7 @@ import nl.ramsolutions.sw.productdef.ProductDefinition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-// TODO rewrite this to use jackson and serializers
+// TODO rewrite this to use serializers with the custom field names
 /** JSON-line TypeKeeper writer. */
 public final class JsonDefinitionWriter {
 

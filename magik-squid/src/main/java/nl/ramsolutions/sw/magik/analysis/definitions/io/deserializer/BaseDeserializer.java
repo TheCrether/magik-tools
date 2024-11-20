@@ -1,8 +1,6 @@
 package nl.ramsolutions.sw.magik.analysis.definitions.io.deserializer;
 
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
+import com.google.gson.*;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -12,7 +10,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 import javax.annotation.Nullable;
 import nl.ramsolutions.sw.MagikToolsProperties;
 import nl.ramsolutions.sw.magik.Location;
@@ -22,7 +19,7 @@ import nl.ramsolutions.sw.magik.analysis.definitions.MagikDefinition;
 import nl.ramsolutions.sw.magik.analysis.helpers.Memoizer;
 import nl.ramsolutions.sw.magik.analysis.typing.TypeString;
 
-public abstract class BaseDeserializer<T> extends StdDeserializer<T> {
+public abstract class BaseDeserializer<T> implements JsonDeserializer<T> {
   private static final Memoizer<Path, IndexedFile> parsedFiles =
       new Memoizer<>(BaseDeserializer::computeParsedFile);
 
@@ -40,63 +37,53 @@ public abstract class BaseDeserializer<T> extends StdDeserializer<T> {
   private record IndexedFile(List<MagikDefinition> definitions, long indexedAt) {}
 
   public BaseDeserializer(List<PathMapping> mappings) {
-    super((Class<?>) null);
     this.mappings = Collections.unmodifiableList(mappings);
   }
 
   @Nullable
-  public static String nullableString(JsonNode node, String field) {
-    JsonNode strNode = node.get(field);
+  public static String nullableString(JsonObject el, String field) {
+    JsonElement strNode = el.get(field);
     return asString(strNode);
   }
 
   @Nullable
-  public static String asString(JsonNode node) {
-    if (node == null || node.isNull() || node.isMissingNode()) {
+  public static String asString(JsonElement el) {
+    if (el == null || el.isJsonNull() || !el.isJsonPrimitive()) {
       return null;
     }
-    return node.asText();
+    return el.getAsString();
   }
 
-  public static Stream<JsonNode> getStream(JsonNode node, String field) {
-    JsonNode arrNode = node.get(field);
-    if (arrNode == null || !arrNode.isArray()) {
+  public static Stream<JsonElement> getStream(JsonObject node, String field) {
+    JsonElement arrNode = node.get(field);
+    if (arrNode == null || !arrNode.isJsonArray()) {
       return Stream.empty();
     }
+    JsonArray arr = arrNode.getAsJsonArray();
 
-    return StreamSupport.stream(arrNode.spliterator(), false);
+    return arr.asList().stream();
   }
 
   public static <X> List<X> getList(
-      DeserializationContext context, JsonNode node, String field, Class<X> clazz) {
+      JsonDeserializationContext context, JsonObject node, String field, Class<X> clazz) {
     return getStream(node, field)
-        .map(
-            e -> {
-              try {
-                return context.readTreeAsValue(e, clazz);
-              } catch (IOException ex) {
-                throw new RuntimeException(ex);
-              }
-            })
+        .map(e -> context.deserialize(e, clazz))
+        .filter(clazz::isInstance)
+        .map(clazz::cast)
         .toList();
   }
 
   public static <X> Set<X> getSet(
-      DeserializationContext context, JsonNode node, String field, Class<X> clazz) {
+      JsonDeserializationContext context, JsonObject node, String field, Class<X> clazz) {
     return getStream(node, field)
-        .map(
-            e -> {
-              try {
-                return context.readTreeAsValue(e, clazz);
-              } catch (IOException ex) {
-                throw new RuntimeException(ex);
-              }
-            })
+        .map(e -> context.deserialize(e, clazz))
+        .filter(clazz::isInstance)
+        .map(clazz::cast)
         .collect(Collectors.toSet());
   }
 
   @Nullable
-  public Location getLocation(JsonNode node) {
+  public Location getLocation(JsonObject node) {
     Location location = null;
     String source = nullableString(node, "src");
     if (source != null) {
@@ -106,8 +93,8 @@ public abstract class BaseDeserializer<T> extends StdDeserializer<T> {
     return location;
   }
 
-  public static String getStringField(JsonNode node, String field) {
-    JsonNode strNode = node.get(field);
+  public static String getStringField(JsonObject node, String field) {
+    JsonElement strNode = node.get(field);
     try {
       return getString(strNode);
     } catch (IllegalStateException ex) {
@@ -115,7 +102,7 @@ public abstract class BaseDeserializer<T> extends StdDeserializer<T> {
     }
   }
 
-  public static String getString(JsonNode node) {
+  public static String getString(JsonElement node) {
     String str = asString(node);
     if (str == null) {
       throw new IllegalStateException("Missing required string node " + node);
@@ -124,17 +111,13 @@ public abstract class BaseDeserializer<T> extends StdDeserializer<T> {
   }
 
   public static TypeString getTypeString(
-      DeserializationContext context, JsonNode node, String field) {
+      JsonDeserializationContext context, JsonObject node, String field) {
     return get(context, node, field, TypeString.class);
   }
 
   public static <X> X get(
-      DeserializationContext context, JsonNode node, String field, Class<X> clazz) {
-    try {
-      return context.readTreeAsValue(node.get(field), clazz);
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
+      JsonDeserializationContext context, JsonObject node, String field, Class<X> clazz) {
+    return context.deserialize(node.get(field), clazz);
   }
 
   public static List<MagikDefinition> getDefinitions(Location location) {

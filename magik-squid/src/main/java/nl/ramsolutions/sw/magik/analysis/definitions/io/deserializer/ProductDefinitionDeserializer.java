@@ -1,9 +1,10 @@
 package nl.ramsolutions.sw.magik.analysis.definitions.io.deserializer;
 
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonNode;
-import java.io.IOException;
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParseException;
+import java.lang.reflect.Type;
 import java.util.List;
 import nl.ramsolutions.sw.magik.Location;
 import nl.ramsolutions.sw.magik.PathMapping;
@@ -16,17 +17,18 @@ public class ProductDefinitionDeserializer extends BaseDeserializer<ProductDefin
   }
 
   @Override
-  public ProductDefinition deserialize(JsonParser jp, DeserializationContext context)
-      throws IOException {
-    JsonNode node = jp.readValueAsTree();
+  public ProductDefinition deserialize(
+      JsonElement json, Type typeOfT, JsonDeserializationContext context)
+      throws JsonParseException {
+    final JsonObject obj = json.getAsJsonObject();
 
-    String name = getStringField(node, "name");
-    String version = nullableString(node, "ver");
-    String versionComment = nullableString(node, "ver_com");
-    String parent = nullableString(node, "parent");
-    List<ProductUsage> usages = getList(context, node, "usage", ProductUsage.class);
+    String name = getStringField(obj, "name");
+    String version = nullableString(obj, "ver");
+    String versionComment = nullableString(obj, "ver_com");
+    String parent = nullableString(obj, "parent");
+    List<ProductUsage> usages = getList(context, obj, "usage", ProductUsage.class);
 
-    Location location = getLocation(node);
+    Location location = getLocation(obj);
 
     return new ProductDefinition(
         location,

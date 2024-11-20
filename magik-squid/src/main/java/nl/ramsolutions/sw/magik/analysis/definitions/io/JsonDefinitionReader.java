@@ -1,9 +1,6 @@
 package nl.ramsolutions.sw.magik.analysis.definitions.io;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.PropertyNamingStrategies;
-import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.google.gson.*;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -19,8 +16,6 @@ import java.util.concurrent.Executors;
 import nl.ramsolutions.sw.magik.PathMapping;
 import nl.ramsolutions.sw.magik.analysis.definitions.*;
 import nl.ramsolutions.sw.magik.analysis.definitions.io.deserializer.*;
-import nl.ramsolutions.sw.magik.analysis.definitions.io.deserializer.ExemplarDefinitionDeserializer;
-import nl.ramsolutions.sw.magik.analysis.definitions.io.deserializer.SlotDefinitionDeserializer;
 import nl.ramsolutions.sw.magik.analysis.typing.ExpressionResultString;
 import nl.ramsolutions.sw.magik.analysis.typing.TypeString;
 import nl.ramsolutions.sw.moduledef.ModuleDefinition;
@@ -45,7 +40,7 @@ public final class JsonDefinitionReader {
 
   private final IDefinitionKeeper definitionKeeper;
   private final List<PathMapping> mappings;
-  private final ObjectMapper objectMapper;
+  private final Gson gson;
   private final ExecutorService threadPool;
 
   private JsonDefinitionReader(
@@ -57,47 +52,45 @@ public final class JsonDefinitionReader {
     final int threadsToRun = Math.max(processors / 2, 6);
     this.threadPool = Executors.newFixedThreadPool(threadsToRun);
 
-    this.objectMapper = new ObjectMapper();
-    objectMapper.setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
-    objectMapper.registerModule(this.buildObjectMapperModule());
+    this.gson = this.createGson();
   }
 
-  private SimpleModule buildObjectMapperModule() {
-    SimpleModule module = new SimpleModule();
-    module.addDeserializer(TypeString.class, new TypeStringDeserializer(mappings));
-    module.addDeserializer(
-        ExpressionResultString.class, new ExpressionResultStringDeserializer(mappings));
-    module.addDeserializer(
-        ExemplarDefinition.Sort.class,
-        new LowerCaseEnumDeserializer<>(mappings, ExemplarDefinition.Sort.class));
-    module.addDeserializer(
-        MethodDefinition.Modifier.class,
-        new LowerCaseEnumDeserializer<>(mappings, MethodDefinition.Modifier.class));
-    module.addDeserializer(
-        ProcedureDefinition.Modifier.class,
-        new LowerCaseEnumDeserializer<>(mappings, ProcedureDefinition.Modifier.class));
-    module.addDeserializer(
-        ParameterDefinition.Modifier.class,
-        new LowerCaseEnumDeserializer<>(mappings, ParameterDefinition.Modifier.class));
-    module.addDeserializer(SlotDefinition.class, new SlotDefinitionDeserializer(mappings));
-    module.addDeserializer(
-        ParameterDefinition.class, new ParameterDefinitionDeserializer(mappings));
-    module.addDeserializer(ProductDefinition.class, new ProductDefinitionDeserializer(mappings));
-    module.addDeserializer(ModuleDefinition.class, new ModuleDefinitionDeserializer(mappings));
-    module.addDeserializer(PackageDefinition.class, new PackageDefinitionDeserializer(mappings));
-    module.addDeserializer(ExemplarDefinition.class, new ExemplarDefinitionDeserializer(mappings));
-    module.addDeserializer(MethodDefinition.class, new MethodDefinitionDeserializer(mappings));
-    module.addDeserializer(
-        ConditionDefinition.class, new ConditionDefinitionDeserializer(mappings));
-    module.addDeserializer(
-        BinaryOperatorDefinition.class, new BinaryOperatorDefinitionDeserializer(mappings));
-    module.addDeserializer(
-        ProcedureDefinition.class, new ProcedureDefinitionDeserializer(mappings));
-    module.addDeserializer(GlobalDefinition.class, new GlobalDefinitionDeserializer(mappings));
-    module.addDeserializer(ProductUsage.class, new ProductUsageDeserializer(mappings));
-    module.addDeserializer(ModuleUsage.class, new ModuleUsageDeserializer(mappings));
-
-    return module;
+  private Gson createGson() {
+    final GsonBuilder builder = new GsonBuilder();
+    return builder
+        .registerTypeAdapter(TypeString.class, new TypeStringDeserializer(mappings))
+        .registerTypeAdapter(
+            ExpressionResultString.class, new ExpressionResultStringDeserializer(mappings))
+        .registerTypeAdapter(
+            ExemplarDefinition.Sort.class,
+            new LowerCaseEnumDeserializer<>(mappings, ExemplarDefinition.Sort.class))
+        .registerTypeAdapter(
+            MethodDefinition.Modifier.class,
+            new LowerCaseEnumDeserializer<>(mappings, MethodDefinition.Modifier.class))
+        .registerTypeAdapter(
+            ProcedureDefinition.Modifier.class,
+            new LowerCaseEnumDeserializer<>(mappings, ProcedureDefinition.Modifier.class))
+        .registerTypeAdapter(
+            ParameterDefinition.Modifier.class,
+            new LowerCaseEnumDeserializer<>(mappings, ParameterDefinition.Modifier.class))
+        .registerTypeAdapter(SlotDefinition.class, new SlotDefinitionDeserializer(mappings))
+        .registerTypeAdapter(
+            ParameterDefinition.class, new ParameterDefinitionDeserializer(mappings))
+        .registerTypeAdapter(ProductDefinition.class, new ProductDefinitionDeserializer(mappings))
+        .registerTypeAdapter(ModuleDefinition.class, new ModuleDefinitionDeserializer(mappings))
+        .registerTypeAdapter(PackageDefinition.class, new PackageDefinitionDeserializer(mappings))
+        .registerTypeAdapter(ExemplarDefinition.class, new ExemplarDefinitionDeserializer(mappings))
+        .registerTypeAdapter(MethodDefinition.class, new MethodDefinitionDeserializer(mappings))
+        .registerTypeAdapter(
+            ConditionDefinition.class, new ConditionDefinitionDeserializer(mappings))
+        .registerTypeAdapter(
+            BinaryOperatorDefinition.class, new BinaryOperatorDefinitionDeserializer(mappings))
+        .registerTypeAdapter(
+            ProcedureDefinition.class, new ProcedureDefinitionDeserializer(mappings))
+        .registerTypeAdapter(GlobalDefinition.class, new GlobalDefinitionDeserializer(mappings))
+        .registerTypeAdapter(ProductUsage.class, new ProductUsageDeserializer(mappings))
+        .registerTypeAdapter(ModuleUsage.class, new ModuleUsageDeserializer(mappings))
+        .create();
   }
 
   /**
@@ -105,13 +98,11 @@ public final class JsonDefinitionReader {
    *
    * @param path Path to JSON-line file.
    * @param definitionKeeper {@link IDefinitionKeeper} to fill.
-   * @throws IOException -
    */
   public static void readTypes(
       final Path path,
       final IDefinitionKeeper definitionKeeper,
-      final @Nullable List<PathMapping> mappings)
-      throws IOException {
+      final @Nullable List<PathMapping> mappings) {
     BaseDeserializer.clearParsedFiles();
 
     final JsonDefinitionReader reader = new JsonDefinitionReader(definitionKeeper, mappings);
@@ -207,55 +198,56 @@ public final class JsonDefinitionReader {
     return completableFuture;
   }
 
-  private void processLine(String line) throws Exception {
+  private void processLine(String line) {
     if (line.trim().startsWith("//")) {
       // Ignore comments.
       return;
     }
 
-    final JsonNode node = objectMapper.readTree(line);
-    final JsonNode instructionObj = node.get(Instruction.FIELD_NAME);
-    final Instruction instruction = Instruction.fromValue(instructionObj.intValue());
+    final JsonElement jsonTree = JsonParser.parseString(line);
+    final JsonObject obj = jsonTree.getAsJsonObject();
+    final JsonElement instructionObj = obj.get(Instruction.FIELD_NAME);
+    final Instruction instruction = Instruction.fromValue(instructionObj.getAsInt());
 
     switch (instruction) {
       case PRODUCT:
-        this.handleProduct(node);
+        this.handleProduct(obj);
         break;
 
       case MODULE:
-        this.handleModule(node);
+        this.handleModule(obj);
         break;
 
       case MAGIK_FILE:
-        this.handleMagikFile(node);
+        this.handleMagikFile(obj);
         break;
 
       case PACKAGE:
-        this.handlePackage(node);
+        this.handlePackage(obj);
         break;
 
       case TYPE:
-        this.handleType(node);
+        this.handleType(obj);
         break;
 
       case METHOD:
-        this.handleMethod(node);
+        this.handleMethod(obj);
         break;
 
       case PROCEDURE:
-        this.handleProcedure(node);
+        this.handleProcedure(obj);
         break;
 
       case CONDITION:
-        this.handleCondition(node);
+        this.handleCondition(obj);
         break;
 
       case BINARY_OPERATOR:
-        this.handleBinaryOperator(node);
+        this.handleBinaryOperator(obj);
         break;
 
       case GLOBAL:
-        this.handleGlobal(node);
+        this.handleGlobal(obj);
         break;
 
       default:
@@ -264,29 +256,28 @@ public final class JsonDefinitionReader {
     }
   }
 
-  private void handleProduct(final JsonNode node) throws IOException {
-    ProductDefinition definition = objectMapper.reader().readValue(node, ProductDefinition.class);
+  private void handleProduct(final JsonObject obj) {
+    ProductDefinition definition = gson.fromJson(obj, ProductDefinition.class);
     this.definitionKeeper.add(definition);
   }
 
-  private void handleModule(final JsonNode node) throws IOException {
-    ModuleDefinition definition = objectMapper.reader().readValue(node, ModuleDefinition.class);
+  private void handleModule(final JsonObject obj) {
+    ModuleDefinition definition = gson.fromJson(obj, ModuleDefinition.class);
     this.definitionKeeper.add(definition);
   }
 
-  private void handleMagikFile(final JsonNode node) throws IOException {
-    final MagikFileDefinition definition =
-        objectMapper.reader().readValue(node, MagikFileDefinition.class);
+  private void handleMagikFile(final JsonObject obj) {
+    final MagikFileDefinition definition = gson.fromJson(obj, MagikFileDefinition.class);
     this.definitionKeeper.add(definition);
   }
 
-  private void handlePackage(final JsonNode node) throws IOException {
-    PackageDefinition definition = objectMapper.reader().readValue(node, PackageDefinition.class);
+  private void handlePackage(final JsonObject obj) {
+    PackageDefinition definition = gson.fromJson(obj, PackageDefinition.class);
     this.definitionKeeper.add(definition);
   }
 
-  private void handleType(final JsonNode node) throws IOException {
-    ExemplarDefinition definition = objectMapper.reader().readValue(node, ExemplarDefinition.class);
+  private void handleType(final JsonObject obj) {
+    ExemplarDefinition definition = gson.fromJson(obj, ExemplarDefinition.class);
 
     // We are allowed to overwrite definitions which have no location, as these will most likely
     // be the default definitions from DefaultDefinitionsAdder.
@@ -298,31 +289,28 @@ public final class JsonDefinitionReader {
     this.definitionKeeper.add(definition);
   }
 
-  private void handleMethod(final JsonNode node) throws IOException {
-    MethodDefinition definition = objectMapper.reader().readValue(node, MethodDefinition.class);
+  private void handleMethod(final JsonObject obj) {
+    MethodDefinition definition = gson.fromJson(obj, MethodDefinition.class);
     this.definitionKeeper.add(definition);
   }
 
-  private void handleCondition(final JsonNode node) throws IOException {
-    ConditionDefinition definition =
-        objectMapper.reader().readValue(node, ConditionDefinition.class);
+  private void handleCondition(final JsonObject obj) {
+    ConditionDefinition definition = gson.fromJson(obj, ConditionDefinition.class);
     this.definitionKeeper.add(definition);
   }
 
-  private void handleBinaryOperator(final JsonNode node) throws IOException {
-    BinaryOperatorDefinition definition =
-        objectMapper.reader().readValue(node, BinaryOperatorDefinition.class);
+  private void handleBinaryOperator(final JsonObject obj) {
+    BinaryOperatorDefinition definition = gson.fromJson(obj, BinaryOperatorDefinition.class);
     this.definitionKeeper.add(definition);
   }
 
-  private void handleProcedure(final JsonNode node) throws IOException {
-    ProcedureDefinition definition =
-        objectMapper.reader().readValue(node, ProcedureDefinition.class);
+  private void handleProcedure(final JsonObject obj) {
+    ProcedureDefinition definition = gson.fromJson(obj, ProcedureDefinition.class);
     this.definitionKeeper.add(definition);
   }
 
-  private void handleGlobal(final JsonNode node) throws IOException {
-    GlobalDefinition definition = objectMapper.reader().readValue(node, GlobalDefinition.class);
+  private void handleGlobal(final JsonObject obj) {
+    GlobalDefinition definition = gson.fromJson(obj, GlobalDefinition.class);
     this.definitionKeeper.add(definition);
   }
 }

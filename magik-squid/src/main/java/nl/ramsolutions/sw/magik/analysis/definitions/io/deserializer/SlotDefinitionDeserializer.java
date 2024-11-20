@@ -1,32 +1,39 @@
 package nl.ramsolutions.sw.magik.analysis.definitions.io.deserializer;
 
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonNode;
-import java.io.IOException;
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParseException;
+import java.lang.reflect.Type;
 import java.util.List;
-import nl.ramsolutions.sw.magik.Location;
 import nl.ramsolutions.sw.magik.PathMapping;
+import nl.ramsolutions.sw.magik.analysis.definitions.MagikDefinition;
 import nl.ramsolutions.sw.magik.analysis.definitions.SlotDefinition;
 import nl.ramsolutions.sw.magik.analysis.typing.TypeString;
 
-public class SlotDefinitionDeserializer extends BaseDeserializer<SlotDefinition> {
+public class SlotDefinitionDeserializer extends DefinitionDeserializer<SlotDefinition> {
   public SlotDefinitionDeserializer(List<PathMapping> mappings) {
     super(mappings);
   }
 
   @Override
-  public SlotDefinition deserialize(JsonParser jsonParser, DeserializationContext context)
-      throws IOException {
-    JsonNode node = jsonParser.getCodec().readTree(jsonParser);
-    String moduleName = nullableString(node, "mod_n");
-    String doc = nullableString(node, "doc");
-    TypeString typeName = getTypeString(context, node, "type_n");
-    String name = getStringField(node, "name");
+  public SlotDefinition deserialize(
+      JsonElement json, Type typeOfT, JsonDeserializationContext context)
+      throws JsonParseException {
+    JsonObject obj = json.getAsJsonObject();
 
-    Location location = getLocation(node);
+    MagikDefinition base = getDefinition(obj);
+
+    final String name = getStringField(obj, "name");
+    final TypeString typeName = getTypeString(context, obj, "type_n");
 
     return new SlotDefinition(
-        location, getTimestamp(location), moduleName, doc, null, name, typeName);
+        base.getLocation(),
+        base.getTimestamp(),
+        base.getModuleName(),
+        base.getDoc(),
+        null,
+        name,
+        typeName);
   }
 }

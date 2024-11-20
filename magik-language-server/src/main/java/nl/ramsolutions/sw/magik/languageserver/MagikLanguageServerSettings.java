@@ -3,6 +3,7 @@ package nl.ramsolutions.sw.magik.languageserver;
 import edu.umd.cs.findbugs.annotations.CheckForNull;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.concurrent.CopyOnWriteArrayList;
 import nl.ramsolutions.sw.MagikToolsProperties;
 import nl.ramsolutions.sw.magik.PathMapping;
 
@@ -98,7 +99,8 @@ public final class MagikLanguageServerSettings {
     }
 
     List<PathMapping> mappings =
-        this.properties.getPropertyList(PATH_MAPPING, null, PathMapping.class);
+        new CopyOnWriteArrayList<>(
+            this.properties.getPropertyList(PATH_MAPPING, null, PathMapping.class));
 
     MagikLanguageServerSettings.pathMappings = mappings;
     MagikLanguageServerSettings.pathMappingsStr = unparsedMappingsStr;

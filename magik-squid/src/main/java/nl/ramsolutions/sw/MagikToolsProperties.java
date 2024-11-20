@@ -1,7 +1,9 @@
 package nl.ramsolutions.sw;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.gson.Gson;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParser;
+import com.google.gson.JsonSyntaxException;
 import edu.umd.cs.findbugs.annotations.CheckForNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.FileInputStream;
@@ -199,7 +201,7 @@ public class MagikToolsProperties {
       return defaultValue;
     }
 
-    return Boolean.valueOf(value);
+    return Boolean.parseBoolean(value);
   }
 
   /**
@@ -231,7 +233,7 @@ public class MagikToolsProperties {
       return defaultValue;
     }
 
-    return Integer.valueOf(value);
+    return Integer.parseInt(value);
   }
 
   /**
@@ -303,6 +305,7 @@ public class MagikToolsProperties {
     return Arrays.stream(values).map(String::trim).toList();
   }
 
+  @SuppressWarnings("unchecked")
   public <T> List<T> getPropertyList(
       final String key, @Nullable String separator, final Class<T> type) {
     final String value = this.getPropertyString(key);
@@ -351,14 +354,15 @@ public class MagikToolsProperties {
         values = valuesStream.toList();
         break;
       default:
-        ObjectMapper om = new ObjectMapper();
+        Gson gson = new Gson();
         values =
             valuesStream
                 .map(
                     v -> {
                       try {
-                        return om.readValue(v, type);
-                      } catch (JsonProcessingException e) {
+                        final JsonElement el = JsonParser.parseString(v);
+                        return gson.fromJson(el, type);
+                      } catch (JsonSyntaxException e) {
                         LOGGER.error("Could not read value {} with type {}", v, type, e);
                         return null;
                       }

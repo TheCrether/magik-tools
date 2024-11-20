@@ -1,9 +1,10 @@
 package nl.ramsolutions.sw.magik.analysis.definitions.io.deserializer;
 
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonNode;
-import java.io.IOException;
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParseException;
+import java.lang.reflect.Type;
 import java.util.List;
 import nl.ramsolutions.sw.magik.Location;
 import nl.ramsolutions.sw.magik.PathMapping;
@@ -16,17 +17,18 @@ public class ModuleDefinitionDeserializer extends BaseDeserializer<ModuleDefinit
   }
 
   @Override
-  public ModuleDefinition deserialize(JsonParser jp, DeserializationContext context)
-      throws IOException {
-    JsonNode node = jp.readValueAsTree();
+  public ModuleDefinition deserialize(
+      JsonElement json, Type typeOfT, JsonDeserializationContext context)
+      throws JsonParseException {
+    JsonObject obj = json.getAsJsonObject();
 
-    String name = getStringField(node, "name");
-    String baseVersion = getStringField(node, "base_ver");
-    String currentVersion = nullableString(node, "cur_ver");
-    String product = nullableString(node, "prod");
-    List<ModuleUsage> usages = getList(context, node, "usgs", ModuleUsage.class);
+    String name = getStringField(obj, "name");
+    String baseVersion = getStringField(obj, "base_ver");
+    String currentVersion = nullableString(obj, "cur_ver");
+    String product = nullableString(obj, "prod");
+    List<ModuleUsage> usages = getList(context, obj, "usgs", ModuleUsage.class);
 
-    Location location = getLocation(node);
+    Location location = getLocation(obj);
 
     return new ModuleDefinition(
         location, getTimestamp(location), name, product, baseVersion, currentVersion, null, usages);
