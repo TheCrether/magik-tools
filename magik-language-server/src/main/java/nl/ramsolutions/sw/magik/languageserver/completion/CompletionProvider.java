@@ -188,6 +188,19 @@ public class CompletionProvider {
       completionItems =
           this.provideSlotCompletion(response, newMagikFile, newPosition, searchedText, checker);
     } else if (tokenNode != null) {
+      boolean tokenNodeHasType = false;
+      final AstNode tokenAtomNode =
+          AstQuery.getParentFromChain(tokenNode, MagikGrammar.IDENTIFIER, MagikGrammar.ATOM);
+      if (tokenAtomNode != null) {
+        final ExpressionResultString nodeType =
+            newMagikFile.getTypeReasonerState().getNodeType(tokenAtomNode);
+        tokenNodeHasType =
+            nodeType != null
+                && !nodeType.equals(ExpressionResultString.EMPTY)
+                && !nodeType.equals(ExpressionResultString.UNDEFINED)
+                && (!nodeType.isEmpty()
+                    && !nodeType.get(0, TypeString.UNDEFINED).equals(TypeString.UNDEFINED));
+      }
       // Method completion: METHOD_INVOCATION
       if (methodInvocationOnSlotNode != null) {
         AstNode identifier = AstQuery.getParentFromChain(tokenNode, MagikGrammar.IDENTIFIER);
@@ -196,9 +209,8 @@ public class CompletionProvider {
               this.provideMethodInvocationCompletion(
                   response, newMagikFile, identifier, removedPart, checker);
         }
-      } else if (methodInvocationNode != null
-          || removedPart.startsWith(".")
-          || removedPart.isEmpty()) {
+      } else if ((tokenNodeHasType || methodInvocationNode != null)
+          && (removedPart.startsWith(".") || removedPart.isEmpty())) {
         completionItems =
             this.provideMethodInvocationCompletion(
                 response, newMagikFile, tokenNode, removedPart, checker);
