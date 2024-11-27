@@ -1,9 +1,6 @@
 package nl.ramsolutions.sw;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonParser;
-import com.google.gson.JsonSyntaxException;
+import com.google.gson.*;
 import edu.umd.cs.findbugs.annotations.CheckForNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.FileInputStream;
@@ -13,6 +10,7 @@ import java.nio.file.Path;
 import java.util.*;
 import java.util.stream.Stream;
 import nl.ramsolutions.sw.magik.MagikFile;
+import nl.ramsolutions.sw.magik.analysis.definitions.io.deserializer.PathDeserializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -354,7 +352,10 @@ public class MagikToolsProperties {
         values = valuesStream.toList();
         break;
       default:
-        Gson gson = new Gson();
+        Gson gson =
+            new GsonBuilder()
+                .registerTypeAdapter(Path.class, new PathDeserializer(Collections.emptyList()))
+                .create();
         values =
             valuesStream
                 .map(
