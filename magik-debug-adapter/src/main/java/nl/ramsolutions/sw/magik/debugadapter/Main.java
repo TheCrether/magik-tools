@@ -2,6 +2,12 @@ package nl.ramsolutions.sw.magik.debugadapter;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
+import java.nio.channels.AsynchronousServerSocketChannel;
+import java.nio.channels.AsynchronousSocketChannel;
+import java.nio.channels.Channels;
+import java.util.concurrent.ExecutionException;
 import java.util.logging.LogManager;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
@@ -19,10 +25,22 @@ public final class Main {
   private static final Options OPTIONS;
   private static final Option OPTION_DEBUG =
       Option.builder().longOpt("debug").desc("Show debug messages").build();
+  private static final Option OPTION_STDIO =
+      Option.builder()
+          .longOpt("stdio")
+          .desc("Use STDIO (default, no other option to interface with this language server)")
+          .build();
+  private static final Option OPTION_NET =
+      Option.builder()
+          .longOpt("net")
+          .desc("Open the LSP on port 5007 instead of using STDIN for commands")
+          .build();
 
   static {
     OPTIONS = new Options();
     OPTIONS.addOption(OPTION_DEBUG);
+    OPTIONS.addOption(OPTION_STDIO);
+    OPTIONS.addOption(OPTION_NET);
   }
 
   private Main() {}
@@ -79,12 +97,34 @@ public final class Main {
     }
 
     final MagikDebugAdapter server = new MagikDebugAdapter();
-    final Launcher<IDebugProtocolClient> launcher =
-        DSPLauncher.createServerLauncher(server, System.in, System.out); // NOSONAR
+    Launcher<IDebugProtocolClient> launcher;
+    if (commandLine.hasOption(OPTION_NET)) {
+      launcher = createSocketLauncher(server, new InetSocketAddress("localhost", 5008));
+    } else {
+      launcher = DSPLauncher.createServerLauncher(server, System.in, System.out); // NOSONAR
+    }
 
+    assert launcher != null;
     final IDebugProtocolClient remoteProxy = launcher.getRemoteProxy();
     server.connect(remoteProxy);
 
     launcher.startListening();
+  }
+
+  static Launcher<IDebugProtocolClient> createSocketLauncher(
+      MagikDebugAdapter debugAdapter, SocketAddress socketAddress) throws IOException {
+    AsynchronousServerSocketChannel serverSocket =
+        AsynchronousServerSocketChannel.open().bind(socketAddress);
+    AsynchronousSocketChannel socketChannel;
+    try {
+      socketChannel = serverSocket.accept().get();
+      return DSPLauncher.createServerLauncher(
+          debugAdapter,
+          Channels.newInputStream(socketChannel),
+          Channels.newOutputStream(socketChannel));
+    } catch (InterruptedException | ExecutionException e) {
+      e.printStackTrace();
+    }
+    return null;
   }
 }

@@ -14,7 +14,9 @@ The following functionality is provided:
 
 ## Smallworld Magik Debugger Adapter in session
 
-Before this Debug Adapter can connect to your Smallworld session, the Smallworld session needs to be started with the Magik Debugger Agent (mda). This can be done by starting the JVM running the Smallworld session with the parameter `-agentpath:<path_to_Smallworld_core>/bin/Linux.x86/libmda.so=socket` (in case you're running on Windows, the mda is named libmda.dll, most likely). The mda communicates via a TCP/IP socket. The port can be provided with the settings `port=...`.
+Before this Debug Adapter can connect to your Smallworld session, the Smallworld session needs to be started with the Magik Debugger Agent (mda).
+This can be done by starting the JVM running the Smallworld session with the parameter `-agentpath:<path_to_Smallworld_core>/bin/Linux.x86/libmda.so=socket`
+(in case you're running on Windows, the mda is named mda.dll). The mda communicates via a TCP/IP socket. The port can be provided with the settings `port=...`.
 
 A complete example of running a session from `runalias` on Linux, specifying port `32000`, is as follows:
 
