@@ -559,7 +559,7 @@ public class CompletionProvider {
     // sibling: METHOD_INVOCATION
     final AstNode node = tokenNode.getParent();
     final AstNode parentNode = node.getParent();
-    final AstNode parentParentNode = parentNode.getParent();
+    final AstNode parentParentNode = parentNode != null ? parentNode.getParent() : null;
     final AstNode wantedNode;
     if (parentNode != null && parentNode.is(MagikGrammar.ATOM)) {
       // Asking the ATOM node.
