@@ -207,13 +207,13 @@ public class CompletionProvider {
         if (identifier != null) {
           completionItems =
               this.provideMethodInvocationCompletion(
-                  response, newMagikFile, identifier, removedPart, checker);
+                  response, newMagikFile, identifier, removedPart, checker, cleanedPosition);
         }
       } else if ((tokenNodeHasType || methodInvocationNode != null)
           && (removedPart.startsWith(".") || removedPart.isEmpty())) {
         completionItems =
             this.provideMethodInvocationCompletion(
-                response, newMagikFile, tokenNode, removedPart, checker);
+                response, newMagikFile, tokenNode, removedPart, checker, cleanedPosition);
       } else {
         completionItems =
             this.provideGlobalCompletion(response, newMagikFile, newPosition, tokenNode, checker);
@@ -549,7 +549,8 @@ public class CompletionProvider {
       final MagikTypedFile magikFile,
       final AstNode tokenNode,
       final String tokenValue,
-      final CancelChecker checker) {
+      final CancelChecker checker,
+      final Position position) {
     // Token -->
     // - parent: any --> parent: ATOM
     // - parent: IDENTIFIER --> parent: METHOD_NAME -> parent: METHOD_INVOCATION --> previous
@@ -654,6 +655,15 @@ public class CompletionProvider {
       item.setInsertTextFormat(InsertTextFormat.Snippet);
       item.setInsertText(this.buildMethodInvocationSnippet(methodDef));
       item.setFilterText(methodDef.getMethodNameWithoutParentheses());
+
+      if (methodDef.getMethodName().startsWith("[")) {
+        System.out.println("does");
+        org.eclipse.lsp4j.Range dotRange =
+            new org.eclipse.lsp4j.Range(
+                new Position(position.getLine(), position.getCharacter() - tokenValue.length()),
+                position);
+        item.setAdditionalTextEdits(List.of(new TextEdit(dotRange, "")));
+      }
 
       Set<MethodDefinition.Modifier> modifiers = methodDef.getModifiers();
       if (modifiers.contains(MethodDefinition.Modifier.DB_TYPE)) {
@@ -793,6 +803,11 @@ public class CompletionProvider {
       insertText += " ${1:val}$0";
 
       return insertText;
+    }
+
+    if (originalMethodName.startsWith("[")) {
+      final String keyName = originalMethodName.substring(1, originalMethodName.indexOf(']'));
+      return "[${1:" + keyName + "}] << ${2:thing}$0";
     }
 
     if (!originalMethodName.endsWith(")")) {
@@ -936,7 +951,21 @@ public class CompletionProvider {
       int column = nodePosition.getColumn();
       int line = nodePosition.getLine();
 
-      if (errorNode.getParent() != null && errorNode.getParent().is(MagikGrammar.IF)) {
+      boolean inIfCondition = true;
+      for (int i = 0; i < errorLines.length; i++) {
+        final String errorLine = errorLines[i];
+        final int currentErrorLineNo = errorLineNo + i;
+        final int thenIndex = errorLine.indexOf("_then");
+        if (thenIndex > -1
+            && (currentErrorLineNo < line || (currentErrorLineNo == line && thenIndex < column))) {
+          inIfCondition = false;
+          break;
+        }
+      }
+
+      if (errorNode.getParent() != null
+          && errorNode.getParent().is(MagikGrammar.IF)
+          && inIfCondition) {
         // clean `_if` structure, only works for the condition part at the moment
         final AstNode ifNode = errorNode.getParent();
         int fromIndex = ifNode.getFirstChild().getFromIndex();

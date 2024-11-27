@@ -19,7 +19,7 @@ public class PathDeserializer extends BaseDeserializer<Path> {
   public Path deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context)
       throws JsonParseException {
     if (!json.isJsonPrimitive() || !json.getAsJsonPrimitive().isString()) {
-      throw new IllegalArgumentException(json.toString() + " is not a string");
+      throw new IllegalArgumentException(json + " is not a string");
     }
 
     final String value = json.getAsJsonPrimitive().getAsString();
