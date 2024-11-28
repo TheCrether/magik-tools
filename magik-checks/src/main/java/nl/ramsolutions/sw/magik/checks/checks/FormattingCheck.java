@@ -1,6 +1,7 @@
 package nl.ramsolutions.sw.magik.checks.checks;
 
 import com.sonar.sslr.api.*;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -73,6 +74,10 @@ public class FormattingCheck extends MagikCheck {
   private Token currentToken;
   private Token nextToken;
   private boolean inPragma = false;
+  private boolean previousNodeIsPragma = false;
+  private AstNode nextTokenNode;
+  private AstNode currentTokenNode;
+  private AstNode previousTokenNode;
 
   @Override
   protected void walkPreMagik(final AstNode node) {
@@ -110,10 +115,7 @@ public class FormattingCheck extends MagikCheck {
 
   @Override
   protected void walkChildren(AstNode node) {
-    this.inPragma =
-        node.is(MagikGrammar.PRAGMA)
-            || node.is(MagikGrammar.PRAGMA_PARAM)
-            || node.getFirstAncestor(MagikGrammar.PRAGMA, MagikGrammar.PRAGMA_PARAM) != null;
+    this.inPragma = this.isNodeInPragma(node);
 
     super.walkChildren(node);
   }
@@ -128,6 +130,17 @@ public class FormattingCheck extends MagikCheck {
     if (this.currentToken != null) {
       this.handleToken();
     }
+  }
+
+  @Override
+  protected void walkTokens(AstNode tokenNode) {
+    this.previousTokenNode = this.currentTokenNode;
+    this.currentTokenNode = this.nextTokenNode;
+    this.nextTokenNode = tokenNode;
+    this.previousNodeIsPragma =
+        this.isNodeInPragma(this.currentTokenNode) && this.isNodeInPragma(this.previousTokenNode);
+
+    super.walkTokens(tokenNode);
   }
 
   @Override
@@ -149,7 +162,7 @@ public class FormattingCheck extends MagikCheck {
 
     this.requireMaxNewlines(this.currentToken);
 
-    if (this.inPragma) {
+    if (this.inPragma || this.currentToken.getValue().equals(")") && this.previousNodeIsPragma) {
       return;
     }
 
@@ -432,5 +445,11 @@ public class FormattingCheck extends MagikCheck {
     }
 
     return ' ';
+  }
+
+  private boolean isNodeInPragma(@Nullable final AstNode node) {
+    return node != null
+        && (node.is(MagikGrammar.PRAGMA, MagikGrammar.PRAGMA_PARAM)
+            || node.getFirstAncestor(MagikGrammar.PRAGMA, MagikGrammar.PRAGMA_PARAM) != null);
   }
 }

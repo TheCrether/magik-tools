@@ -202,7 +202,12 @@ public class MagikWorkspaceFolder {
     LOGGER.debug("Writing types database for workspace: {}, path: {}", this, typesDbPath);
     final FilterableDefinitionKeeperAdapter filteredDefinitionKeeper =
         this.getWorkspaceFilteredDefinitionKeeper();
-    JsonDefinitionWriter.write(typesDbPath, filteredDefinitionKeeper);
+    try {
+      JsonDefinitionWriter.write(typesDbPath, filteredDefinitionKeeper);
+    } catch (final IOException e) {
+      LOGGER.error(
+          "could not write type database for workspace: {}, path: {}", this, typesDbPath, e);
+    }
   }
 
   private FilterableDefinitionKeeperAdapter getWorkspaceFilteredDefinitionKeeper() {
