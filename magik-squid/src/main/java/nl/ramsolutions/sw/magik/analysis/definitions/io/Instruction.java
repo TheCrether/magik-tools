@@ -2,7 +2,7 @@ package nl.ramsolutions.sw.magik.analysis.definitions.io;
 
 /** Json TypeKeeper Reader/Writer instructions. */
 @SuppressWarnings("checkstyle:JavadocVariable")
-enum Instruction {
+public enum Instruction {
   PRODUCT(1),
   MODULE(2),
   PACKAGE(3),
