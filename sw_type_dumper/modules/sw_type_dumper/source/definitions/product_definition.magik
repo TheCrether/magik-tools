@@ -74,6 +74,7 @@ _method product_definition.new_from(product)
 		_then
 			>> product.parent.name
 		_endif
+
 	_local usages << product.prerequisites.
 		map(_proc(prereq) _return prereq[1] _endproc).
 		as_sorted_collection().

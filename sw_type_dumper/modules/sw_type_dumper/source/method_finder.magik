@@ -97,7 +97,5 @@ _method method_finder.get_method_topics(method, class)
 _endmethod
 $
 
-# TODO "correct" overridding of methods
-
 method_finder.auto_start? << _true
 $
