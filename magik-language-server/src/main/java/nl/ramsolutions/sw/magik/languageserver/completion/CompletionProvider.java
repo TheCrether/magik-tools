@@ -657,7 +657,6 @@ public class CompletionProvider {
       item.setFilterText(methodDef.getMethodNameWithoutParentheses());
 
       if (methodDef.getMethodName().startsWith("[")) {
-        System.out.println("does");
         org.eclipse.lsp4j.Range dotRange =
             new org.eclipse.lsp4j.Range(
                 new Position(position.getLine(), position.getCharacter() - tokenValue.length()),
