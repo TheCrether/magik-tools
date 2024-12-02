@@ -169,6 +169,11 @@ public class CompletionProvider {
               MagikGrammar.IDENTIFIER,
               MagikGrammar.METHOD_NAME,
               MagikGrammar.METHOD_INVOCATION);
+      if (methodInvocationNode == null) {
+        methodInvocationNode =
+            AstQuery.getParentFromChain(
+                tokenNode, MagikGrammar.METHOD_INVOCATION); // after _protection blocks?
+      }
       methodInvocationOnSlotNode =
           AstQuery.getParentFromChain(
               tokenNode, MagikGrammar.IDENTIFIER, MagikGrammar.SLOT, MagikGrammar.ATOM);
@@ -178,8 +183,9 @@ public class CompletionProvider {
       return Collections.emptyList();
     }
 
-    if (tokenNode == null && removedPart.equals(".")
-        || tokenNode != null && tokenNode.getTokenOriginalValue().equals(".")) {
+    if (methodInvocationNode == null
+        && (tokenNode == null && removedPart.equals(".")
+            || tokenNode != null && tokenNode.getTokenOriginalValue().equals("."))) {
       // only '.' or starts with '.' -> slot invocations
       String searchedText = removedPart;
       if (removedPart.equals(".")) {
@@ -564,6 +570,8 @@ public class CompletionProvider {
     if (parentNode != null && parentNode.is(MagikGrammar.ATOM)) {
       // Asking the ATOM node.
       wantedNode = parentNode;
+    } else if (node.is(MagikGrammar.METHOD_INVOCATION, MagikGrammar.PROCEDURE_INVOCATION)) {
+      wantedNode = node.getPreviousSibling();
     } else if (parentParentNode != null
         && (parentParentNode.is(MagikGrammar.METHOD_INVOCATION)
             || parentParentNode.is(MagikGrammar.PROCEDURE_INVOCATION))) {
