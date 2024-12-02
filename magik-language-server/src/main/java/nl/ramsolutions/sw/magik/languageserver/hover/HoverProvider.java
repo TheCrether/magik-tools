@@ -422,7 +422,7 @@ public class HoverProvider {
     final LocalTypeReasonerState reasonerState = magikFile.getTypeReasonerState();
     final ExpressionResultString result = reasonerState.getNodeType(node);
     final TypeString resultTypeStr = result.get(0, TypeString.UNDEFINED);
-    if (resultTypeStr.isCombined()) {
+    if (resultTypeStr.isCombined() && resultTypeStr.getCombinedTypes().size() > 1) {
       appendCodeBlock(
           builder,
           true,
