@@ -294,8 +294,8 @@ public class MagikWorkspaceService implements WorkspaceService {
 
   private void runIndexers() {
     final long start = System.nanoTime();
-    if (LOGGER.isTraceEnabled()) {
-      LOGGER.trace("Run indexers");
+    if (LOGGER.isInfoEnabled()) {
+      LOGGER.info("Run indexers");
     }
 
     // run indexing for workspace folders first without any other information for faster
@@ -348,7 +348,7 @@ public class MagikWorkspaceService implements WorkspaceService {
 
     CompletableFuture.runAsync(
         () -> {
-          LOGGER.trace("Start indexing workspace");
+          LOGGER.info("Start indexing workspace");
           final ProgressParams progressParams = new ProgressParams();
           progressParams.setToken(token);
 
@@ -367,7 +367,7 @@ public class MagikWorkspaceService implements WorkspaceService {
           end.setMessage("Done indexing workspace");
           progressParams.setValue(Either.forLeft(end));
           languageClient.notifyProgress(progressParams);
-          LOGGER.trace("Done indexing workspace in background");
+          LOGGER.info("Done indexing workspace in background");
           this.languageServer.getLanguageClient().refreshSemanticTokens();
           this.languageServer.getLanguageClient().refreshDiagnostics();
         });

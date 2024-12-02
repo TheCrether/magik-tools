@@ -950,21 +950,7 @@ public class CompletionProvider {
       int column = nodePosition.getColumn();
       int line = nodePosition.getLine();
 
-      boolean inIfCondition = true;
-      for (int i = 0; i < errorLines.length; i++) {
-        final String errorLine = errorLines[i];
-        final int currentErrorLineNo = errorLineNo + i;
-        final int thenIndex = errorLine.indexOf("_then");
-        if (thenIndex > -1
-            && (currentErrorLineNo < line || (currentErrorLineNo == line && thenIndex < column))) {
-          inIfCondition = false;
-          break;
-        }
-      }
-
-      if (errorNode.getParent() != null
-          && errorNode.getParent().is(MagikGrammar.IF)
-          && inIfCondition) {
+      if (errorNode.getParent() != null && errorNode.getParent().is(MagikGrammar.IF)) {
         // clean `_if` structure, only works for the condition part at the moment
         final AstNode ifNode = errorNode.getParent();
         int fromIndex = ifNode.getFirstChild().getFromIndex();
