@@ -195,8 +195,7 @@ public class CompletionProvider {
           this.provideSlotCompletion(response, newMagikFile, newPosition, searchedText, checker);
     } else if (tokenNode != null) {
       boolean tokenNodeHasType = false;
-      final AstNode tokenAtomNode =
-          AstQuery.getParentFromChain(tokenNode, MagikGrammar.IDENTIFIER, MagikGrammar.ATOM);
+      final AstNode tokenAtomNode = tokenNode.getFirstAncestor(MagikGrammar.ATOM);
       if (tokenAtomNode != null) {
         final ExpressionResultString nodeType =
             newMagikFile.getTypeReasonerState().getNodeType(tokenAtomNode);
@@ -806,8 +805,13 @@ public class CompletionProvider {
 
     if (methodDef.getModifiers().contains(MethodDefinition.Modifier.SLOT)) {
       final int lastChevron = originalMethodName.lastIndexOf('<');
-      String insertText = originalMethodName.substring(0, lastChevron + 1);
-      insertText += " ${1:val}$0";
+      String insertText = "";
+      if (lastChevron > -1) {
+        insertText += originalMethodName.substring(0, lastChevron + 1);
+        insertText += " ${1:val}$0";
+      } else {
+        insertText += originalMethodName.trim();
+      }
 
       return insertText;
     }
