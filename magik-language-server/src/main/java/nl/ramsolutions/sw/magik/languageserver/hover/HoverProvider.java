@@ -291,7 +291,7 @@ public class HoverProvider {
       builder.append(indentStr).append(" ↳ ").append(parentConditionName).append(BR);
 
       definitionKeeper
-          .getConditionDefinitions()
+          .getConditionDefinitions(parentConditionName)
           .forEach(
               parentConditionDef ->
                   this.addConditionTaxonomy(magikFile, parentConditionDef, builder, indent + 1));
@@ -378,8 +378,7 @@ public class HoverProvider {
         final TypeStringResolver resolver = magikFile.getTypeStringResolver();
 
         resolver
-            .tryToGetOneMethodDefinition(typeStr, methodName)
-            // could be found, use it
+            .getRespondingMethodDefinitions(typeStr, methodName)
             .forEach(methodDef -> buildMethodSignatureDoc(methodDef, builder, this.properties));
       }
     }
@@ -406,7 +405,7 @@ public class HoverProvider {
     final String methodName = methodDefHelper.getMethodName();
     final TypeStringResolver resolver = magikFile.getTypeStringResolver();
     resolver
-        .tryToGetOneMethodDefinition(typeStr, methodName)
+        .getRespondingMethodDefinitions(typeStr, methodName)
         .forEach(methodDef -> buildMethodSignatureDoc(methodDef, builder, this.properties));
   }
 

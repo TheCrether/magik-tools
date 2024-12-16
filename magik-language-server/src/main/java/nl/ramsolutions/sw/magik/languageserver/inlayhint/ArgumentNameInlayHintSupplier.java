@@ -4,6 +4,7 @@ import com.sonar.sslr.api.AstNode;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import nl.ramsolutions.sw.MagikToolsProperties;
 import nl.ramsolutions.sw.magik.MagikTypedFile;
@@ -61,8 +62,8 @@ class ArgumentNameInlayHintSupplier {
     final LocalTypeReasonerState reasonerState = magikFile.getTypeReasonerState();
     final AstNode previousSiblingNode = methodInvocationNode.getPreviousSibling();
     final ExpressionResultString result = reasonerState.getNodeType(previousSiblingNode);
-    final TypeString typeStr = result.get(0, TypeString.UNDEFINED);
-    if (typeStr == TypeString.UNDEFINED) {
+    final TypeString typeString = result.get(0, TypeString.UNDEFINED);
+    if (typeString == TypeString.UNDEFINED) {
       return Stream.of();
     }
 
@@ -71,7 +72,25 @@ class ArgumentNameInlayHintSupplier {
     final String methodName = helper.getMethodName();
     final TypeStringResolver resolver = magikFile.getTypeStringResolver();
     final Collection<MethodDefinition> methodDefinitions =
-        resolver.getMethodDefinitions(typeStr, methodName);
+        typeString.getCombinedTypes().stream()
+            .map(typeStr -> resolver.getRespondingMethodDefinitions(typeStr, methodName))
+            .flatMap(Collection::stream)
+            .collect(Collectors.toSet());
+
+    // Test if all MethodDefinitions have the same parameters.
+    final long methodDefinitionParameterCount =
+        methodDefinitions.stream()
+            .map(
+                methodDef ->
+                    methodDef.getParameters().stream()
+                        .map(ParameterDefinition::getName)
+                        .collect(Collectors.toSet()))
+            .distinct()
+            .count();
+    if (methodDefinitionParameterCount != 1) {
+      return Stream.of();
+    }
+
     final MethodDefinition methodDefinition = methodDefinitions.stream().findAny().orElse(null);
     if (methodDefinition == null) {
       return Stream.of();

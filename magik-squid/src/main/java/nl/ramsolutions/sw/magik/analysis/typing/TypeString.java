@@ -270,7 +270,7 @@ public final class TypeString implements Comparable<TypeString> {
   /**
    * Get full string.
    *
-   * @return get the full string for the type
+   * @return Full string.
    */
   public String getFullString() {
     if (this.isCombined()) {
@@ -400,13 +400,27 @@ public final class TypeString implements Comparable<TypeString> {
    * @return Generic definitions.
    */
   public List<TypeString> getGenerics() {
-    return this.generics;
+    return Collections.unmodifiableList(this.generics);
+  }
+
+  /**
+   * Get the generic for the given generic reference.
+   *
+   * @param genericReference The generic reference to search for.
+   * @return The found generic if found, null otherwise.
+   */
+  @CheckForNull
+  public TypeString getGenericDefinition(final TypeString genericReference) {
+    return this.generics.stream()
+        .filter(generic -> generic.getGenericReference().equals(genericReference))
+        .findAny()
+        .orElse(null);
   }
 
   /**
    * Get the reference of the generic.
    *
-   * @return
+   * @return Generic reference.
    */
   public TypeString getGenericReference() {
     if (!this.isGenericReference() && !this.isGenericDefinition()) {
@@ -548,7 +562,7 @@ public final class TypeString implements Comparable<TypeString> {
       return null;
     }
 
-    return TypeString.ofCombination(intersection.toArray(TypeString[]::new));
+    return TypeString.combine(intersection.toArray(TypeString[]::new));
   }
 
   /**
@@ -570,7 +584,7 @@ public final class TypeString implements Comparable<TypeString> {
       return null;
     }
 
-    return TypeString.ofCombination(difference.toArray(TypeString[]::new));
+    return TypeString.combine(difference.toArray(TypeString[]::new));
   }
 
   /**

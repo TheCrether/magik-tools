@@ -229,20 +229,20 @@ export class MagikTestProvider implements vscode.Disposable {
 		});
 	}
 
-	private runTests(testItems: TestItemCollection|vscode.TestItemCollection, outputPath: fs.PathLike) {
+	private runTests(testItems: vscode.TestItemCollection, outputPath: fs.PathLike) {
 		// Gather required products.
 		const products = this.getSelfAndAncestors(testItems, 'product');
 		const productsStr = products
-			.map(testItem => ":" + testItem.id.substring('product:'.length))
+			.map(testItem => ":|" + testItem.id.substring('product:'.length) + "|")
 			.join(",");
 
 		// Get modules to be loaded.
-		const modules = [
+		const modules: vscode.TestItem[] = [
 			...this.getSelfAndAncestors(testItems, 'module'),
 			...this.getSelfAndDescendants(testItems, 'module')
 		];
 		const modulesStr = modules
-			.map(testItem => ":" + testItem.id.substring('module:'.length))
+			.map(testItem => ":|" + testItem.id.substring('module:'.length) + "|")
 			.join(",");
 
 		// Build test runner script.
@@ -281,7 +281,7 @@ _protect
 
 		# Add all test_cases.`;
 
-		testItems.forEach(testItem => {
+		testItems.forEach((testItem: vscode.TestItem) => {
 			script += this.generateTestCase(testItem, "top_suite");
 		});
 

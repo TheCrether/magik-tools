@@ -21,6 +21,15 @@ public class FormattingOptions {
   private boolean spacedBraces = DEFAULT_SPACED_BRACES;
   private boolean spacedBracesOnEmpty = DEFAULT_SPACED_BRACES_ON_EMPTY;
 
+  /**
+   * Constructor.
+   *
+   * @param tabSize Tab size.
+   * @param insertSpaces Insert spaces.
+   * @param insertFinalNewline Insert final newline.
+   * @param trimTrailingWhitespace Trim trailing whitespace.
+   * @param trimFinalNewlines Trim final newlines.
+   */
   public FormattingOptions(
       final int tabSize,
       final boolean insertSpaces,

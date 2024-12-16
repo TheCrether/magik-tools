@@ -88,7 +88,7 @@ class CompletionProviderTest {
 
     final CompletionItem item = completions.get(0);
     assertThat(item.getKind()).isEqualTo(CompletionItemKind.Method);
-    assertThat(item.getInsertText()).isEqualTo("find_me()");
+    assertThat(item.getInsertText()).isEqualTo("find_me()$0");
     assertThat(item.getLabel()).isEqualTo("find_me()");
     assertThat(item.getDetail()).isEqualTo("sw:integer");
   }
@@ -134,7 +134,7 @@ class CompletionProviderTest {
     assertThat(completions).hasSize(1);
     final CompletionItem item = completions.get(0);
     assertThat(item.getKind()).isEqualTo(CompletionItemKind.Method);
-    assertThat(item.getInsertText()).isEqualTo("find_me()");
+    assertThat(item.getInsertText()).isEqualTo("find_me()$0");
     assertThat(item.getLabel()).isEqualTo("find_me()");
     assertThat(item.getDetail()).isEqualTo("user:a");
   }
