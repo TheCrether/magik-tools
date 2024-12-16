@@ -207,7 +207,7 @@ public class DefinitionsProvider {
     final MagikLanguageServerSettings settings = new MagikLanguageServerSettings(this.properties);
 
     final TypeStringResolver resolver = magikFile.getTypeStringResolver();
-    return resolver.getMethodDefinitions(typeStr, methodName).stream()
+    return resolver.getRespondingMethodDefinitions(typeStr, methodName).stream()
         .map(MethodDefinition::getLocation)
         .map((Location location) -> Location.validLocation(location, settings.getPathMappings()))
         .toList();

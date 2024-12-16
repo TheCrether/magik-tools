@@ -28,6 +28,13 @@
 - Add ability to override aliases path and environment path in tasks in VSCode extension.
 - Set default value for `whitelist` in VariableNamingCheck.
 - Add FileMustStartWithPackageStatement check to test if a file starts with a `_package`-statement.
+- Use responding methods, instead of all methods on exemplar.
+- Only supply argument inlay hints when all methods have the same parameters.
+- Fix MethodArgumentTypeMatchesParameterTypeTypedCheck not handling generics.
+- Fix binary operator reasoning not using `species` method.
+- Improve auto formatting.
+- Fix auto formatting bug where `_pragma` caused lines to be removed.
+- FormattingCheck now uses formatting code to detect issues.
 - Several fixes.
 
 ### Breaking changes (reiterated from above)
@@ -40,6 +47,7 @@
 - Add UnsafeEvaluateInvocation check to Sonar way profile. This might result in more issues.
 - Add UndefinedVariable check to Sonar way profile. This might result in more issues.
 - Add FileMustStartWithPackageStatement check to test if a file starts with a `_package`-statement. This might result in more issues.
+- FormattingCheck now uses formatting code to detect issues. This might result in more or different issues.
 
 ## 0.10.1 (2024-08-14)
 

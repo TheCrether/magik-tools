@@ -622,7 +622,7 @@ public class CompletionProvider {
 
     final List<MethodDefinition> filteredMethods =
         new ArrayList<>(
-            resolver.getMethodDefinitions(finalTypeStr).stream()
+            resolver.getRespondingMethodDefinitions(finalTypeStr).stream()
                 .filter(methodDef -> methodDef.getMethodName().contains(methodNamePart))
                 .filter(
                     methodDef -> {

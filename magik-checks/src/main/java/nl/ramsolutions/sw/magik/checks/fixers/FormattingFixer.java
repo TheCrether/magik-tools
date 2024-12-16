@@ -1,7 +1,6 @@
 package nl.ramsolutions.sw.magik.checks.fixers;
 
 import com.sonar.sslr.api.AstNode;
-import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 import nl.ramsolutions.sw.MagikToolsProperties;
@@ -16,6 +15,7 @@ import nl.ramsolutions.sw.magik.formatting.MagikFormattingSettings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/** Fixer for formatting issues. */
 public class FormattingFixer extends MagikCheckFixer {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(FormattingFixer.class);
@@ -24,7 +24,7 @@ public class FormattingFixer extends MagikCheckFixer {
   public List<CodeAction> provideCodeActions(final MagikFile magikFile, final Range range) {
     final AstNode node = magikFile.getTopNode();
     if (!this.canFormat(magikFile)) {
-      LOGGER.warn("Cannot provide code actions due to syntax errors");
+      LOGGER.warn("Cannot format due to syntax errors");
       return Collections.emptyList();
     }
 
@@ -44,13 +44,7 @@ public class FormattingFixer extends MagikCheckFixer {
     formattingOptions.setSpacedBraces(settings.getSpacedBraces());
     formattingOptions.setSpacedBracesOnEmpty(settings.getSpacesBracesOnEmpty());
 
-    FormattingWalker walker;
-    try {
-      walker = new FormattingWalker(formattingOptions);
-    } catch (final IOException exception) {
-      LOGGER.error("Error creating formatter", exception);
-      return Collections.emptyList();
-    }
+    final FormattingWalker walker = new FormattingWalker(formattingOptions);
 
     walker.walkAst(node);
     return walker.getTextEdits().stream()

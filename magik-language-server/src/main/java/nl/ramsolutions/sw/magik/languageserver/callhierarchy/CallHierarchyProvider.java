@@ -70,6 +70,13 @@ public class CallHierarchyProvider {
     capabilities.setCallHierarchyProvider(true);
   }
 
+  /**
+   * Prepare call hierarchy.
+   *
+   * @param magikFile Magik file.
+   * @param position Position.
+   * @return Call hierarchy items.
+   */
   public List<CallHierarchyItem> prepareCallHierarchy(
       final MagikTypedFile magikFile, final Position position) {
     final AstNode node = magikFile.getTopNode();
@@ -108,6 +115,12 @@ public class CallHierarchyProvider {
     return List.of(item);
   }
 
+  /**
+   * Call hierarchy incoming calls.
+   *
+   * @param item Call hierarchy item.
+   * @return Call hierarchy incoming calls.
+   */
   public List<CallHierarchyIncomingCall> callHierarchyIncomingCalls(final CallHierarchyItem item) {
     final JsonElement element = (JsonElement) item.getData();
     final JsonObject object = element.getAsJsonObject();
@@ -194,6 +207,12 @@ public class CallHierarchyProvider {
         fromItem, List.of(Lsp4jConversion.rangeToLsp4j(fromRange)));
   }
 
+  /**
+   * Call hierarchy outgoing calls.
+   *
+   * @param item Call hierarchy item.
+   * @return Call hierarchy outgoing calls.
+   */
   public List<CallHierarchyOutgoingCall> callHierarchyOutgoingCalls(final CallHierarchyItem item) {
     final JsonElement element = (JsonElement) item.getData();
     final JsonObject object = element.getAsJsonObject();
@@ -235,7 +254,7 @@ public class CallHierarchyProvider {
               // definition.
               final String calledMethodName = helper.getMethodName();
               final TypeStringResolver resolver = magikFile.getTypeStringResolver();
-              return resolver.getMethodDefinitions(typeStr, calledMethodName).stream()
+              return resolver.getRespondingMethodDefinitions(typeStr, calledMethodName).stream()
                   .map(
                       calledMethodDef ->
                           this.createOutgoingCall(methodInvocationNode, calledMethodDef));

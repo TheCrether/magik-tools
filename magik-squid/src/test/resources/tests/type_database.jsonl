@@ -7,7 +7,7 @@
 // modules
 {"i":2,"name":"test_module","base_ver":"1","cur_ver":"2","p_name":"test_product","desc":"test_module"}
 // magik files
-{"i":10, "location":{"uri":"file:///test.magik"}}
+{"i":10, "src":{"uri":"file:///test.magik"}}
 // packages
 {"i": 3,"name":"sw","uses":[]}
 {"i":3,"name":"user","uses":["sw"]}
